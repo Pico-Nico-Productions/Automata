@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "up": "automata:block/roboport_top",
+    "down": "automata:block/roboport_side",
+    "north": "automata:block/roboport_side",
+    "south": "automata:block/roboport_side",
+    "east": "automata:block/roboport_side",
+    "west": "automata:block/roboport_side",
+    "particle": "automata:block/roboport_side"
+  }
+}
