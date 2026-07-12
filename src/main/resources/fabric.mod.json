@@ -8,8 +8,8 @@
 		"Nick S Will"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://github.com/Pico-Nico-Productions/Automata",
+		"sources": "https://github.com/Pico-Nico-Productions/Automata"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/automata/icon.png",
@@ -22,7 +22,7 @@
 			"pro.piconico.automata.client.AutomataClient"
 		],
 		"fabric-datagen": [
-			"pro.piconico.automata.client.AutomataDataGenerator"
+			"pro.piconico.automata.datagen.AutomataDataGenerator"
 		]
 	},
 	"mixins": [

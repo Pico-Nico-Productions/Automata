@@ -18,11 +18,11 @@
       "type": "java",
       "name": "Data Generation",
       "request": "launch",
-      "cwd": "${workspaceFolder}/run\\datagen",
+      "cwd": "${workspaceFolder}/run",
       "console": "integratedTerminal",
       "stopOnEntry": false,
       "mainClass": "net.fabricmc.devlaunchinjector.Main",
-      "vmArgs": "-Dfabric.dli.config\u003dC:\\Users\\nickw\\Documents\\Personal\\Programming\\Java\\Automata\\.gradle\\loom-cache\\launch.cfg -Dfabric.dli.env\u003dclient -Dfabric.dli.main\u003dnet.fabricmc.loader.impl.launch.knot.KnotClient -Dfabric-api.datagen -Dfabric-api.datagen.output-dir\u003dC:\\Users\\nickw\\Documents\\Personal\\Programming\\Java\\Automata\\src\\main\\generated",
+      "vmArgs": "-Dfabric.dli.config\u003dC:\\Users\\nickw\\Documents\\Personal\\Programming\\Java\\Automata\\.gradle\\loom-cache\\launch.cfg -Dfabric.dli.env\u003dclient -Dfabric.dli.main\u003dnet.fabricmc.loader.impl.launch.knot.KnotClient -Dfabric-api.datagen -Dfabric-api.datagen.output-dir\u003dC:\\Users\\nickw\\Documents\\Personal\\Programming\\Java\\Automata\\src\\generated\\resources",
       "args": "",
       "env": {},
       "projectName": "Automata"

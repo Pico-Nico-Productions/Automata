@@ -11,7 +11,7 @@ public class RoboportBlock extends BlockWithEntity {
     public static final MapCodec<RoboportBlock> CODEC = createCodec(RoboportBlock::new);
 
     public RoboportBlock(Settings settings) {
-        super(settings);
+        super(settings.strength(3.0f));
     }
 
     @Override
