@@ -3,6 +3,7 @@ package pro.piconico.automata;
 import net.fabricmc.api.ModInitializer;
 
 import pro.piconico.automata.registry.AutomataBlocks;
+import pro.piconico.automata.registry.AutomataItems;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +14,7 @@ public class Automata implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		AutomataItems.initialize();
 		AutomataBlocks.initialize();
 
 		LOGGER.info("Automata Initialized!");
