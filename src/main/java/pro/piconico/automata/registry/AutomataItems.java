@@ -13,7 +13,7 @@ import net.minecraft.registry.RegistryKeys;
 import pro.piconico.automata.item.ConstructionBotItem;
 
 public class AutomataItems {
-    public static final Item CONSTRUCTION_BOT = register("construction_bot", ConstructionBotItem::new);
+    public static final Item CONSTRUCTION_BOT = register(AutomataRegistry.CONSTRUCTION_BOT, ConstructionBotItem::new);
 
     private static Item register(String name, Function<Settings, Item> itemFactory) {
         RegistryKey<Item> itemKey = AutomataRegistry.toRegistryKey(RegistryKeys.ITEM, name);

@@ -14,7 +14,7 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
 
     @Override
     public void generateTranslations(WrapperLookup registryLookup, TranslationBuilder translationBuilder) {
-        translationBuilder.add(AutomataItems.CONSTRUCTION_BOT, "Construction Robot");
+        translationBuilder.add(AutomataItems.CONSTRUCTION_BOT, "Construction Bot");
 
         AutomataLanguageGenerationUtils.AddBlockTranslation(translationBuilder, AutomataBlocks.ROBOPORT, "Roboport");
     }

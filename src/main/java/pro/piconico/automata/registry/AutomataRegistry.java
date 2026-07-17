@@ -6,7 +6,22 @@ import net.minecraft.util.Identifier;
 import pro.piconico.automata.Automata;
 
 public class AutomataRegistry {
+    public static final String CONSTRUCTION_BOT = "construction_bot";
+    public static final String ROBOPORT = "roboport";
+
+    public static Identifier id(String path) {
+        return Identifier.of(Automata.MOD_ID, path);
+    }
+
+    public static Identifier textureId(String path) {
+        return id("textures/" + path + ".png");
+    }
+
+    public static Identifier guiTextureId(String path) {
+        return textureId("gui/" + path);
+    }
+
     public static <T> RegistryKey<T> toRegistryKey(RegistryKey<Registry<T>> registryKey, String path) {
-        return RegistryKey.of(registryKey, Identifier.of(Automata.MOD_ID, path));
+        return RegistryKey.of(registryKey, id(path));
     }
 }
