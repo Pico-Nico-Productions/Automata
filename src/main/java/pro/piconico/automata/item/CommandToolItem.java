@@ -1,5 +1,6 @@
 package pro.piconico.automata.item;
 
+import java.util.Optional;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -37,7 +38,7 @@ public class CommandToolItem extends Item {
             return ActionResult.SUCCESS;
         }
 
-        setCommandToolComponent(stack, new CommandToolComponent(selection1, getCommandToolComponent(stack).selection2()));
+        setCommandToolComponent(stack, new CommandToolComponent(Optional.of(selection1), getCommandToolComponent(stack).selection2()));
         player.sendMessage(Text.translatable(AutomataTexts.SELECTION, 1, selection1.toShortString()), true);
 
         return ActionResult.SUCCESS;
@@ -52,7 +53,9 @@ public class CommandToolItem extends Item {
 
         // TODO: Send packet/create command here
         setCommandToolComponent(player.getMainHandStack(), CommandToolComponent.EMPTY);
-        player.sendMessage(Text.translatable(AutomataTexts.DECONSTRUCTION, commandToolComponent.selection1().toShortString(), commandToolComponent.selection2().toShortString()), true);
+        String selection1String = commandToolComponent.selection1().get().toShortString();
+        String selection2String = commandToolComponent.selection2().get().toShortString();
+        player.sendMessage(Text.translatable(AutomataTexts.DECONSTRUCTION, selection1String, selection2String), true);
 
         return ActionResult.SUCCESS;
     }
@@ -84,7 +87,7 @@ public class CommandToolItem extends Item {
         }
 
         BlockPos selection2 = context.getBlockPos();
-        setCommandToolComponent(stack, new CommandToolComponent(getCommandToolComponent(stack).selection1(), selection2));
+        setCommandToolComponent(stack, new CommandToolComponent(getCommandToolComponent(stack).selection1(), Optional.of(selection2)));
         player.sendMessage(Text.translatable(AutomataTexts.SELECTION, 2, selection2.toShortString()), true);
 
         return ActionResult.SUCCESS;
