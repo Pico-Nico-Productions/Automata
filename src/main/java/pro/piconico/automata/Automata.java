@@ -7,6 +7,7 @@ import pro.piconico.automata.registry.AutomataBlocks;
 import pro.piconico.automata.registry.AutomataComponents;
 import pro.piconico.automata.registry.AutomataEntities;
 import pro.piconico.automata.registry.AutomataItems;
+import pro.piconico.automata.registry.AutomataPersistentStates;
 import pro.piconico.automata.registry.AutomataScreenHandlers;
 import pro.piconico.automata.registry.AutomataTexts;
 
@@ -18,9 +19,10 @@ public class Automata implements ModInitializer {
 	public void onInitialize() {
 		AutomataTexts.initialize();
 		AutomataComponents.initialize();
+		AutomataEntities.initialize();
 		AutomataItems.initialize();
 		AutomataBlocks.initialize();
-		AutomataEntities.initialize();
+		AutomataPersistentStates.initialize();
 		AutomataScreenHandlers.initialize();
 
 		LOGGER.info("Automata Initialized!");

@@ -14,6 +14,7 @@ import net.minecraft.world.World;
 import pro.piconico.automata.component.CommandToolComponent;
 import pro.piconico.automata.registry.AutomataComponents;
 import pro.piconico.automata.registry.AutomataTexts;
+import pro.piconico.automata.bot.BotDispatcher;
 
 public class CommandToolItem extends Item {
     public CommandToolItem(Settings settings) {
@@ -24,72 +25,42 @@ public class CommandToolItem extends Item {
         return stack.getOrDefault(AutomataComponents.COMMAND_TOOL, CommandToolComponent.EMPTY);
     }
 
-    private static void setCommandToolComponent(ItemStack stack, CommandToolComponent data) {
-        stack.set(AutomataComponents.COMMAND_TOOL, data);
-    }
-
-    public static ActionResult onAttackBlock(PlayerEntity player, World world, Hand hand, BlockPos selection1, Direction direction) {
-        ItemStack stack = player.getMainHandStack();
-        if (hand != Hand.MAIN_HAND || !(stack.getItem() instanceof CommandToolItem)) {
-            return ActionResult.PASS;
-        }
-
-        if (world.isClient()) {
+    private static ActionResult select(PlayerEntity player, ItemStack stack, BlockPos selection, boolean isSelection2) {
+        if (player.getEntityWorld().isClient())
             return ActionResult.SUCCESS;
-        }
-
-        setCommandToolComponent(stack, new CommandToolComponent(Optional.of(selection1), getCommandToolComponent(stack).selection2()));
-        player.sendMessage(Text.translatable(AutomataTexts.SELECTION, 1, selection1.toShortString()), true);
-
-        return ActionResult.SUCCESS;
-    }
-
-    private ActionResult sendDeconstructionCommand(PlayerEntity player, CommandToolComponent commandToolComponent) {
-        if (!commandToolComponent.canDeconstruct()) {
-            player.sendMessage(Text.translatable(AutomataTexts.INVALID_DECONSTRUCTION_SELECTION), true);
-
-            return ActionResult.FAIL;
-        }
-
-        // TODO: Send packet/create command here
-        setCommandToolComponent(player.getMainHandStack(), CommandToolComponent.EMPTY);
-        String selection1String = commandToolComponent.selection1().get().toShortString();
-        String selection2String = commandToolComponent.selection2().get().toShortString();
-        player.sendMessage(Text.translatable(AutomataTexts.DECONSTRUCTION, selection1String, selection2String), true);
-
-        return ActionResult.SUCCESS;
-    }
-
-    @Override
-    public ActionResult use(World world, PlayerEntity player, Hand hand) {
-        if (!player.isSneaking()) {
-            return ActionResult.FAIL;
-        }
-
-        CommandToolComponent commandToolComponent = getCommandToolComponent(player.getMainHandStack());
-        if (world.isClient()) {
-            return commandToolComponent.canDeconstruct() ? ActionResult.SUCCESS : ActionResult.FAIL;
-        }
         
-        return sendDeconstructionCommand(player, commandToolComponent);
+        Optional<BlockPos> selection1 = isSelection2 ? getCommandToolComponent(stack).selection1() : Optional.of(selection);
+        Optional<BlockPos> selection2 = isSelection2 ? Optional.of(selection) : getCommandToolComponent(stack).selection2();
+        stack.set(AutomataComponents.COMMAND_TOOL, new CommandToolComponent(selection1, selection2));
+        player.sendMessage(Text.translatable(AutomataTexts.SELECTION, isSelection2 ? 2 : 1, selection.toShortString()), true);
+
+        return ActionResult.SUCCESS;
+    }
+
+    public static ActionResult onAttackBlock(PlayerEntity player, World world, Hand hand, BlockPos blockPos, Direction direction) {
+        ItemStack stack = player.getMainHandStack();
+        if (hand != Hand.MAIN_HAND || !(stack.getItem() instanceof CommandToolItem))
+            return ActionResult.PASS;
+        
+        return select(player, stack, blockPos, false);
     }
 
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
-        if (context.getWorld().isClient()) {
-            return ActionResult.SUCCESS;
-        }
-
         PlayerEntity player = context.getPlayer();
         ItemStack stack = context.getStack();
-        if (player.isSneaking()) {
-            return sendDeconstructionCommand(player, getCommandToolComponent(stack));
-        }
+        if (player.isSneaking())
+            return BotDispatcher.markForDeconstruction(player, getCommandToolComponent(stack));
+        
+        return select(player, stack, context.getBlockPos(), true);
+    }
 
-        BlockPos selection2 = context.getBlockPos();
-        setCommandToolComponent(stack, new CommandToolComponent(getCommandToolComponent(stack).selection1(), Optional.of(selection2)));
-        player.sendMessage(Text.translatable(AutomataTexts.SELECTION, 2, selection2.toShortString()), true);
+    @Override
+    public ActionResult use(World world, PlayerEntity player, Hand hand) {
+        if (!player.isSneaking())
+            return ActionResult.FAIL;
 
-        return ActionResult.SUCCESS;
+        CommandToolComponent commandToolComponent = getCommandToolComponent(player.getMainHandStack());
+        return BotDispatcher.markForDeconstruction(player, commandToolComponent);
     }
 }
