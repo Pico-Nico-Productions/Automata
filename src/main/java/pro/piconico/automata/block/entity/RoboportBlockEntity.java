@@ -11,6 +11,8 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
@@ -25,6 +27,18 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
 
     public RoboportBlockEntity(BlockPos pos, BlockState state) {
         super(AutomataEntities.ROBOPORT, pos, state);
+    }
+
+    @Override
+    protected void readData(ReadView view) {
+        super.readData(view);
+        Inventories.readData(view, items);
+    }
+
+    @Override
+    protected void writeData(WriteView view) {
+        super.writeData(view);
+        Inventories.writeData(view, items);
     }
 
     @Override
