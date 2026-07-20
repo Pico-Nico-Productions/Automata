@@ -1,4 +1,4 @@
-# Automata
+# Automata Developer Guide
 
 ## Running The Mod
 
@@ -6,6 +6,14 @@
 2. Open in VS Code
 3. Run **Data Generation** launch task (generated data is git ignored)
 4. Run **Minecraft Client** launch task
+
+## Code Conventions
+
+### Avoid String Literals
+- Define all strings used as **Identifier**s and **RegistryKey**s in [`src\main\java\pro\piconico\automata\registry\AutomataRegistry.java`](src\main\java\pro\piconico\automata\registry\AutomataRegistry.java)
+- Define all strings used as translation keys in [`src\main\java\pro\piconico\automata\registry\AutomataTexts.java`](src\main\java\pro\piconico\automata\registry\AutomataTexts.java)
+- Write all player facing strings in the **FabricLanguageProvider**s in `src\client\java\pro\piconico\automata\datagen\lang`
+- Developer facing string are the exception (e.g. **Codec** field names, **Exception** messages, log messages)
 
 ## Adding Texts
 
@@ -58,6 +66,17 @@ Call **Text**.translatable with the translation key and arguments
 1. Create a class (T for example) that extends **PersistentState** in `src\main\java\pro\piconico\automata\world\`
 2. Give it a public static final **Codec\<T\>**
 3. Register it as a public static final **PersistentStateType\<T\>** in [`src\main\java\pro\piconico\automata\registry\AutomataPersistentStates.java`](src\main\java\pro\piconico\automata\registry\AutomataPersistentStates.java)
+
+## Adding Packets
+
+1. Create a record (T for example) that implements **CustomPayload** in `src\main\java\pro\piconico\automata\network\packet\`
+2. Register it as a public static final **CustomPayload.Type\<?, T\>** in [`src\main\java\pro\piconico\automata\registry\AutomataPackets.java`](src\main\java\pro\piconico\automata\registry\AutomataPackets.java)
+### Client To Server (C2S)
+3. Create a class that handles the packet in `src\main\java\pro\piconico\automata\network\handler`
+4. Initialize the handler in [`src\main\java\pro\piconico\automata\registry\AutomataPackets.java`](src\main\java\pro\piconico\automata\registry\AutomataPackets.java)
+### Server To Client (S2C)
+3. Create a class that handles the packet in `src\client\java\pro\piconico\automata\client\network\handler`
+4. Initialize the handler in [`src\client\java\pro\piconico\automata\client\AutomataClient.java`](src\client\java\pro\piconico\automata\client\AutomataClient.java)
 
 ## Adding Screens
 

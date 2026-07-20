@@ -1,9 +1,10 @@
 package pro.piconico.automata.bot;
 
-import java.util.Iterator;
+import java.util.ArrayList;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
@@ -20,14 +21,11 @@ public class BotDispatcher {
     }
     
     public static void update(World world) {
-        BotPersistentState state = AutomataPersistentStates.get(world, AutomataPersistentStates.BOT_PERSISTENT_STATE);
-        Iterator<BlockPos> deconstructionIterator = state.getDeconstructionJobs().iterator();
-        while (deconstructionIterator.hasNext()) {
-            BlockPos blockPos = deconstructionIterator.next();
-
+        BotPersistentState botState = AutomataPersistentStates.get(world, AutomataPersistentStates.BOT_PERSISTENT_STATE);
+        ArrayList<BlockPos> toRemove = new ArrayList<>();
+        for (BlockPos blockPos : botState.getDeconstructionJobs()) {
             if (!canDeconstruct(world, blockPos)) {
-                deconstructionIterator.remove();
-                state.markDirty();
+                toRemove.add(blockPos);
 
                 continue;
             }
@@ -39,10 +37,10 @@ public class BotDispatcher {
             if (BlockUtils.hasFluidSourceBlock(world, blockPos)) {
                 world.setBlockState(blockPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
             }
-            deconstructionIterator.remove();
-            state.markDirty();
+            toRemove.add(blockPos);
             //#endregion
         }
+        botState.removeDeconstructionJobs(toRemove, (ServerWorld)world);
     }
 
     public static ActionResult markForDeconstruction(PlayerEntity player, CommandToolComponent commandToolComponent) {
@@ -61,8 +59,7 @@ public class BotDispatcher {
         BlockPos selection2 = commandToolComponent.selection2().get();
         BlockPos min = BlockPos.min(selection1, selection2);
         BlockPos max = BlockPos.max(selection1, selection2);
-        BotPersistentState botState = AutomataPersistentStates.get(world, AutomataPersistentStates.BOT_PERSISTENT_STATE);
-        boolean jobAdded = false;
+        ArrayList<BlockPos> toAdd = new ArrayList<>();
         for (int x = min.getX(); x <= max.getX(); x++) {
             for (int y = min.getY(); y <= max.getY(); y++) {
                 for (int z = min.getZ(); z <= max.getZ(); z++) {
@@ -70,16 +67,19 @@ public class BotDispatcher {
                     if (!canDeconstruct(world, blockPos))
                         continue;
 
-                    botState.addDeconstructionJob(blockPos);
-                    jobAdded = true;
+                    toAdd.add(blockPos);
                 }
             }
         }
+        BotPersistentState botState = AutomataPersistentStates.get(world, AutomataPersistentStates.BOT_PERSISTENT_STATE);
+        botState.addDeconstructionJobs(toAdd, (ServerWorld)world);
 
         player.sendMessage(Text.translatable(AutomataTexts.DECONSTRUCTION, selection1.toShortString(), selection2.toShortString()), true);
 
-        if (jobAdded) update(world);
-
         return ActionResult.SUCCESS;
+    }
+
+    public static void initialize() {
+        BotPersistentState.DECONSTRUCTION_JOBS_MUTATE.register((serverWorld) -> update(serverWorld));
     }
 }
