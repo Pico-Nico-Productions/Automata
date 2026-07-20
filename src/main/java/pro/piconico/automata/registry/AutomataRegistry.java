@@ -6,7 +6,6 @@ import net.minecraft.util.Identifier;
 import pro.piconico.automata.Automata;
 
 public class AutomataRegistry {
-    public static final String BOT_CACHE_PACKET = "bot_cache_packet";
     public static final String BOT_PERSISTENT_STATE = "bot_persistent_state";
     public static final String COMMAND_TOOL = "command_tool";
     public static final String CONSTRUCTION_BOT = "construction_bot";

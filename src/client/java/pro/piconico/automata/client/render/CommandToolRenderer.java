@@ -8,12 +8,10 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.VertexRendering;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
-import pro.piconico.automata.client.cache.BotCache;
 import pro.piconico.automata.component.CommandToolComponent;
 import pro.piconico.automata.registry.AutomataComponents;
 import pro.piconico.automata.registry.AutomataItems;
@@ -22,7 +20,6 @@ public class CommandToolRenderer {
     private static final double EXPAND = 0.002;
     private static final RenderLayer OUTLINE_LAYER = RenderLayers.SECONDARY_BLOCK_OUTLINE;
     private static final float OUTLINE_WIDTH = 4.0f;
-    private static final int ROBOPORT_COLOR = 0xFFFFFF00; // Yellow
     private static final int SELECTION_BOX_COLOR = 0xFFFF0000; // Red
     private static final int SELECTION1_COLOR = 0xFF00FF00; // Green
     private static final int SELECTION2_COLOR = 0xFF0000FF; // Blue
@@ -31,18 +28,6 @@ public class CommandToolRenderer {
         Vec3d cameraPos = context.gameRenderer().getCamera().getCameraPos();
         VoxelShape boxShape = VoxelShapes.cuboid(box.expand(EXPAND));
         VertexRendering.drawOutline(context.matrices(), context.consumers().getBuffer(OUTLINE_LAYER), boxShape, -cameraPos.x, -cameraPos.y, -cameraPos.z, color, OUTLINE_WIDTH);
-    }
-
-    private static void renderRoboportOutlines(WorldRenderContext context) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player == null) return;
-
-        ItemStack stack = client.player.getMainHandStack();
-        if (!stack.isOf(AutomataItems.COMMAND_TOOL)) return;
-        
-        for (BlockPos blockPos : BotCache.ROBOPORTS) {
-            renderBoxOutline(context, new Box(blockPos), ROBOPORT_COLOR);
-        }
     }
 
     private static void renderSelectionOutline(WorldRenderContext context) {
@@ -62,7 +47,6 @@ public class CommandToolRenderer {
     }
 
     public static void initialize() {
-        WorldRenderEvents.END_MAIN.register(CommandToolRenderer::renderRoboportOutlines);
         WorldRenderEvents.END_MAIN.register(CommandToolRenderer::renderSelectionOutline);
     }
 }

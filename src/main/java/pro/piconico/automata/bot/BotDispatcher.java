@@ -80,6 +80,7 @@ public class BotDispatcher {
     }
 
     public static void initialize() {
+        BotPersistentState.ROBOPORTS_MUTATE.register((serverWorld) -> update(serverWorld));
         BotPersistentState.DECONSTRUCTION_JOBS_MUTATE.register((serverWorld) -> update(serverWorld));
     }
 }
