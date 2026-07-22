@@ -11,6 +11,8 @@ import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.PersistentState;
+import pro.piconico.automata.block.RoboportBlock;
+import pro.piconico.automata.registry.AutomataPersistentStates;
 
 public class BotPersistentState extends PersistentState {
     public static final Codec<BotPersistentState> CODEC = RecordCodecBuilder.create(instance -> instance
@@ -58,24 +60,8 @@ public class BotPersistentState extends PersistentState {
         ROBOPORTS_MUTATE.invoker().onMutate(serverWorld);
     }
 
-    public void addRoboports(Collection<BlockPos> toAdd, ServerWorld serverWorld) {
-        if (!roboports.addAll(toAdd))
-            return;
-
-        markDirty();
-        ROBOPORTS_MUTATE.invoker().onMutate(serverWorld);
-    }
-
     public void removeRoboport(BlockPos blockPos, ServerWorld serverWorld) {
         if (!roboports.remove(blockPos))
-            return;
-
-        markDirty();
-        ROBOPORTS_MUTATE.invoker().onMutate(serverWorld);
-    }
-
-    public void removeRoboports(Collection<BlockPos> toRemove, ServerWorld serverWorld) {
-        if (!roboports.removeAll(toRemove))
             return;
 
         markDirty();
@@ -88,24 +74,8 @@ public class BotPersistentState extends PersistentState {
         return deconstructionJobs;
     }
 
-    public void addDeconstructionJob(BlockPos blockPos, ServerWorld serverWorld) {
-        if (!deconstructionJobs.add(blockPos))
-            return;
-
-        markDirty();
-        DECONSTRUCTION_JOBS_MUTATE.invoker().onMutate(serverWorld);
-    }
-
     public void addDeconstructionJobs(Collection<BlockPos> toAdd, ServerWorld serverWorld) {
         if (!deconstructionJobs.addAll(toAdd))
-            return;
-
-        markDirty();
-        DECONSTRUCTION_JOBS_MUTATE.invoker().onMutate(serverWorld);
-    }
-
-    public void removeDeconstructionJob(BlockPos blockPos, ServerWorld serverWorld) {
-        if (!deconstructionJobs.remove(blockPos))
             return;
 
         markDirty();
@@ -120,4 +90,15 @@ public class BotPersistentState extends PersistentState {
         DECONSTRUCTION_JOBS_MUTATE.invoker().onMutate(serverWorld);
     }
     //#endregion
+
+    public static void initialize() {
+        RoboportBlock.PLACED.register((pos, world) -> {
+            BotPersistentState botState = AutomataPersistentStates.get(world, AutomataPersistentStates.BOT_PERSISTENT_STATE);
+            botState.addRoboport(pos, world);
+        });
+        RoboportBlock.REMOVED.register((pos, world) -> {
+            BotPersistentState botState = AutomataPersistentStates.get(world, AutomataPersistentStates.BOT_PERSISTENT_STATE);
+            botState.removeRoboport(pos, world);
+        });
+    }
 }

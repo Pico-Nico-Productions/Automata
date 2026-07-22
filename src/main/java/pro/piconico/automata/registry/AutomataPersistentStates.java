@@ -16,6 +16,7 @@ public class AutomataPersistentStates {
     }
 
     public static void initialize() {
+        BotPersistentState.initialize();
     }
 
     public static <T extends PersistentState> T get(World world, PersistentStateType<T> stateType) {

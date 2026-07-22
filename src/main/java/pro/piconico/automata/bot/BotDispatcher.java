@@ -19,28 +19,28 @@ public class BotDispatcher {
     private static boolean canDeconstruct(World world, BlockPos blockPos) {
         return BlockUtils.hasBreakableBlock(world, blockPos) || BlockUtils.hasFluidSourceBlock(world, blockPos);
     }
-    
-    public static void update(World world) {
-        BotPersistentState botState = AutomataPersistentStates.get(world, AutomataPersistentStates.BOT_PERSISTENT_STATE);
-        ArrayList<BlockPos> toRemove = new ArrayList<>();
+
+    public static void update(ServerWorld serverWorld) {
+        BotPersistentState botState = AutomataPersistentStates.get(serverWorld, AutomataPersistentStates.BOT_PERSISTENT_STATE);
+        ArrayList<BlockPos> jobsToRemove = new ArrayList<>();
         for (BlockPos blockPos : botState.getDeconstructionJobs()) {
-            if (!canDeconstruct(world, blockPos)) {
-                toRemove.add(blockPos);
+            if (!canDeconstruct(serverWorld, blockPos)) {
+                jobsToRemove.add(blockPos);
 
                 continue;
             }
-            
+
             //#region TODO: Replace with roboport search and bot dispatch
-            if (BlockUtils.hasBreakableBlock(world, blockPos)) {
-                world.breakBlock(blockPos, true, null);
+            if (BlockUtils.hasBreakableBlock(serverWorld, blockPos)) {
+                serverWorld.breakBlock(blockPos, true, null);
             }
-            if (BlockUtils.hasFluidSourceBlock(world, blockPos)) {
-                world.setBlockState(blockPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
+            if (BlockUtils.hasFluidSourceBlock(serverWorld, blockPos)) {
+                serverWorld.setBlockState(blockPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
             }
-            toRemove.add(blockPos);
+            jobsToRemove.add(blockPos);
             //#endregion
         }
-        botState.removeDeconstructionJobs(toRemove, (ServerWorld)world);
+        botState.removeDeconstructionJobs(jobsToRemove, serverWorld);
     }
 
     public static ActionResult markForDeconstruction(PlayerEntity player, CommandToolComponent commandToolComponent) {
@@ -59,7 +59,7 @@ public class BotDispatcher {
         BlockPos selection2 = commandToolComponent.selection2().get();
         BlockPos min = BlockPos.min(selection1, selection2);
         BlockPos max = BlockPos.max(selection1, selection2);
-        ArrayList<BlockPos> toAdd = new ArrayList<>();
+        ArrayList<BlockPos> jobsToAdd = new ArrayList<>();
         for (int x = min.getX(); x <= max.getX(); x++) {
             for (int y = min.getY(); y <= max.getY(); y++) {
                 for (int z = min.getZ(); z <= max.getZ(); z++) {
@@ -67,12 +67,12 @@ public class BotDispatcher {
                     if (!canDeconstruct(world, blockPos))
                         continue;
 
-                    toAdd.add(blockPos);
+                    jobsToAdd.add(blockPos);
                 }
             }
         }
         BotPersistentState botState = AutomataPersistentStates.get(world, AutomataPersistentStates.BOT_PERSISTENT_STATE);
-        botState.addDeconstructionJobs(toAdd, (ServerWorld)world);
+        botState.addDeconstructionJobs(jobsToAdd, (ServerWorld)world);
 
         player.sendMessage(Text.translatable(AutomataTexts.DECONSTRUCTION, selection1.toShortString(), selection2.toShortString()), true);
 

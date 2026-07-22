@@ -20,7 +20,7 @@ public class AutomataRegistry {
     }
 
     public static Identifier textureId(String path) {
-        return id("texture/" + path + ".png");
+        return id("textures/" + path + ".png");
     }
 
     public static Identifier guiTextureId(String path) {

@@ -1,6 +1,5 @@
 package pro.piconico.automata.block.entity;
 
-import org.jspecify.annotations.Nullable;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -87,7 +86,7 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
     }
     
     @Override
-    public @Nullable ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
+    public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
         return new RoboportScreenHandler(syncId, playerInventory, pos);
     }
 
