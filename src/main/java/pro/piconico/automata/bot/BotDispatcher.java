@@ -1,6 +1,8 @@
 package pro.piconico.automata.bot;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.SequencedCollection;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.PlayerEntity;
@@ -10,6 +12,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import pro.piconico.automata.block.BlockUtils;
+import pro.piconico.automata.block.RoboportBlock;
 import pro.piconico.automata.component.CommandToolComponent;
 import pro.piconico.automata.registry.AutomataPersistentStates;
 import pro.piconico.automata.registry.AutomataTexts;
@@ -18,6 +21,20 @@ import pro.piconico.automata.world.BotPersistentState;
 public class BotDispatcher {
     private static boolean canDeconstruct(World world, BlockPos blockPos) {
         return BlockUtils.hasBreakableBlock(world, blockPos) || BlockUtils.hasFluidSourceBlock(world, blockPos);
+    }
+
+    private static SequencedCollection<BlockPos> findRoboportsInRange(BotPersistentState botState, BlockPos blockPos) {
+        ArrayList<BlockPos> roboportsInRange = new ArrayList<>();
+        for (BlockPos roboport : botState.getRoboports()) {
+            if (roboport.getChebyshevDistance(blockPos) > RoboportBlock.RANGE)
+                continue;
+
+            roboportsInRange.add(roboport);
+        }
+
+        roboportsInRange.sort(Comparator.comparingInt(roboport -> roboport.getChebyshevDistance(blockPos)));
+
+        return roboportsInRange;
     }
 
     public static void update(ServerWorld serverWorld) {
@@ -29,6 +46,10 @@ public class BotDispatcher {
 
                 continue;
             }
+
+            SequencedCollection<BlockPos> roboportsInRange = findRoboportsInRange(botState, blockPos);
+            if (roboportsInRange.isEmpty())
+                continue;
 
             //#region TODO: Replace with roboport search and bot dispatch
             if (BlockUtils.hasBreakableBlock(serverWorld, blockPos)) {
