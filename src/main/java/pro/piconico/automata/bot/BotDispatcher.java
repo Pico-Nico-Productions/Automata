@@ -1,10 +1,6 @@
 package pro.piconico.automata.bot;
 
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.SequencedCollection;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -12,7 +8,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import pro.piconico.automata.block.BlockUtils;
-import pro.piconico.automata.block.RoboportBlock;
+import pro.piconico.automata.bot.job.DeconstructionJob;
 import pro.piconico.automata.component.CommandToolComponent;
 import pro.piconico.automata.registry.AutomataPersistentStates;
 import pro.piconico.automata.registry.AutomataTexts;
@@ -23,45 +19,20 @@ public class BotDispatcher {
         return BlockUtils.hasBreakableBlock(world, blockPos) || BlockUtils.hasFluidSourceBlock(world, blockPos);
     }
 
-    private static SequencedCollection<BlockPos> findRoboportsInRange(BotPersistentState botState, BlockPos blockPos) {
-        ArrayList<BlockPos> roboportsInRange = new ArrayList<>();
-        for (BlockPos roboport : botState.getRoboports()) {
-            if (roboport.getChebyshevDistance(blockPos) > RoboportBlock.RANGE)
-                continue;
-
-            roboportsInRange.add(roboport);
-        }
-
-        roboportsInRange.sort(Comparator.comparingInt(roboport -> roboport.getChebyshevDistance(blockPos)));
-
-        return roboportsInRange;
-    }
-
     public static void update(ServerWorld serverWorld) {
         BotPersistentState botState = AutomataPersistentStates.get(serverWorld, AutomataPersistentStates.BOT_PERSISTENT_STATE);
-        ArrayList<BlockPos> jobsToRemove = new ArrayList<>();
-        for (BlockPos blockPos : botState.getDeconstructionJobs()) {
-            if (!canDeconstruct(serverWorld, blockPos)) {
-                jobsToRemove.add(blockPos);
+        ArrayList<DeconstructionJob> jobsToRemove = new ArrayList<>(), jobsToAssign = new ArrayList<>();
+        for (DeconstructionJob job : botState.getUnassignedDeconstructionJobs()) {
+            if (!canDeconstruct(serverWorld, job.pos())) {
+                jobsToRemove.add(job);
 
                 continue;
             }
 
-            SequencedCollection<BlockPos> roboportsInRange = findRoboportsInRange(botState, blockPos);
-            if (roboportsInRange.isEmpty())
-                continue;
-
-            //#region TODO: Replace with roboport search and bot dispatch
-            if (BlockUtils.hasBreakableBlock(serverWorld, blockPos)) {
-                serverWorld.breakBlock(blockPos, true, null);
-            }
-            if (BlockUtils.hasFluidSourceBlock(serverWorld, blockPos)) {
-                serverWorld.setBlockState(blockPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
-            }
-            jobsToRemove.add(blockPos);
-            //#endregion
+            jobsToAssign.add(job);
         }
         botState.removeDeconstructionJobs(jobsToRemove, serverWorld);
+        botState.assignDeconstructionJobsToClosestRoboportInRange(jobsToAssign, serverWorld);
     }
 
     public static ActionResult markForDeconstruction(PlayerEntity player, CommandToolComponent commandToolComponent) {
@@ -80,7 +51,7 @@ public class BotDispatcher {
         BlockPos selection2 = commandToolComponent.selection2().get();
         BlockPos min = BlockPos.min(selection1, selection2);
         BlockPos max = BlockPos.max(selection1, selection2);
-        ArrayList<BlockPos> jobsToAdd = new ArrayList<>();
+        ArrayList<DeconstructionJob> jobsToAdd = new ArrayList<>();
         for (int x = min.getX(); x <= max.getX(); x++) {
             for (int y = min.getY(); y <= max.getY(); y++) {
                 for (int z = min.getZ(); z <= max.getZ(); z++) {
@@ -88,7 +59,7 @@ public class BotDispatcher {
                     if (!canDeconstruct(world, blockPos))
                         continue;
 
-                    jobsToAdd.add(blockPos);
+                    jobsToAdd.add(new DeconstructionJob(blockPos));
                 }
             }
         }
@@ -101,7 +72,7 @@ public class BotDispatcher {
     }
 
     public static void initialize() {
-        BotPersistentState.ROBOPORTS_MUTATE.register((serverWorld) -> update(serverWorld));
-        BotPersistentState.DECONSTRUCTION_JOBS_MUTATE.register((serverWorld) -> update(serverWorld));
+        BotPersistentState.ROBOPORTS_MUTATED.register((serverWorld) -> update(serverWorld));
+        BotPersistentState.DECONSTRUCTION_JOBS_MUTATED.register((serverWorld) -> update(serverWorld));
     }
 }
