@@ -6,29 +6,34 @@ import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.passive.BeeEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import pro.piconico.automata.Automata;
 import pro.piconico.automata.block.BlockUtils;
 import pro.piconico.automata.bot.job.BotJob;
+import pro.piconico.automata.bot.job.DeconstructionJob;
 
 public class ConstructionBotEntity extends BeeEntity {
-    public static final double SPEED = 1;
+    public static final double SPEED = 0.5;
+    public static final int INTERACT_DISTANCE = 1;
 
     @FunctionalInterface
     public interface EndJob {
-        void onEnded(boolean completed);
+        void onEnded(ConstructionBotEntity bot, BotJob job, boolean completed);
     }
 
-    public final Event<EndJob> JOB_ENDED = EventFactory.createArrayBacked(EndJob.class, callbacks -> (completed) -> {
+    public static final Event<EndJob> JOB_ENDED = EventFactory.createArrayBacked(EndJob.class, callbacks -> (bot, job, completed) -> {
         for (EndJob callback : callbacks) {
-            callback.onEnded(completed);
+            callback.onEnded(bot, job, completed);
         }
     });
 
-    private Optional<BotJob> job;
+    private Optional<BotJob> job = Optional.empty();
 
     public ConstructionBotEntity(EntityType<? extends BeeEntity> entityType, World world) {
         super(entityType, world);
@@ -38,51 +43,85 @@ public class ConstructionBotEntity extends BeeEntity {
         return job;
     }
 
-    public void setJob(Optional<BotJob> job) {
-        if (this.job.isPresent())
-            JOB_ENDED.invoker().onEnded(false);
-
-        this.job = job;
-    }
-
     public boolean hasJob() {
         return job.isPresent();
     }
 
-    @Override
-    protected void initGoals() {
-        // Removes inhereted bee behavior
+    public void endJob(boolean completed) {
+        if (job.isEmpty())
+            return;
+
+        JOB_ENDED.invoker().onEnded(this, job.get(), completed);
+        job = Optional.empty();
+    }
+
+    public void setJob(Optional<BotJob> job) {
+        endJob(false);
+
+        this.job = job;
     }
 
     @Override
     public void tick() {
         super.tick();
 
-        if (getEntityWorld().isClient() || job.isEmpty())
+        if (getEntityWorld().isClient())
             return;
 
-        if (getBlockPos().getChebyshevDistance(job.get().pos()) > 1) {
-            moveToTarget(job.get().pos());
+        if (job.isEmpty()) {
+            // TODO: Navigate back to roboport
+            return;
         }
-        else {
+
+        BlockPos jobPos = job.get().pos();
+        switch (job.get()) {
+        case DeconstructionJob deconstructionJob:
+            if (!BlockUtils.hasDeconstructableBlock(getEntityWorld(), jobPos)) {
+                endJob(true);
+                return;
+            }
+
+            if (getBlockPos().getSquaredDistance(jobPos) > INTERACT_DISTANCE * INTERACT_DISTANCE) {
+                if (jobPos.equals(getNavigation().getTargetPos()))
+                    return;
+
+                getNavigation().startMovingTo(jobPos.getX(), jobPos.getY(), jobPos.getZ(), SPEED);
+                
+                return;
+            }
+
             ServerWorld serverWorld = (ServerWorld)getEntityWorld();
-            if (BlockUtils.hasBreakableBlock(serverWorld, job.get().pos())) {
-                serverWorld.breakBlock(job.get().pos(), true, null);
+            if (BlockUtils.hasBreakableBlock(serverWorld, jobPos)) {
+                serverWorld.breakBlock(jobPos, true, null);
             }
-            if (BlockUtils.hasFluidSourceBlock(serverWorld, job.get().pos())) {
-                serverWorld.setBlockState(job.get().pos(), Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
+            if (BlockUtils.hasFluidSourceBlock(serverWorld, jobPos)) {
+                serverWorld.setBlockState(jobPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
             }
-            job = Optional.empty();
-            JOB_ENDED.invoker().onEnded(true);
+
+            endJob(true);
+            break;
+        default:
+            Automata.logError(ConstructionBotEntity.class.getSimpleName() + " was assigned an unhandled job type", IllegalStateException::new);
+            break;
         }
     }
 
-    private void moveToTarget(BlockPos targetPos) {
-        Vec3d targetVec = Vec3d.ofCenter(targetPos);
-        getLookControl().lookAt(targetVec.x, targetVec.y, targetVec.z);
+    @Override
+    public void onDeath(DamageSource damageSource) {
+        super.onDeath(damageSource);
 
-        Vec3d moveVec = targetVec.subtract(getEntityPos()).normalize().multiply(SPEED);
-        setVelocity(moveVec);
-        velocityDirty = true;
+        setJob(Optional.empty());
+    }
+
+    @Override
+    public void readData(ReadView view) {
+        super.readData(view);
+        // TODO: Add BotJob codec registry
+    }
+
+    @Override
+    public void writeData(WriteView view) {
+        super.writeData(view);
+        // TODO: Add BotJob codec registry
     }
 }

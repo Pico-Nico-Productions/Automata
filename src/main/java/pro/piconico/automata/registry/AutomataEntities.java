@@ -5,7 +5,6 @@ import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRe
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
@@ -23,12 +22,12 @@ public class AutomataEntities {
 
     public static final BlockEntityType<RoboportBlockEntity> ROBOPORT = register(AutomataRegistry.ROBOPORT, RoboportBlockEntity::new, AutomataBlocks.ROBOPORT);
 
-    private static <T extends Entity> EntityType<T> register(String name, EntityFactory<T> entityFactory, DefaultAttributeContainer.Builder builder) {
+    private static <T extends LivingEntity> EntityType<T> register(String name, EntityFactory<T> entityFactory, DefaultAttributeContainer.Builder builder) {
         RegistryKey<EntityType<?>> entityKey = AutomataRegistry.toRegistryKey(RegistryKeys.ENTITY_TYPE, name);
         EntityType<T> entity = EntityType.Builder.create(entityFactory, SpawnGroup.MISC).build(entityKey);
         Registry.register(Registries.ENTITY_TYPE, entityKey, entity);
 
-        FabricDefaultAttributeRegistry.register((EntityType<? extends LivingEntity>)entity, builder);
+        FabricDefaultAttributeRegistry.register(entity, builder);
 
         return entity;
     }

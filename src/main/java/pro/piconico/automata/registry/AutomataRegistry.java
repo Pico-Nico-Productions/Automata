@@ -23,6 +23,10 @@ public class AutomataRegistry {
         return id("textures/" + path + ".png");
     }
 
+    public static Identifier entityTextureId(String path) {
+        return textureId("entity/" + path);
+    }
+
     public static Identifier guiTextureId(String path) {
         return textureId("gui/" + path);
     }

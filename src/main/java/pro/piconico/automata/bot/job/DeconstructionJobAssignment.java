@@ -6,7 +6,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.Uuids;
 
-public class DeconstructionJobAssignment {
+public class DeconstructionJobAssignment implements BotJobAssignment {
     public static final Codec<DeconstructionJobAssignment> CODEC = RecordCodecBuilder.create(instance -> instance
             .group(DeconstructionJob.CODEC.fieldOf("job").forGetter(jobAssignment -> jobAssignment.job),
                     Uuids.INT_STREAM_CODEC.optionalFieldOf("bot_uuid").forGetter(jobAssignment -> jobAssignment.assignedBot))
@@ -25,15 +25,20 @@ public class DeconstructionJobAssignment {
         this(job, Optional.empty());
     }
 
+    @Override
+    public BotJob getJob() {
+        return job;
+    }
+
     public Optional<UUID> getAssignedBot() {
         return assignedBot;
     }
 
-    public void setAssignedBot(Optional<UUID> assignedBot) {
-        this.assignedBot = assignedBot;
-    }
-
     public boolean isAssigned() {
         return assignedBot.isPresent();
+    }
+
+    public void setAssignedBot(Optional<UUID> assignedBot) {
+        this.assignedBot = assignedBot;
     }
 }

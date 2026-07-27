@@ -17,7 +17,6 @@ import pro.piconico.automata.block.entity.RoboportBlockEntity;
 
 public class RoboportBlock extends BlockWithEntity {
     public static final MapCodec<RoboportBlock> CODEC = createCodec(RoboportBlock::new);
-    public static final int RANGE = 2;
 
     @FunctionalInterface
     public interface BlockAction {
@@ -55,10 +54,10 @@ public class RoboportBlock extends BlockWithEntity {
 
     @Override
     protected void onStateReplaced(BlockState state, ServerWorld world, BlockPos pos, boolean moved) {
-        if (world.isClient() || state.isOf(world.getBlockState(pos).getBlock()))
+        if (state.isOf(world.getBlockState(pos).getBlock()))
             return;
 
-        REMOVED.invoker().onAction(pos, (ServerWorld)world);
+        REMOVED.invoker().onAction(pos, world);
     }
 
     @Override

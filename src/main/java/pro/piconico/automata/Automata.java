@@ -1,10 +1,12 @@
 package pro.piconico.automata;
 
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pro.piconico.automata.bot.BotDispatcher;
 import pro.piconico.automata.registry.AutomataBlocks;
+import pro.piconico.automata.registry.AutomataCommands;
 import pro.piconico.automata.registry.AutomataComponents;
 import pro.piconico.automata.registry.AutomataEntities;
 import pro.piconico.automata.registry.AutomataItems;
@@ -24,9 +26,18 @@ public class Automata implements ModInitializer {
 		AutomataItems.initialize();
 		AutomataBlocks.initialize();
 		AutomataPersistentStates.initialize();
-        BotDispatcher.initialize();
 		AutomataScreenHandlers.initialize();
+        AutomataCommands.initialize();
 
 		LOGGER.info("Automata Initialized!");
 	}
+
+    public static void logError(String message, Function<String, ? extends RuntimeException> errorFactory) {
+        if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
+            throw errorFactory.apply(message);
+        }
+        else {
+            LOGGER.error(message);
+        }
+    }
 }

@@ -18,6 +18,7 @@ import net.minecraft.storage.WriteView;
 import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
+import pro.piconico.automata.Automata;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.entity.ConstructionBotEntity;
 import pro.piconico.automata.registry.AutomataBlocks;
@@ -26,26 +27,40 @@ import pro.piconico.automata.registry.AutomataItems;
 import pro.piconico.automata.screen.RoboportScreenHandler;
 
 public class RoboportBlockEntity extends BlockEntity implements Inventory, ExtendedScreenHandlerFactory<BlockPos> {
+    private static final int RANGE = 2;
+    
     public static final int BOT_SLOT_COUNT = 1;
 
-    private final DefaultedList<ItemStack> items = DefaultedList.ofSize(BOT_SLOT_COUNT, ItemStack.EMPTY);
+    private final DefaultedList<ItemStack> itemStacks = DefaultedList.ofSize(BOT_SLOT_COUNT, ItemStack.EMPTY);
 
     public RoboportBlockEntity(BlockPos pos, BlockState state) {
         super(AutomataEntities.ROBOPORT, pos, state);
     }
 
-    public Optional<ConstructionBotEntity> assignJob(BotJob job) {
-        if (getWorld().isClient())
-            return Optional.empty();
+    public boolean isInRange(BlockPos blockPos) {
+        return getPos().getChebyshevDistance(blockPos) <= RANGE;
+    }
 
-        Optional<ItemStack> botStack = items.stream().filter(item -> item.isOf(AutomataItems.CONSTRUCTION_BOT)).findFirst();
-        if (botStack.isEmpty()) {
+    public boolean canDoJob(BotJob job) {
+        if (!isInRange(job.pos()))
+            return false;
+
+        Optional<ItemStack> botStack = itemStacks.stream().filter(item -> item.isOf(AutomataItems.CONSTRUCTION_BOT)).findFirst();
+        return botStack.isPresent();
+    }
+
+    public Optional<ConstructionBotEntity> assignJob(BotJob job) {
+        if (!(getWorld() instanceof ServerWorld serverWorld)) {
+            Automata.logError("Client can't assign jobs", IllegalCallerException::new);
             return Optional.empty();
         }
 
+        if (!canDoJob(job))
+            return Optional.empty();
+
+        Optional<ItemStack> botStack = itemStacks.stream().filter(item -> item.isOf(AutomataItems.CONSTRUCTION_BOT)).findFirst();
         botStack.get().decrement(1);
 
-        ServerWorld serverWorld = (ServerWorld)getWorld();
         BlockPos spawnLocation = getPos().up();
         ConstructionBotEntity bot = AutomataEntities.CONSTRUCTION_BOT.spawn(serverWorld, spawnLocation, SpawnReason.MOB_SUMMONED);
         if (bot == null)
@@ -58,48 +73,48 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
     @Override
     protected void readData(ReadView view) {
         super.readData(view);
-        Inventories.readData(view, items);
+        Inventories.readData(view, itemStacks);
     }
 
     @Override
     protected void writeData(WriteView view) {
         super.writeData(view);
-        Inventories.writeData(view, items);
+        Inventories.writeData(view, itemStacks);
     }
 
     @Override
     public void clear() {
-        items.clear();
+        itemStacks.clear();
     }
 
     @Override
     public int size() {
-        return items.size();
+        return itemStacks.size();
     }
 
     @Override
     public boolean isEmpty() {
-        return items.stream().allMatch(itemStack -> itemStack.isEmpty());
+        return itemStacks.stream().allMatch(itemStack -> itemStack.isEmpty());
     }
 
     @Override
     public ItemStack getStack(int slot) {
-        return items.get(slot);
+        return itemStacks.get(slot);
     }
 
     @Override
     public ItemStack removeStack(int slot, int amount) {
-        return Inventories.splitStack(items, slot, amount);
+        return Inventories.splitStack(itemStacks, slot, amount);
     }
 
     @Override
     public ItemStack removeStack(int slot) {
-        return Inventories.removeStack(items, slot);
+        return Inventories.removeStack(itemStacks, slot);
     }
 
     @Override
     public void setStack(int slot, ItemStack stack) {
-        items.set(slot, stack);
+        itemStacks.set(slot, stack);
     }
 
     @Override

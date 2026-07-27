@@ -32,7 +32,7 @@ public class CommandToolItem extends Item {
         Optional<BlockPos> selection1 = isSelection2 ? getCommandToolComponent(stack).selection1() : Optional.of(selection);
         Optional<BlockPos> selection2 = isSelection2 ? Optional.of(selection) : getCommandToolComponent(stack).selection2();
         stack.set(AutomataComponents.COMMAND_TOOL, new CommandToolComponent(selection1, selection2));
-        player.sendMessage(Text.translatable(AutomataTexts.SELECTION, isSelection2 ? 2 : 1, selection.toShortString()), true);
+        player.sendMessage(Text.translatable(AutomataTexts.SELECTED, isSelection2 ? 2 : 1, selection.toShortString()), true);
 
         return ActionResult.SUCCESS;
     }

@@ -3,11 +3,13 @@ package pro.piconico.automata.registry;
 import pro.piconico.automata.Automata;
 
 public class AutomataTexts {
+    public static final String DECONSTRUCTION_FAILED = toTranslationKey("deconstruction_failed");
+    /** Expected arguments: job count */
+    public static final String JOBS_ADDED = toTranslationKey("jobs_added");
+    /** Expected arguments: job count */
+    public static final String JOBS_REMOVED = toTranslationKey("jobs_removed");
     /** Expected arguments: selection number and selection */
-    public static final String SELECTION = toTranslationKey("selection");
-    public static final String INVALID_DECONSTRUCTION_SELECTION = toTranslationKey("invalid_deconstruction_selection");
-    /** Expected arguments: selection 1 and selection 2 */
-    public static final String DECONSTRUCTION = toTranslationKey("deconstruction");
+    public static final String SELECTED = toTranslationKey("selected");
 
     private static String toTranslationKey(String name) {
         return "text." + Automata.MOD_ID + "." + name;

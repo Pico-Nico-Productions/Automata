@@ -2,10 +2,8 @@ package pro.piconico.automata.registry;
 
 import java.util.function.Supplier;
 import com.mojang.serialization.Codec;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.PersistentState;
 import net.minecraft.world.PersistentStateType;
-import net.minecraft.world.World;
 import pro.piconico.automata.world.BotPersistentState;
 
 public class AutomataPersistentStates {
@@ -17,13 +15,5 @@ public class AutomataPersistentStates {
 
     public static void initialize() {
         BotPersistentState.initialize();
-    }
-
-    public static <T extends PersistentState> T get(World world, PersistentStateType<T> stateType) {
-        if (world.isClient()) {
-            throw new IllegalStateException("Cannot access " + PersistentState.class.getSimpleName() + "s on client.");
-        }
-
-        return ((ServerWorld) world).getPersistentStateManager().getOrCreate(stateType);
     }
 }
