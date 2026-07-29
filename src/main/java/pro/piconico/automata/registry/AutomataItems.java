@@ -1,7 +1,6 @@
 package pro.piconico.automata.registry;
 
 import java.util.function.Function;
-
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.item.Item;
 import net.minecraft.item.Item.Settings;

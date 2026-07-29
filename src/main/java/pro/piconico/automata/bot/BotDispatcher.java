@@ -42,7 +42,7 @@ public class BotDispatcher {
                 }
             }
         }
-        long jobCount = BotPersistentState.addDeconstructionJobs(jobsToAdd, (ServerWorld)world);
+        long jobCount = BotPersistentState.addJobs(DeconstructionJob.class, jobsToAdd, (ServerWorld)world);
 
         player.sendMessage(Text.translatable(AutomataTexts.JOBS_ADDED, jobCount), true);
 

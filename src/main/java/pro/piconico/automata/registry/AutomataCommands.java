@@ -27,7 +27,7 @@ public class AutomataCommands {
         });
 
         LiteralArgumentBuilder<ServerCommandSource> deconstructionArgument = CommandManager.literal(DECONSTRUCTION_ARGUMENT).executes(context -> {
-            int removeCount = BotPersistentState.clearDeconstructionJobs(context.getSource().getWorld());
+            int removeCount = BotPersistentState.clearJobs(context.getSource().getWorld());
 
             context.getSource().sendMessage(Text.translatable(AutomataTexts.JOBS_REMOVED, removeCount));
 

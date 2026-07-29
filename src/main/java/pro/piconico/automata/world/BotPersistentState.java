@@ -8,7 +8,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -25,15 +24,15 @@ import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.job.BotJobAssignment;
 import pro.piconico.automata.bot.job.DeconstructionJob;
-import pro.piconico.automata.bot.job.DeconstructionJobAssignment;
-import pro.piconico.automata.entity.ConstructionBotEntity;
+import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.registry.AutomataPersistentStates;
 
 public class BotPersistentState extends PersistentState {
-    public static final Codec<BotPersistentState> CODEC = RecordCodecBuilder.create(instance -> instance
-            .group(BlockPos.CODEC.listOf().fieldOf("roboports").forGetter(botState -> botState.roboports.stream().toList()), DeconstructionJobAssignment.CODEC
-                    .listOf().fieldOf("deconstruction_jobs").forGetter(botState -> new ArrayList<>(botState.deconstructionJobs.values())))
-            .apply(instance, BotPersistentState::new));
+    public static final Codec<BotPersistentState> CODEC = RecordCodecBuilder
+            .create(instance -> instance.group(BlockPos.CODEC.listOf().fieldOf("roboports").forGetter(botState -> botState.roboports.stream().toList()),
+                    BotJobAssignment.createCodec(DeconstructionJob.CODEC).listOf().fieldOf("deconstruction_jobs")
+                            .forGetter(botState -> new ArrayList<>(botState.deconstructionJobs.values())))
+                    .apply(instance, BotPersistentState::new));
 
     public enum Mutation {
         Add, Remove, Modify
@@ -42,6 +41,9 @@ public class BotPersistentState extends PersistentState {
     @FunctionalInterface
     public interface Mutate {
         void onMutate(ServerWorld handler, Mutation mutation);
+    }
+
+    private record BotJobType<JobType extends BotJob>(HashMap<BlockPos, BotJobAssignment<JobType>> jobs, Event<Mutate> mutateEvent) {
     }
 
     public static final Event<Mutate> ROBOPORTS_MUTATED = EventFactory.createArrayBacked(Mutate.class, callbacks -> (serverWorld, mutation) -> {
@@ -56,16 +58,29 @@ public class BotPersistentState extends PersistentState {
     });
 
     private final HashSet<BlockPos> roboports = new HashSet<>();
-    private final HashMap<BlockPos, DeconstructionJobAssignment> deconstructionJobs = new HashMap<>();
+    private final HashMap<BlockPos, BotJobAssignment<DeconstructionJob>> deconstructionJobs = new HashMap<>();
+    private final HashMap<Class<? extends BotJob>, BotJobType<? extends BotJob>> botJobTypeRegistry = new HashMap<>();
 
-    public BotPersistentState(List<BlockPos> roboports, List<DeconstructionJobAssignment> deconstructionJobs) {
+    public BotPersistentState() {
+        botJobTypeRegistry.put(DeconstructionJob.class, new BotJobType<DeconstructionJob>(deconstructionJobs, DECONSTRUCTION_JOBS_MUTATED));
+    }
+
+    public BotPersistentState(List<BlockPos> roboports, List<BotJobAssignment<DeconstructionJob>> deconstructionJobs) {
+        this();
+
         this.roboports.addAll(roboports);
-        for (DeconstructionJobAssignment deconstructionJobAssignment : deconstructionJobs) {
-            this.deconstructionJobs.put(deconstructionJobAssignment.job.pos(), deconstructionJobAssignment);
+        for (BotJobAssignment<DeconstructionJob> jobAssignment : deconstructionJobs) {
+            this.deconstructionJobs.put(jobAssignment.job.pos(), jobAssignment);
         }
     }
 
-    public BotPersistentState() {
+    @SuppressWarnings("unchecked")
+    private <T extends BotJob> BotJobType<T> getBotJobType(Class<T> jobClass) {
+        if (!botJobTypeRegistry.containsKey(jobClass)) {
+            Automata.logError("Tried to get the bot job type of an unregister type", IllegalArgumentException::new);
+        }
+
+        return (BotJobType<T>)botJobTypeRegistry.get(jobClass);
     }
 
     //#region Roboports
@@ -122,12 +137,12 @@ public class BotPersistentState extends PersistentState {
     //#endregion
 
     //#region Jobs
-    private static <AssignmentType extends BotJobAssignment> void assignJobs(HashMap<BlockPos, AssignmentType> jobs,
-            Event<Mutate> mutateEvent, ServerWorld serverWorld) {
+    private static <T extends BotJob> void assignJobs(Class<T> jobClass, ServerWorld serverWorld) {
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
+        BotJobType<T> botJobType = botState.getBotJobType(jobClass);
         boolean mutated = false;
 
-        for (AssignmentType jobAssignment : jobs.values()) {
+        for (BotJobAssignment<T> jobAssignment : botJobType.jobs.values()) {
             if (jobAssignment.isAssigned())
                 continue;
 
@@ -137,8 +152,8 @@ public class BotPersistentState extends PersistentState {
             if (roboportEntity.isEmpty())
                 continue;
 
-            ConstructionBotEntity constructionBot = roboportEntity.get().assignJob(job).get();
-            jobAssignment.setAssignedBot(Optional.of(constructionBot.getUuid()));
+            BotEntity botEntity = roboportEntity.get().assignJob(job).get();
+            jobAssignment.setAssignedBot(Optional.of(botEntity.getUuid()));
 
             mutated = true;
         }
@@ -147,20 +162,19 @@ public class BotPersistentState extends PersistentState {
             return;
 
         botState.markDirty();
-        mutateEvent.invoker().onMutate(serverWorld, Mutation.Modify);
+        botState.getBotJobType(jobClass).mutateEvent.invoker().onMutate(serverWorld, Mutation.Modify);
     }
 
-    private static <JobType extends BotJob, AssignmentType extends BotJobAssignment> int addJobs(Collection<JobType> toAdd,
-            HashMap<BlockPos, AssignmentType> jobs, Function<JobType, AssignmentType> assignmentFactory,
-            Event<Mutate> mutateEvent, ServerWorld serverWorld) {
+    public static <T extends BotJob> int addJobs(Class<T> jobClass, Iterable<T> toAdd, ServerWorld serverWorld) {
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
+        BotJobType<T> botJobType = botState.getBotJobType(jobClass);
         int addCount = 0;
 
-        for (JobType job : toAdd) {
-            if (jobs.containsKey(job.pos()) && jobs.get(job.pos()).isAssigned())
+        for (T job : toAdd) {
+            if (botJobType.jobs.containsKey(job.pos()) && botJobType.jobs.get(job.pos()).isAssigned())
                 continue;
 
-            jobs.put(job.pos(), assignmentFactory.apply(job));
+            botJobType.jobs.put(job.pos(), new BotJobAssignment<T>(job));
 
             addCount++;
         }
@@ -168,23 +182,23 @@ public class BotPersistentState extends PersistentState {
             return 0;
 
         botState.markDirty();
-        mutateEvent.invoker().onMutate(serverWorld, Mutation.Add);
+        botJobType.mutateEvent.invoker().onMutate(serverWorld, Mutation.Add);
 
-        assignJobs(jobs, mutateEvent, serverWorld);
+        assignJobs(jobClass, serverWorld);
 
         return addCount;
     }
 
-    private static <JobType extends BotJob, AssignmentType extends BotJobAssignment> int removeJobs(Collection<BlockPos> toRemove,
-            HashMap<BlockPos, AssignmentType> jobs, Event<Mutate> mutateEvent, ServerWorld serverWorld) {
+    public static <T extends BotJob> int removeJobs(Class<T> jobClass, Iterable<T> toRemove, ServerWorld serverWorld) {
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
+        BotJobType<T> botJobType = botState.getBotJobType(jobClass);
         int removeCount = 0;
 
-        for (BlockPos jobPos : toRemove) {
-            if (!jobs.containsKey(jobPos))
+        for (T job : toRemove) {
+            if (!botJobType.jobs.containsKey(job.pos()))
                 continue;
 
-            AssignmentType jobAssignment = jobs.remove(jobPos);
+            BotJobAssignment<T> jobAssignment = botJobType.jobs.remove(job.pos());
 
             removeCount++;
 
@@ -193,18 +207,19 @@ public class BotPersistentState extends PersistentState {
                 continue;
 
             Entity entity = serverWorld.getEntity(assignedBotUUID.get());
-            if (!(entity instanceof ConstructionBotEntity assignedBot)) {
-                Automata.logError(BotPersistentState.class.getSimpleName() + " has a job assigned to an invalid " + UUID.class.getSimpleName() + ".", IllegalStateException::new);
+            if (!(entity instanceof BotEntity assignedBot)) {
+                Automata.logError(BotPersistentState.class.getSimpleName() + " has a job assigned to an invalid " + UUID.class.getSimpleName() + ".",
+                        IllegalStateException::new);
                 continue;
             }
 
-            assignedBot.setJob(Optional.empty());
+            assignedBot.endJob(false);
         }
         if (removeCount == 0)
             return 0;
 
         botState.markDirty();
-        mutateEvent.invoker().onMutate(serverWorld, Mutation.Remove);
+        botJobType.mutateEvent.invoker().onMutate(serverWorld, Mutation.Remove);
 
         return removeCount;
     }
@@ -212,69 +227,32 @@ public class BotPersistentState extends PersistentState {
     public static int clearJobs(ServerWorld serverWorld) {
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
 
-        return removeJobs(botState.deconstructionJobs.keySet(), botState.deconstructionJobs, DECONSTRUCTION_JOBS_MUTATED, serverWorld);
+        return removeJobs(DeconstructionJob.class, botState.deconstructionJobs.values().stream().map(jobAssignment -> jobAssignment.job).toList(), serverWorld);
     }
 
-    private static void onJobEnded(ConstructionBotEntity bot, BotJob job, boolean completed) {
-        if (!(bot.getEntityWorld() instanceof ServerWorld serverWorld))
+    private static void onJobEnded(BotEntity botEntity, BotJob job, boolean completed) {
+        if (!(botEntity.getEntityWorld() instanceof ServerWorld serverWorld))
             return;
 
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
+        BotJobType<?> botJobType = botState.getBotJobType(job.getClass());
 
-        HashMap<BlockPos, DeconstructionJobAssignment> jobs = botState.deconstructionJobs;
-        if (!jobs.containsKey(job.pos())) {
-            Automata.logError("Bot ended a nonexistent job.", IllegalStateException::new);
+        if (!botJobType.jobs.containsKey(job.pos())) {
             return;
         }
 
         if (completed) {
-            jobs.remove(job.pos());
+            botJobType.jobs.remove(job.pos());
         }
         else {
-            jobs.get(job.pos()).setAssignedBot(Optional.empty());
+            botJobType.jobs.get(job.pos()).setAssignedBot(Optional.empty());
         }
 
         botState.markDirty();
-        DECONSTRUCTION_JOBS_MUTATED.invoker().onMutate(serverWorld, completed ? Mutation.Remove : Mutation.Modify);
+        botJobType.mutateEvent.invoker().onMutate(serverWorld, completed ? Mutation.Remove : Mutation.Modify);
 
-        if (!completed) assignJobs(jobs, DECONSTRUCTION_JOBS_MUTATED, serverWorld);
-    }
-    //#endregion
-
-    //#region Deconstruction Jobs
-    public static Collection<DeconstructionJobAssignment> getDeconstructionJobs(ServerWorld serverWorld) {
-        BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
-
-        return botState.deconstructionJobs.values();
-    }
-
-    public static Collection<DeconstructionJobAssignment> getAssignedDeconstructionJobs(ServerWorld serverWorld) {
-        BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
-
-        return botState.deconstructionJobs.values().stream().filter(assignment -> assignment.isAssigned()).toList();
-    }
-
-    public static Collection<DeconstructionJobAssignment> getUnassignedDeconstructionJobs(ServerWorld serverWorld) {
-        BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
-
-        return botState.deconstructionJobs.values().stream().filter(assignment -> !assignment.isAssigned()).toList();
-    }
-
-    public static int addDeconstructionJobs(Collection<DeconstructionJob> toAdd, ServerWorld serverWorld) {
-        BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
-
-        return addJobs(toAdd, botState.deconstructionJobs, DeconstructionJobAssignment::new, DECONSTRUCTION_JOBS_MUTATED, serverWorld);
-    }
-
-    public static int removeDeconstructionJobs(Collection<BlockPos> toRemove, ServerWorld serverWorld) {
-        BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
-
-        return removeJobs(toRemove, botState.deconstructionJobs, DECONSTRUCTION_JOBS_MUTATED, serverWorld);
-    }
-
-    public static int clearDeconstructionJobs(ServerWorld serverWorld) {
-        BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
-        return removeDeconstructionJobs(botState.deconstructionJobs.keySet(), serverWorld);
+        if (!completed)
+            assignJobs(job.getClass(), serverWorld);
     }
     //#endregion
 
@@ -282,6 +260,6 @@ public class BotPersistentState extends PersistentState {
         RoboportBlock.PLACED.register(BotPersistentState::addRoboport);
         RoboportBlock.REMOVED.register(BotPersistentState::removeRoboport);
 
-        ConstructionBotEntity.JOB_ENDED.register(BotPersistentState::onJobEnded);
+        BotEntity.JOB_ENDED.register(BotPersistentState::onJobEnded);
     }
 }

@@ -4,11 +4,13 @@ import java.util.Optional;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -20,15 +22,18 @@ import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import pro.piconico.automata.Automata;
 import pro.piconico.automata.bot.job.BotJob;
-import pro.piconico.automata.entity.ConstructionBotEntity;
+import pro.piconico.automata.bot.job.DeconstructionJob;
+import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.registry.AutomataBlocks;
 import pro.piconico.automata.registry.AutomataEntities;
 import pro.piconico.automata.registry.AutomataItems;
 import pro.piconico.automata.screen.RoboportScreenHandler;
 
 public class RoboportBlockEntity extends BlockEntity implements Inventory, ExtendedScreenHandlerFactory<BlockPos> {
-    private static final int RANGE = 2;
-    
+    private record BotItemAndEntity(Item item, EntityType<? extends BotEntity> entity) {
+    }
+
+    public static final int RANGE = 5;
     public static final int BOT_SLOT_COUNT = 1;
 
     private final DefaultedList<ItemStack> itemStacks = DefaultedList.ofSize(BOT_SLOT_COUNT, ItemStack.EMPTY);
@@ -41,33 +46,47 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         return getPos().getChebyshevDistance(blockPos) <= RANGE;
     }
 
-    public boolean canDoJob(BotJob job) {
+    private Optional<BotItemAndEntity> getBotFor(BotJob job) {
         if (!isInRange(job.pos()))
-            return false;
+            return Optional.empty();
 
-        Optional<ItemStack> botStack = itemStacks.stream().filter(item -> item.isOf(AutomataItems.CONSTRUCTION_BOT)).findFirst();
-        return botStack.isPresent();
+        Optional<BotItemAndEntity> bot;
+        switch (job) {
+        case DeconstructionJob deconstructionJob:
+            bot = Optional.of(new BotItemAndEntity(AutomataItems.CONSTRUCTION_BOT, AutomataEntities.CONSTRUCTION_BOT));
+            break;
+        default:
+            Automata.LOGGER
+                    .warn(RoboportBlockEntity.class.getSimpleName() + " checked a job type it doesn't have a bot type for: " + job.getClass().getSimpleName());
+            return Optional.empty();
+        }
+
+        return containsAny(itemStack -> itemStack.isOf(bot.get().item)) ? bot : Optional.empty();
     }
 
-    public Optional<ConstructionBotEntity> assignJob(BotJob job) {
+    public boolean canDoJob(BotJob job) {
+        return getBotFor(job).isPresent();
+    }
+
+    public Optional<BotEntity> assignJob(BotJob job) {
         if (!(getWorld() instanceof ServerWorld serverWorld)) {
             Automata.logError("Client can't assign jobs", IllegalCallerException::new);
             return Optional.empty();
         }
-
-        if (!canDoJob(job))
+        
+        Optional<BotItemAndEntity> bot = getBotFor(job);
+        if (bot.isEmpty())
             return Optional.empty();
 
-        Optional<ItemStack> botStack = itemStacks.stream().filter(item -> item.isOf(AutomataItems.CONSTRUCTION_BOT)).findFirst();
+        Optional<ItemStack> botStack = itemStacks.stream().filter(item -> item.isOf(bot.get().item)).findFirst();
         botStack.get().decrement(1);
+        markDirty();
 
         BlockPos spawnLocation = getPos().up();
-        ConstructionBotEntity bot = AutomataEntities.CONSTRUCTION_BOT.spawn(serverWorld, spawnLocation, SpawnReason.MOB_SUMMONED);
-        if (bot == null)
-            return Optional.empty();
+        BotEntity botEntity = bot.get().entity.spawn(serverWorld, spawnLocation, SpawnReason.MOB_SUMMONED);
+        botEntity.setJob(Optional.of(job));
 
-        bot.setJob(Optional.of(job));
-        return Optional.of(bot);
+        return Optional.of(botEntity);
     }
 
     @Override
