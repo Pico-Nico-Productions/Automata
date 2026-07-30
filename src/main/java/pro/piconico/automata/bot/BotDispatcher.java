@@ -8,6 +8,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import pro.piconico.automata.block.BlockUtils;
+import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.job.DeconstructionJob;
 import pro.piconico.automata.component.CommandToolComponent;
 import pro.piconico.automata.registry.AutomataTexts;
@@ -30,7 +31,7 @@ public class BotDispatcher {
         BlockPos selection2 = commandToolComponent.selection2().get();
         BlockPos min = BlockPos.min(selection1, selection2);
         BlockPos max = BlockPos.max(selection1, selection2);
-        ArrayList<DeconstructionJob> jobsToAdd = new ArrayList<>();
+        ArrayList<BotJob> jobsToAdd = new ArrayList<>();
         for (int x = min.getX(); x <= max.getX(); x++) {
             for (int y = min.getY(); y <= max.getY(); y++) {
                 for (int z = min.getZ(); z <= max.getZ(); z++) {
@@ -42,7 +43,7 @@ public class BotDispatcher {
                 }
             }
         }
-        long jobCount = BotPersistentState.addJobs(DeconstructionJob.class, jobsToAdd, (ServerWorld)world);
+        long jobCount = BotPersistentState.addJobs(jobsToAdd, (ServerWorld)world);
 
         player.sendMessage(Text.translatable(AutomataTexts.JOBS_ADDED, jobCount), true);
 
