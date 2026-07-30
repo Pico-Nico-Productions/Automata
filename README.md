@@ -98,6 +98,10 @@ Call **Text**.translatable with the translation key and arguments
 1. Create a function (buildCommand for example) that is private static **LiteralArgumentBuilder\<ServerCommandSource\>** in [`src\main\java\pro\piconico\automata\registry\AutomataCommands.java`](src\main\java\pro\piconico\automata\registry\AutomataCommands.java)
 2. Add it to the command registration callback in *initialize*
 
+### Adding Bot Jobs
+1. Create a record (T for example) that implements **BotJob** and has a **MapCodec\<T\>** in `src\main\java\pro\piconico\automata\bot\job\`
+2. Register it as a public static final **BotJobType\<T\>** in [`src\main\java\pro\piconico\automata\registry\AutomataBotJobs.java`](src\main\java\pro\piconico\automata\registry\AutomataBotJobs.java)
+
 ## License
 
 This project is based on a template that is available under the CC0 license. Feel free to learn from it and incorporate it in your own projects.

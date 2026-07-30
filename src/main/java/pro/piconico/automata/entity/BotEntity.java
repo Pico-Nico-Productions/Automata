@@ -12,6 +12,8 @@ import net.minecraft.world.World;
 import pro.piconico.automata.bot.job.BotJob;
 
 public abstract class BotEntity extends BeeEntity {
+    private static final String JOB_KEY = "job";
+
     public static final double SPEED = 0.5;
     public static final int INTERACT_DISTANCE = 1;
 
@@ -64,12 +66,17 @@ public abstract class BotEntity extends BeeEntity {
     @Override
     public void readData(ReadView view) {
         super.readData(view);
-        // TODO: Add BotJob codec registry
+
+        job = view.read(JOB_KEY, BotJob.CODEC);
     }
 
     @Override
     public void writeData(WriteView view) {
         super.writeData(view);
-        // TODO: Add BotJob codec registry
+
+        if (job.isEmpty())
+            return;
+
+        view.put(JOB_KEY, BotJob.CODEC, job.get());
     }
 }
