@@ -6,8 +6,10 @@ import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.passive.BeeEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import pro.piconico.automata.bot.job.BotJob;
 
@@ -54,6 +56,31 @@ public abstract class BotEntity extends BeeEntity {
         endJob(false);
 
         this.job = job;
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+
+        if (!(getEntityWorld() instanceof ServerWorld serverWorld))
+            return;
+
+        if (job.isEmpty()) {
+            // TODO: Navigate back to roboport
+            return;
+        }
+        
+        BlockPos jobPos = job.get().pos();
+        if (getBlockPos().getSquaredDistance(jobPos) > INTERACT_DISTANCE * INTERACT_DISTANCE) {
+            if (jobPos.equals(getNavigation().getTargetPos()))
+                return;
+
+            getNavigation().startMovingTo(jobPos.getX(), jobPos.getY(), jobPos.getZ(), SPEED);
+
+            return;
+        }
+
+        endJob(job.get().execute(serverWorld));
     }
     
     @Override
