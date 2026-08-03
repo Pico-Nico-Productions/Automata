@@ -11,9 +11,13 @@ import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.bot.BotType;
 import pro.piconico.automata.bot.job.BotJob;
+import pro.piconico.automata.inventory.InventoryUtils;
+import pro.piconico.automata.world.BotPersistentState;
 
+// TODO: Extend PathAwareEntity instead and create goals
 public abstract class BotEntity extends BeeEntity {
     private static final String JOB_KEY = "job";
 
@@ -32,11 +36,12 @@ public abstract class BotEntity extends BeeEntity {
     });
 
     private Optional<BotJob> job = Optional.empty();
+    private Optional<RoboportBlockEntity> roboport = Optional.empty();
 
     public BotEntity(EntityType<? extends BeeEntity> entityType, World world) {
         super(entityType, world);
     }
-    
+
     public abstract BotType getBotType();
 
     public Optional<BotJob> getJob() {
@@ -61,6 +66,45 @@ public abstract class BotEntity extends BeeEntity {
         this.job = job;
     }
 
+    private boolean navigateTo(BlockPos pos) {
+        if (getBlockPos().getSquaredDistance(pos) > INTERACT_DISTANCE * INTERACT_DISTANCE) {
+            if (pos.equals(getNavigation().getTargetPos()))
+                return false;
+
+            getNavigation().startMovingTo(pos.getX(), pos.getY(), pos.getZ(), SPEED);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean doJob(ServerWorld serverWorld) {
+        if (job.isEmpty())
+            return true;
+
+        if (!navigateTo(job.get().pos()))
+            return false;
+
+        endJob(job.get().execute(serverWorld));
+
+        return true;
+    }
+
+    private boolean returnToPort(ServerWorld serverWorld) {
+        if (roboport.isEmpty() || !InventoryUtils.canAdd(roboport.get(), getBotType().item())) {
+            roboport = BotPersistentState.getRoboportClosestTo(getBlockPos(), port -> InventoryUtils.canAdd(port, getBotType().item()), serverWorld);
+            if (roboport.isEmpty()) return false;
+        }
+
+        if (!navigateTo(roboport.get().getPos()))
+            return false;
+
+        roboport.get().tryAdmit(this);
+
+        return true;
+    }
+
     @Override
     public void tick() {
         super.tick();
@@ -68,24 +112,12 @@ public abstract class BotEntity extends BeeEntity {
         if (!(getEntityWorld() instanceof ServerWorld serverWorld))
             return;
 
-        if (job.isEmpty()) {
-            // TODO: Navigate back to roboport
+        if (!doJob(serverWorld))
             return;
-        }
-        
-        BlockPos jobPos = job.get().pos();
-        if (getBlockPos().getSquaredDistance(jobPos) > INTERACT_DISTANCE * INTERACT_DISTANCE) {
-            if (jobPos.equals(getNavigation().getTargetPos()))
-                return;
 
-            getNavigation().startMovingTo(jobPos.getX(), jobPos.getY(), jobPos.getZ(), SPEED);
-
-            return;
-        }
-
-        endJob(job.get().execute(serverWorld));
+        returnToPort(serverWorld);
     }
-    
+
     @Override
     public void onDeath(DamageSource damageSource) {
         super.onDeath(damageSource);

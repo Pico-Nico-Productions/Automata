@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 import com.mojang.serialization.Codec;
@@ -54,7 +55,7 @@ public class BotPersistentState extends PersistentState {
         }
     });
 
-    private final HashSet<BlockPos> roboports = new HashSet<>();
+    private final HashSet<BlockPos> roboports = new HashSet<>(); // TODO: Consider converting to PointOfInterestType
     private final Map<BlockPos, Map<BotJobType<?>, BotJobAssignment<BotJob>>> jobAssignments = new HashMap<>();
 
     public BotPersistentState() {
@@ -181,21 +182,21 @@ public class BotPersistentState extends PersistentState {
 
     public static int addJobs(Iterable<BotJob> toAdd, ServerWorld serverWorld) {
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
-        int addCount = 0;
+        Set<BlockPos> addedPositions = new HashSet<>();
 
         for (BotJob job : toAdd) {
             Map<BotJobType<?>, BotJobAssignment<BotJob>> typeMap = botState.jobAssignments.computeIfAbsent(job.pos(), pos -> new HashMap<>());
             BotJobType<?> type = job.getType();
 
-            if (typeMap.containsKey(type) && typeMap.get(type).isAssigned())
+            if (typeMap.containsKey(type) && (typeMap.get(type).isAssigned() || typeMap.get(type).job.equals(job)))
                 continue;
 
             typeMap.put(type, new BotJobAssignment<>(job));
 
-            addCount++;
+            addedPositions.add(job.pos());
         }
 
-        if (addCount == 0)
+        if (addedPositions.isEmpty())
             return 0;
 
         botState.markDirty();
@@ -203,7 +204,7 @@ public class BotPersistentState extends PersistentState {
 
         assignJobs(serverWorld);
 
-        return addCount;
+        return addedPositions.size();
     }
 
     private static void unassignJob(BotJobAssignment<BotJob> jobAssignment, ServerWorld serverWorld) {
@@ -258,12 +259,17 @@ public class BotPersistentState extends PersistentState {
         return typeMap.size();
     }
 
-    public static int clearJobs(ServerWorld serverWorld) {
+    public static int clearJobs(ServerWorld serverWorld, Set<BotJobType<?>> jobTypes) {
         int removeCount = 0;
 
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
         for (BlockPos jobPos : botState.jobAssignments.keySet()) {
-            removeCount += removeJobsAt(jobPos, serverWorld);
+            for (BotJobType<?> botJobType : jobTypes) {
+                if (!removeJobAt(jobPos, botJobType, serverWorld))
+                    continue;
+
+                removeCount++;
+            }
         }
 
         return removeCount;
@@ -298,10 +304,18 @@ public class BotPersistentState extends PersistentState {
     }
     //#endregion
 
+    private static void onBotAdmitted(RoboportBlockEntity roboport) {
+        if (!(roboport.getWorld() instanceof ServerWorld serverWorld))
+            return;
+
+        assignJobs(serverWorld);
+    }
+
     public static void initialize() {
         RoboportBlock.PLACED.register(BotPersistentState::addRoboport);
         RoboportBlock.REMOVED.register(BotPersistentState::removeRoboport);
 
         BotEntity.JOB_ENDED.register(BotPersistentState::onJobEnded);
+        RoboportBlockEntity.BOT_ADDED.register(BotPersistentState::onBotAdmitted);
     }
 }

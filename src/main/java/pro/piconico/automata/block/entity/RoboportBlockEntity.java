@@ -3,6 +3,8 @@ package pro.piconico.automata.block.entity;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import net.fabricmc.fabric.api.event.Event;
+import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -26,6 +28,7 @@ import pro.piconico.automata.Automata;
 import pro.piconico.automata.bot.BotType;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.entity.BotEntity;
+import pro.piconico.automata.inventory.InventoryUtils;
 import pro.piconico.automata.item.BotItem;
 import pro.piconico.automata.registry.AutomataBlocks;
 import pro.piconico.automata.registry.AutomataBots;
@@ -35,6 +38,17 @@ import pro.piconico.automata.screen.RoboportScreenHandler;
 public class RoboportBlockEntity extends BlockEntity implements Inventory, ExtendedScreenHandlerFactory<BlockPos> {
     public static final int RANGE = 5;
     public static final int BOT_SLOT_COUNT = 1;
+
+    @FunctionalInterface
+    public interface UpdateRoboport {
+        void onUpdated(RoboportBlockEntity roboport);
+    }
+
+    public static final Event<UpdateRoboport> BOT_ADDED = EventFactory.createArrayBacked(UpdateRoboport.class, callbacks -> (roboport) -> {
+        for (UpdateRoboport callback : callbacks) {
+            callback.onUpdated(roboport);
+        }
+    });
 
     private final DefaultedList<ItemStack> itemStacks = DefaultedList.ofSize(BOT_SLOT_COUNT, ItemStack.EMPTY);
 
@@ -46,7 +60,7 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         return getPos().getChebyshevDistance(blockPos) <= RANGE;
     }
 
-    private Optional<ItemStack> getBotStackFor(BotJob job) {
+    private Optional<Integer> getBotSlotFor(BotJob job) {
         if (!isInRange(job.pos()))
             return Optional.empty();
 
@@ -55,12 +69,16 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
             return Optional.empty();
 
         Set<Item> capableBotItems = capableBotTypes.get().stream().map(botType -> botType.item()).collect(Collectors.toSet());
+        for (int i = 0; i < itemStacks.size(); i++) {
+            if (capableBotItems.contains(getStack(i).getItem()))
+                return Optional.of(i);
+        }
 
-        return itemStacks.stream().filter(stack -> !stack.isEmpty() && capableBotItems.contains(stack.getItem())).findFirst();
+        return Optional.empty();
     }
 
     public boolean canDoJob(BotJob job) {
-        return getBotStackFor(job).isPresent();
+        return getBotSlotFor(job).isPresent();
     }
 
     public Optional<BotEntity> assignJob(BotJob job) {
@@ -68,20 +86,39 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
             Automata.logError("Client can't assign jobs", IllegalCallerException::new);
             return Optional.empty();
         }
-        
-        Optional<ItemStack> botStack = getBotStackFor(job);
-        if (botStack.isEmpty())
+
+        Optional<Integer> botSlot = getBotSlotFor(job);
+        if (botSlot.isEmpty())
             return Optional.empty();
 
-        botStack.get().decrement(1);
+        BotItem botItem = (BotItem)Inventories.splitStack(itemStacks, botSlot.get(), 1).getItem();
         markDirty();
 
-        EntityType<? extends BotEntity> botEntityType = ((BotItem)botStack.get().getItem()).getBotType().entityType();
+        EntityType<? extends BotEntity> botEntityType = botItem.getBotType().entityType();
         BlockPos spawnLocation = getPos().up();
         BotEntity botEntity = botEntityType.spawn(serverWorld, spawnLocation, SpawnReason.MOB_SUMMONED);
         botEntity.setJob(Optional.of(job));
 
         return Optional.of(botEntity);
+    }
+
+    public boolean tryAdmit(BotEntity botEntity) {
+        Item botItem = botEntity.getBotType().item();
+
+        if (!InventoryUtils.canAdd(this, botItem))
+            return false;
+
+        botEntity.stopRiding();
+        botEntity.removeAllPassengers();
+        botEntity.detachLeash();
+        botEntity.discard();
+
+        InventoryUtils.add(this, botItem);
+        markDirty();
+
+        BOT_ADDED.invoker().onUpdated(this);
+
+        return true;
     }
 
     @Override
@@ -99,6 +136,7 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
     @Override
     public void clear() {
         itemStacks.clear();
+        markDirty();
     }
 
     @Override
@@ -118,22 +156,41 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
 
     @Override
     public ItemStack removeStack(int slot, int amount) {
-        return Inventories.splitStack(itemStacks, slot, amount);
+        ItemStack splitStack = Inventories.splitStack(itemStacks, slot, amount);
+        markDirty();
+
+        return splitStack;
     }
 
     @Override
     public ItemStack removeStack(int slot) {
-        return Inventories.removeStack(itemStacks, slot);
+        ItemStack removedStack = Inventories.removeStack(itemStacks, slot);
+        markDirty();
+
+        return removedStack;
     }
 
     @Override
     public void setStack(int slot, ItemStack stack) {
+        ItemStack currentStack = getStack(slot);
+        boolean added = !stack.isEmpty() && stack.getItem() != currentStack.getItem() || stack.getCount() > currentStack.getCount();
+
         itemStacks.set(slot, stack);
+        markDirty();
+
+        if (added) {
+            BOT_ADDED.invoker().onUpdated(this);
+        }
     }
 
     @Override
     public boolean canPlayerUse(PlayerEntity player) {
         return true;
+    }
+
+    @Override
+    public boolean isValid(int slot, ItemStack stack) {
+        return stack.getItem() instanceof BotItem;
     }
 
     @Override
