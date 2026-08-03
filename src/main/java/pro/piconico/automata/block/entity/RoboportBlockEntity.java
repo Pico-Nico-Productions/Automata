@@ -1,14 +1,18 @@
 package pro.piconico.automata.block.entity;
 
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -19,9 +23,12 @@ import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import pro.piconico.automata.Automata;
+import pro.piconico.automata.bot.BotType;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.entity.BotEntity;
+import pro.piconico.automata.item.BotItem;
 import pro.piconico.automata.registry.AutomataBlocks;
+import pro.piconico.automata.registry.AutomataBots;
 import pro.piconico.automata.registry.AutomataEntities;
 import pro.piconico.automata.screen.RoboportScreenHandler;
 
@@ -43,7 +50,13 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         if (!isInRange(job.pos()))
             return Optional.empty();
 
-        return itemStacks.stream().filter(stack -> !stack.isEmpty() && stack.isOf(job.getType().botItem())).findFirst();
+        Optional<Set<BotType>> capableBotTypes = AutomataBots.getBotTypesFor(job);
+        if (capableBotTypes.isEmpty())
+            return Optional.empty();
+
+        Set<Item> capableBotItems = capableBotTypes.get().stream().map(botType -> botType.item()).collect(Collectors.toSet());
+
+        return itemStacks.stream().filter(stack -> !stack.isEmpty() && capableBotItems.contains(stack.getItem())).findFirst();
     }
 
     public boolean canDoJob(BotJob job) {
@@ -63,8 +76,9 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         botStack.get().decrement(1);
         markDirty();
 
+        EntityType<? extends BotEntity> botEntityType = ((BotItem)botStack.get().getItem()).getBotType().entityType();
         BlockPos spawnLocation = getPos().up();
-        BotEntity botEntity = job.getType().botEntityType().spawn(serverWorld, spawnLocation, SpawnReason.MOB_SUMMONED);
+        BotEntity botEntity = botEntityType.spawn(serverWorld, spawnLocation, SpawnReason.MOB_SUMMONED);
         botEntity.setJob(Optional.of(job));
 
         return Optional.of(botEntity);

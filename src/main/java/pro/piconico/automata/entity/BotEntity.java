@@ -11,6 +11,7 @@ import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import pro.piconico.automata.bot.BotType;
 import pro.piconico.automata.bot.job.BotJob;
 
 public abstract class BotEntity extends BeeEntity {
@@ -35,6 +36,8 @@ public abstract class BotEntity extends BeeEntity {
     public BotEntity(EntityType<? extends BeeEntity> entityType, World world) {
         super(entityType, world);
     }
+    
+    public abstract BotType getBotType();
 
     public Optional<BotJob> getJob() {
         return job;

@@ -101,8 +101,13 @@ Call **Text**.translatable with the translation key and arguments
 2. Add it to the command registration callback in *initialize*
 
 ### Adding Bot Jobs
-1. Create a record (T for example) that implements **BotJob** and has a **MapCodec/<T/>** in [`/src/main/java/pro/piconico/automata/bot/job/`](/src/main/java/pro/piconico/automata/bot/job/)
+1. Create a record (T for example) that implements **BotJob** in [`/src/main/java/pro/piconico/automata/bot/job/`](/src/main/java/pro/piconico/automata/bot/job/)
 2. Register it as a public static final **BotJobType/<T/>** in [`/src/main/java/pro/piconico/automata/registry/AutomataBotJobs.java`](/src/main/java/pro/piconico/automata/registry/AutomataBotJobs.java)
+
+### Adding Bots
+1. [Add an item](#adding-items) that extends **BotItem**
+2. [Add an entity](#living-entities) that extends **BotEntity**
+3. Register a public static final **BotType** in [`/src/main/java/pro/piconico/automata/registry/AutomataBots.java`](/src/main/java/pro/piconico/automata/registry/AutomataBots.java)
 
 ## License
 
