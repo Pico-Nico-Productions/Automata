@@ -1,11 +1,14 @@
 package pro.piconico.automata.world;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -25,14 +28,15 @@ import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.job.BotJobAssignment;
 import pro.piconico.automata.bot.job.BotJobType;
+import pro.piconico.automata.bot.job.BotJobUtils;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.registry.AutomataPersistentStates;
+import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
 public class BotPersistentState extends PersistentState {
     public static final Codec<BotPersistentState> CODEC = RecordCodecBuilder.create(instance -> instance
             .group(BlockPos.CODEC.listOf().fieldOf("roboports").forGetter(state -> state.roboports.stream().toList()),
-                    BotJobAssignment.createCodec(BotJob.CODEC).listOf().fieldOf("job_assignments")
-                            .forGetter(state -> state.jobAssignments.values().stream().flatMap(innerMap -> innerMap.values().stream()).toList()))
+                    BotJobUtils.JOB_ASSIGNMENT_CODEC.fieldOf("job_assignments").forGetter(state -> state.jobAssignmentMap))
             .apply(instance, BotPersistentState::new));
 
     public enum Mutation {
@@ -56,20 +60,15 @@ public class BotPersistentState extends PersistentState {
     });
 
     private final HashSet<BlockPos> roboports = new HashSet<>(); // TODO: Consider converting to PointOfInterestType
-    private final Map<BlockPos, Map<BotJobType<?>, BotJobAssignment<BotJob>>> jobAssignments = new HashMap<>();
+    private final Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> jobAssignmentMap;
 
     public BotPersistentState() {
+        jobAssignmentMap = new HashMap<>();
     }
 
-    public BotPersistentState(List<BlockPos> roboports, List<BotJobAssignment<BotJob>> jobAssignments) {
+    public BotPersistentState(List<BlockPos> roboports, Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> jobAssignmentMap) {
         this.roboports.addAll(roboports);
-
-        for (BotJobAssignment<BotJob> assignment : jobAssignments) {
-            BotJob job = assignment.getJob();
-            BlockPos pos = job.pos();
-            BotJobType<?> type = job.getType();
-            this.jobAssignments.computeIfAbsent(pos, k -> new HashMap<>()).put(type, assignment);
-        }
+        this.jobAssignmentMap = jobAssignmentMap;
     }
 
     //#region Roboports
@@ -126,36 +125,50 @@ public class BotPersistentState extends PersistentState {
     //#endregion
 
     //#region Jobs
-    public static Map<BlockPos, Map<BotJobType<?>, BotJobAssignment<BotJob>>> getJobs(ServerWorld serverWorld) {
+    public static Optional<BotJobAssignment> getJobAt(BlockPos pos, BotJobType<?> jobType, ServerWorld serverWorld) {
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
 
-        return Collections.unmodifiableMap(botState.jobAssignments);
-    }
-
-    public static Optional<BotJobAssignment<BotJob>> getJobAt(BlockPos pos, BotJobType<?> jobType, ServerWorld serverWorld) {
-        BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
-
-        if (!botState.jobAssignments.containsKey(pos) || !botState.jobAssignments.get(pos).containsKey(jobType))
+        if (!botState.jobAssignmentMap.containsKey(pos) || !botState.jobAssignmentMap.get(pos).containsKey(jobType))
             return Optional.empty();
 
-        return Optional.of(botState.jobAssignments.get(pos).get(jobType));
+        return Optional.of(botState.jobAssignmentMap.get(pos).get(jobType));
     }
 
-    public static Optional<Collection<BotJobAssignment<BotJob>>> getJobsAt(BlockPos pos, ServerWorld serverWorld) {
+    public static Collection<BotJobAssignment> getJobsAt(BlockPos pos, ServerWorld serverWorld) {
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
 
-        if (!botState.jobAssignments.containsKey(pos))
-            return Optional.empty();
+        if (!botState.jobAssignmentMap.containsKey(pos))
+            return List.of();
 
-        return Optional.of(botState.jobAssignments.get(pos).values());
+        return botState.jobAssignmentMap.get(pos).values();
+    }
+
+    public static Collection<BotJobAssignment> getJobsIn(ChunkBounds chunkBounds, ServerWorld serverWorld) {
+        Collection<BotJobAssignment> inRangeJobs = new ArrayList<>();
+
+        BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
+        for (Map.Entry<BlockPos, Map<BotJobType<?>, BotJobAssignment>> entry : botState.jobAssignmentMap.entrySet()) {
+            if (!chunkBounds.containsXZ(entry.getKey()))
+                continue;
+
+            inRangeJobs.addAll(entry.getValue().values());
+        }
+
+        return inRangeJobs;
+    }
+
+    public static Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> getJobs(ServerWorld serverWorld) {
+        BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
+
+        return Collections.unmodifiableMap(botState.jobAssignmentMap);
     }
 
     private static void assignJobs(ServerWorld serverWorld) {
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
         boolean mutated = false;
 
-        for (Map<BotJobType<?>, BotJobAssignment<BotJob>> typeMap : botState.jobAssignments.values()) {
-            for (BotJobAssignment<BotJob> jobAssignment : typeMap.values()) {
+        for (Map<BotJobType<?>, BotJobAssignment> typeMap : botState.jobAssignmentMap.values()) {
+            for (BotJobAssignment jobAssignment : typeMap.values()) {
                 if (jobAssignment.isAssigned())
                     continue;
 
@@ -185,13 +198,13 @@ public class BotPersistentState extends PersistentState {
         Set<BlockPos> addedPositions = new HashSet<>();
 
         for (BotJob job : toAdd) {
-            Map<BotJobType<?>, BotJobAssignment<BotJob>> typeMap = botState.jobAssignments.computeIfAbsent(job.pos(), pos -> new HashMap<>());
+            Map<BotJobType<?>, BotJobAssignment> typeMap = botState.jobAssignmentMap.computeIfAbsent(job.pos(), pos -> new HashMap<>());
             BotJobType<?> type = job.getType();
 
             if (typeMap.containsKey(type) && (typeMap.get(type).isAssigned() || typeMap.get(type).job.equals(job)))
                 continue;
 
-            typeMap.put(type, new BotJobAssignment<>(job));
+            typeMap.put(type, new BotJobAssignment(job));
 
             addedPositions.add(job.pos());
         }
@@ -207,7 +220,7 @@ public class BotPersistentState extends PersistentState {
         return addedPositions.size();
     }
 
-    private static void unassignJob(BotJobAssignment<BotJob> jobAssignment, ServerWorld serverWorld) {
+    private static void unassignJob(BotJobAssignment jobAssignment, ServerWorld serverWorld) {
         if (jobAssignment.getAssignedBot().isEmpty())
             return;
 
@@ -229,10 +242,10 @@ public class BotPersistentState extends PersistentState {
         if (getJobAt(pos, type, serverWorld).isEmpty())
             return false;
 
-        Map<BotJobType<?>, BotJobAssignment<BotJob>> typeMap = botState.jobAssignments.get(pos);
-        BotJobAssignment<BotJob> jobAssignment = typeMap.remove(type);
+        Map<BotJobType<?>, BotJobAssignment> typeMap = botState.jobAssignmentMap.get(pos);
+        BotJobAssignment jobAssignment = typeMap.remove(type);
         if (typeMap.isEmpty()) {
-            botState.jobAssignments.remove(pos);
+            botState.jobAssignmentMap.remove(pos);
         }
         unassignJob(jobAssignment, serverWorld);
 
@@ -245,11 +258,11 @@ public class BotPersistentState extends PersistentState {
     public static int removeJobsAt(BlockPos pos, ServerWorld serverWorld) {
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
 
-        if (!botState.jobAssignments.containsKey(pos))
+        if (!botState.jobAssignmentMap.containsKey(pos))
             return 0;
 
-        Map<BotJobType<?>, BotJobAssignment<BotJob>> typeMap = botState.jobAssignments.remove(pos);
-        for (BotJobAssignment<BotJob> jobAssignment : typeMap.values()) {
+        Map<BotJobType<?>, BotJobAssignment> typeMap = botState.jobAssignmentMap.remove(pos);
+        for (BotJobAssignment jobAssignment : typeMap.values()) {
             unassignJob(jobAssignment, serverWorld);
         }
 
@@ -259,18 +272,33 @@ public class BotPersistentState extends PersistentState {
         return typeMap.size();
     }
 
-    public static int clearJobs(ServerWorld serverWorld, Set<BotJobType<?>> jobTypes) {
+    public static int removeJobsOf(Set<BotJobType<?>> jobTypes, ServerWorld serverWorld) {
         int removeCount = 0;
 
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
-        for (BlockPos jobPos : botState.jobAssignments.keySet()) {
+        Iterator<Entry<BlockPos, Map<BotJobType<?>, BotJobAssignment>>> jobEntryIterator = botState.jobAssignmentMap.entrySet().iterator();
+        while (jobEntryIterator.hasNext()) {
+            Entry<BlockPos, Map<BotJobType<?>, BotJobAssignment>> jobEntry = jobEntryIterator.next();
             for (BotJobType<?> botJobType : jobTypes) {
-                if (!removeJobAt(jobPos, botJobType, serverWorld))
+                if (!jobEntry.getValue().containsKey(botJobType))
                     continue;
+
+                BotJobAssignment jobAssignment = jobEntry.getValue().remove(botJobType);
+                if (jobEntry.getValue().isEmpty()) {
+                    jobEntryIterator.remove();
+                }
+
+                unassignJob(jobAssignment, serverWorld);
 
                 removeCount++;
             }
         }
+
+        if (removeCount == 0)
+            return 0;
+
+        botState.markDirty();
+        JOBS_MUTATED.invoker().onMutate(serverWorld, Mutation.Remove);
 
         return removeCount;
     }
@@ -279,17 +307,17 @@ public class BotPersistentState extends PersistentState {
         if (!(botEntity.getEntityWorld() instanceof ServerWorld serverWorld))
             return;
 
-        Optional<BotJobAssignment<BotJob>> jobAssignment = getJobAt(job.pos(), job.getType(), serverWorld);
+        Optional<BotJobAssignment> jobAssignment = getJobAt(job.pos(), job.getType(), serverWorld);
         if (jobAssignment.isEmpty())
             return;
 
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
 
         if (completed) {
-            Map<BotJobType<?>, BotJobAssignment<BotJob>> typeMap = botState.jobAssignments.get(job.pos());
+            Map<BotJobType<?>, BotJobAssignment> typeMap = botState.jobAssignmentMap.get(job.pos());
             typeMap.remove(job.getType());
             if (typeMap.isEmpty()) {
-                botState.jobAssignments.remove(job.pos());
+                botState.jobAssignmentMap.remove(job.pos());
             }
         }
         else {

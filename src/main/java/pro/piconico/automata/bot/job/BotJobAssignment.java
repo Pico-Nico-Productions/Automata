@@ -6,29 +6,27 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.Uuids;
 
-public class BotJobAssignment<T extends BotJob> {
-    public static <T extends BotJob> Codec<BotJobAssignment<T>> createCodec(Codec<T> jobCodec) {
-        return RecordCodecBuilder
-                .create(instance -> instance
-                        .group(jobCodec.fieldOf("job").forGetter(BotJobAssignment::getJob),
-                                Uuids.INT_STREAM_CODEC.optionalFieldOf("bot_uuid").forGetter(BotJobAssignment::getAssignedBot))
-                        .apply(instance, BotJobAssignment::new));
-    }
+public class BotJobAssignment {
+    public static Codec<BotJobAssignment> CODEC = RecordCodecBuilder
+            .create(instance -> instance
+                    .group(BotJob.CODEC.fieldOf("job").forGetter(BotJobAssignment::getJob),
+                            Uuids.INT_STREAM_CODEC.optionalFieldOf("bot_uuid").forGetter(BotJobAssignment::getAssignedBot))
+                    .apply(instance, BotJobAssignment::new));
 
     private Optional<UUID> assignedBot;
 
-    public final T job;
+    public final BotJob job;
 
-    public BotJobAssignment(T job, Optional<UUID> assignedBot) {
+    public BotJobAssignment(BotJob job, Optional<UUID> assignedBot) {
         this.job = job;
         this.assignedBot = assignedBot;
     }
 
-    public BotJobAssignment(T job) {
+    public BotJobAssignment(BotJob job) {
         this(job, Optional.empty());
     }
 
-    public T getJob() {
+    public BotJob getJob() {
         return job;
     }
 

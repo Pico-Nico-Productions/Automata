@@ -5,6 +5,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -12,6 +13,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import pro.piconico.automata.component.CommandToolComponent;
+import pro.piconico.automata.network.BotSyncManager;
 import pro.piconico.automata.registry.AutomataComponents;
 import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.bot.BotDispatcher;
@@ -25,10 +27,33 @@ public class CommandToolItem extends Item {
         return stack.getOrDefault(AutomataComponents.COMMAND_TOOL, CommandToolComponent.EMPTY);
     }
 
+    public static void onHoldStarted(PlayerEntity player, Hand hand, ItemStack stack) {
+        if (!(stack.getItem() instanceof CommandToolItem))
+            return;
+
+        if (!(player instanceof ServerPlayerEntity serverPlayer) || BotSyncManager.isSubscribed(serverPlayer))
+            return;
+
+        BotSyncManager.subscribe(serverPlayer);
+    }
+
+    public static void onHoldEnded(PlayerEntity player, Hand hand, ItemStack stack) {
+        if (!(stack.getItem() instanceof CommandToolItem))
+            return;
+
+        if (player.getMainHandStack().getItem() instanceof CommandToolItem || player.getOffHandStack().getItem() instanceof CommandToolItem)
+            return;
+
+        if (!(player instanceof ServerPlayerEntity serverPlayer))
+            return;
+
+        BotSyncManager.unsubscribe(serverPlayer);
+    }
+
     private static ActionResult select(PlayerEntity player, ItemStack stack, BlockPos selection, boolean isSelection2) {
         if (player.getEntityWorld().isClient())
             return ActionResult.SUCCESS;
-        
+
         Optional<BlockPos> selection1 = isSelection2 ? getCommandToolComponent(stack).selection1() : Optional.of(selection);
         Optional<BlockPos> selection2 = isSelection2 ? Optional.of(selection) : getCommandToolComponent(stack).selection2();
         stack.set(AutomataComponents.COMMAND_TOOL, new CommandToolComponent(selection1, selection2));
@@ -38,10 +63,10 @@ public class CommandToolItem extends Item {
     }
 
     public static ActionResult onAttackBlock(PlayerEntity player, World world, Hand hand, BlockPos blockPos, Direction direction) {
-        ItemStack stack = player.getMainHandStack();
-        if (hand != Hand.MAIN_HAND || !(stack.getItem() instanceof CommandToolItem))
+        ItemStack stack = player.getStackInHand(hand);
+        if (!(stack.getItem() instanceof CommandToolItem))
             return ActionResult.PASS;
-        
+
         return select(player, stack, blockPos, false);
     }
 
@@ -51,7 +76,7 @@ public class CommandToolItem extends Item {
         ItemStack stack = context.getStack();
         if (player.isSneaking())
             return BotDispatcher.markForDeconstruction(player, getCommandToolComponent(stack));
-        
+
         return select(player, stack, context.getBlockPos(), true);
     }
 

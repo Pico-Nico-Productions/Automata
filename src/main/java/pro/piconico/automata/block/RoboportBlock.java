@@ -13,15 +13,11 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import pro.piconico.automata.block.BlockUtils.BlockAction;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
 
 public class RoboportBlock extends BlockWithEntity {
     public static final MapCodec<RoboportBlock> CODEC = createCodec(RoboportBlock::new);
-
-    @FunctionalInterface
-    public interface BlockAction {
-        void onAction(BlockPos pos, ServerWorld world);
-    }
 
     public static final Event<BlockAction> PLACED = EventFactory.createArrayBacked(BlockAction.class, callbacks -> (pos, world) -> {
         for (BlockAction callback : callbacks) {
