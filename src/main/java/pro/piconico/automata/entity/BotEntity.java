@@ -51,18 +51,29 @@ public abstract class BotEntity extends BeeEntity {
         return job.isPresent();
     }
 
+    public boolean canDoJob(BotJob job) {
+        return getBotType().supportedJobTypes().contains(job.getType());
+    }
+
     public void endJob(boolean completed) {
         if (job.isEmpty())
             return;
 
-        JOB_ENDED.invoker().onEnded(this, job.get(), completed);
+        BotJob oldJob = job.get();
         job = Optional.empty();
+        JOB_ENDED.invoker().onEnded(this, oldJob, completed);
     }
 
-    public void setJob(Optional<BotJob> job) {
-        endJob(false);
+    public boolean setJob(Optional<BotJob> newJob) {
+        if (newJob.isPresent() && !canDoJob(newJob.get()))
+            return false;
 
-        this.job = job;
+        Optional<BotJob> oldJob = job;
+        job = newJob;
+        if (oldJob.isPresent())
+            JOB_ENDED.invoker().onEnded(this, oldJob.get(), false);
+
+        return true;
     }
 
     private boolean navigateTo(BlockPos pos) {

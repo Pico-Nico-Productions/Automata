@@ -111,7 +111,7 @@ public class BotPersistentState extends PersistentState {
 
                 BotJob job = jobAssignment.getJob();
 
-                Optional<RoboportBlockEntity> roboportEntity = RoboportBlockEntity.getClosestTo(job.pos(), roboport -> roboport.canDoJob(job), serverWorld);
+                Optional<RoboportBlockEntity> roboportEntity = RoboportBlockEntity.getClosestTo(job.pos(), roboport -> roboport.canAssignJob(job), serverWorld);
                 if (roboportEntity.isEmpty())
                     continue;
 
@@ -263,8 +263,7 @@ public class BotPersistentState extends PersistentState {
         botState.markDirty();
         JOBS_MUTATED.invoker().onMutate(serverWorld, completed ? Mutation.Remove : Mutation.Modify);
 
-        if (!completed)
-            assignJobs(serverWorld);
+        assignJobs(serverWorld);
     }
     //#endregion
 

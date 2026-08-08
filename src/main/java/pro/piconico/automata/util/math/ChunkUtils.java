@@ -1,7 +1,9 @@
 package pro.piconico.automata.util.math;
 
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.World;
 
 public class ChunkUtils {
@@ -16,24 +18,35 @@ public class ChunkUtils {
     }
 
     public record ChunkBounds(ChunkPos minChunkPos, ChunkPos maxChunkPos, BlockPos minBlockPos, BlockPos maxBlockPos) {
-        public static ChunkBounds of(ChunkPos center, int radius, int minY, int maxY) {
-            if (radius < 0)
-                throw new IllegalArgumentException("Radius must be >= 0");
+        public static ChunkBounds of(ChunkPos center, int chunkRadius, int minY, int maxY) {
+            if (chunkRadius < 0)
+                throw new IllegalArgumentException("Chunk radius must be >= 0");
 
-            ChunkPos minChunkPos = new ChunkPos(center.x - radius, center.z - radius);
-            ChunkPos maxChunkPos = new ChunkPos(center.x + radius, center.z + radius);
+            ChunkPos minChunkPos = new ChunkPos(center.x - chunkRadius, center.z - chunkRadius);
+            ChunkPos maxChunkPos = new ChunkPos(center.x + chunkRadius, center.z + chunkRadius);
             BlockPos minBlockPos = getStartPos(minChunkPos, minY);
             BlockPos maxBlockPos = getEndPos(maxChunkPos, maxY);
 
             return new ChunkBounds(minChunkPos, maxChunkPos, minBlockPos, maxBlockPos);
         }
 
-        public static ChunkBounds of(ChunkPos center, int radius, World world) {
-            return of(center, radius, world.getBottomY(), world.getTopYInclusive());
+        public static ChunkBounds of(ChunkPos center, int chunkRadius, HeightLimitView heightLimitView) {
+            return of(center, chunkRadius, heightLimitView.getBottomY(), heightLimitView.getTopYInclusive());
         }
 
-        public static ChunkBounds of(ChunkPos center, int radius) {
-            return of(center, radius, World.MIN_Y, World.MAX_Y);
+        public static ChunkBounds of(ChunkPos center, int chunkRadius) {
+            return of(center, chunkRadius, World.MIN_Y, World.MAX_Y);
+        }
+
+        public Box toBox() {
+            return new Box(
+                minBlockPos.getX(),
+                minBlockPos.getY(),
+                minBlockPos.getZ(),
+                maxBlockPos.getX() + 1.0,
+                maxBlockPos.getY() + 1.0,
+                maxBlockPos.getZ() + 1.0
+            );
         }
 
         public boolean contains(ChunkPos chunkPos) {
