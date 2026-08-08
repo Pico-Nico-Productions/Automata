@@ -25,6 +25,7 @@
 			"pro.piconico.automata.datagen.AutomataDataGenerator"
 		]
 	},
+	"accessWidener": "automata.classtweaker",
 	"mixins": [
 		"automata.mixins.json",
 		{

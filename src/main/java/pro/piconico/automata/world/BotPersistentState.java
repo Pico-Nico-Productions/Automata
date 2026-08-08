@@ -12,7 +12,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Predicate;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.fabricmc.fabric.api.event.Event;
@@ -20,7 +19,6 @@ import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.entity.Entity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.PersistentState;
 import pro.piconico.automata.Automata;
 import pro.piconico.automata.block.RoboportBlock;
@@ -34,10 +32,9 @@ import pro.piconico.automata.registry.AutomataPersistentStates;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
 public class BotPersistentState extends PersistentState {
-    public static final Codec<BotPersistentState> CODEC = RecordCodecBuilder.create(instance -> instance
-            .group(BlockPos.CODEC.listOf().fieldOf("roboports").forGetter(state -> state.roboports.stream().toList()),
-                    BotJobUtils.JOB_ASSIGNMENT_CODEC.fieldOf("job_assignments").forGetter(state -> state.jobAssignmentMap))
-            .apply(instance, BotPersistentState::new));
+    public static final Codec<BotPersistentState> CODEC = RecordCodecBuilder
+            .create(instance -> instance.group(BotJobUtils.JOB_ASSIGNMENT_CODEC.fieldOf("job_assignments").forGetter(state -> state.jobAssignmentMap))
+                    .apply(instance, BotPersistentState::new));
 
     public enum Mutation {
         Add, Remove, Modify
@@ -48,81 +45,21 @@ public class BotPersistentState extends PersistentState {
         void onMutate(ServerWorld handler, Mutation mutation);
     }
 
-    public static final Event<Mutate> ROBOPORTS_MUTATED = EventFactory.createArrayBacked(Mutate.class, callbacks -> (serverWorld, mutation) -> {
-        for (Mutate callback : callbacks) {
-            callback.onMutate(serverWorld, mutation);
-        }
-    });
     public static final Event<Mutate> JOBS_MUTATED = EventFactory.createArrayBacked(Mutate.class, callbacks -> (serverWorld, mutation) -> {
         for (Mutate callback : callbacks) {
             callback.onMutate(serverWorld, mutation);
         }
     });
 
-    private final HashSet<BlockPos> roboports = new HashSet<>(); // TODO: Consider converting to PointOfInterestType
     private final Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> jobAssignmentMap;
 
     public BotPersistentState() {
         jobAssignmentMap = new HashMap<>();
     }
 
-    public BotPersistentState(List<BlockPos> roboports, Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> jobAssignmentMap) {
-        this.roboports.addAll(roboports);
+    public BotPersistentState(Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> jobAssignmentMap) {
         this.jobAssignmentMap = jobAssignmentMap;
     }
-
-    //#region Roboports
-    public static Collection<BlockPos> getRoboports(ServerWorld serverWorld) {
-        BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
-
-        return Collections.unmodifiableSet(botState.roboports);
-    }
-
-    public static Optional<RoboportBlockEntity> getRoboportClosestTo(Vec3i position, Predicate<RoboportBlockEntity> roboportPredicate,
-            ServerWorld serverWorld) {
-        Optional<RoboportBlockEntity> closestRoboport = Optional.empty();
-
-        BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
-        double minDistance = Double.MAX_VALUE;
-        for (BlockPos roboportPos : botState.roboports) {
-            double distance = roboportPos.getSquaredDistance(position);
-            if (distance >= minDistance)
-                continue;
-
-            if (!(serverWorld.getBlockEntity(roboportPos) instanceof RoboportBlockEntity roboport)) {
-                Automata.logError(BotPersistentState.class.getSimpleName() + " expected a roboport at " + roboportPos.toShortString() + ".",
-                        IllegalStateException::new);
-                continue;
-            }
-
-            if (!roboportPredicate.test(roboport))
-                continue;
-
-            closestRoboport = Optional.of(roboport);
-            minDistance = distance;
-        }
-
-        return closestRoboport;
-    }
-
-    private static void addRoboport(BlockPos blockPos, ServerWorld serverWorld) {
-        BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
-        if (!botState.roboports.add(blockPos))
-            return;
-
-        botState.markDirty();
-        ROBOPORTS_MUTATED.invoker().onMutate(serverWorld, Mutation.Add);
-    }
-
-    private static void removeRoboport(BlockPos blockPos, ServerWorld serverWorld) {
-        BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
-        if (!botState.roboports.remove(blockPos))
-            return;
-
-        botState.markDirty();
-        ROBOPORTS_MUTATED.invoker().onMutate(serverWorld, Mutation.Remove);
-    }
-    //#endregion
 
     //#region Jobs
     public static Optional<BotJobAssignment> getJobAt(BlockPos pos, BotJobType<?> jobType, ServerWorld serverWorld) {
@@ -174,8 +111,7 @@ public class BotPersistentState extends PersistentState {
 
                 BotJob job = jobAssignment.getJob();
 
-                Optional<RoboportBlockEntity> roboportEntity = BotPersistentState.getRoboportClosestTo(job.pos(), roboport -> roboport.canDoJob(job),
-                        serverWorld);
+                Optional<RoboportBlockEntity> roboportEntity = RoboportBlockEntity.getClosestTo(job.pos(), roboport -> roboport.canDoJob(job), serverWorld);
                 if (roboportEntity.isEmpty())
                     continue;
 
@@ -332,7 +268,11 @@ public class BotPersistentState extends PersistentState {
     }
     //#endregion
 
-    private static void onBotAdmitted(RoboportBlockEntity roboport) {
+    private static void onRoboportPlaced(BlockPos pos, ServerWorld serverWorld) {
+        assignJobs(serverWorld);
+    }
+
+    private static void onBotAdded(RoboportBlockEntity roboport) {
         if (!(roboport.getWorld() instanceof ServerWorld serverWorld))
             return;
 
@@ -340,10 +280,8 @@ public class BotPersistentState extends PersistentState {
     }
 
     public static void initialize() {
-        RoboportBlock.PLACED.register(BotPersistentState::addRoboport);
-        RoboportBlock.REMOVED.register(BotPersistentState::removeRoboport);
-
         BotEntity.JOB_ENDED.register(BotPersistentState::onJobEnded);
-        RoboportBlockEntity.BOT_ADDED.register(BotPersistentState::onBotAdmitted);
+        RoboportBlock.PLACED.register(BotPersistentState::onRoboportPlaced);
+        RoboportBlockEntity.BOT_ADDED.register(BotPersistentState::onBotAdded);
     }
 }

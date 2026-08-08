@@ -13,6 +13,7 @@ import pro.piconico.automata.registry.AutomataItems;
 import pro.piconico.automata.registry.AutomataNetworkManagers;
 import pro.piconico.automata.registry.AutomataPackets;
 import pro.piconico.automata.registry.AutomataPersistentStates;
+import pro.piconico.automata.registry.AutomataPointOfInterestTypes;
 import pro.piconico.automata.registry.AutomataScreenHandlers;
 import pro.piconico.automata.registry.AutomataTexts;
 
@@ -27,6 +28,7 @@ public class Automata implements ModInitializer {
 		AutomataEntities.initialize();
 		AutomataItems.initialize();
 		AutomataBlocks.initialize();
+        AutomataPointOfInterestTypes.initialize();
 		AutomataPersistentStates.initialize();
         AutomataPackets.initialize();
         AutomataNetworkManagers.initialize();

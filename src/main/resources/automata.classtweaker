@@ -1,0 +1,7 @@
+classTweaker v1 named
+
+# Makes PointOfInterestTypes.getStatesOfBlock public
+accessible method net/minecraft/world/poi/PointOfInterestTypes getStatesOfBlock (Lnet/minecraft/block/Block;)Ljava/util/Set;
+
+# Makes PointOfInterestTypes.register public
+accessible method net/minecraft/world/poi/PointOfInterestTypes register (Lnet/minecraft/registry/Registry;Lnet/minecraft/registry/RegistryKey;Ljava/util/Set;II)Lnet/minecraft/world/poi/PointOfInterestType;

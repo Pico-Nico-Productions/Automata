@@ -15,7 +15,6 @@ import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.bot.BotType;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.inventory.InventoryUtils;
-import pro.piconico.automata.world.BotPersistentState;
 
 // TODO: Extend PathAwareEntity instead and create goals
 public abstract class BotEntity extends BeeEntity {
@@ -93,14 +92,15 @@ public abstract class BotEntity extends BeeEntity {
 
     private boolean returnToPort(ServerWorld serverWorld) {
         if (roboport.isEmpty() || !InventoryUtils.canAdd(roboport.get(), getBotType().item())) {
-            roboport = BotPersistentState.getRoboportClosestTo(getBlockPos(), port -> InventoryUtils.canAdd(port, getBotType().item()), serverWorld);
-            if (roboport.isEmpty()) return false;
+            roboport = RoboportBlockEntity.getClosestTo(getBlockPos(), port -> InventoryUtils.canAdd(port, getBotType().item()), serverWorld);
+            if (roboport.isEmpty())
+                return false;
         }
 
         if (!navigateTo(roboport.get().getPos()))
             return false;
 
-        roboport.get().tryAdmit(this);
+        roboport.get().tryAdd(this);
 
         return true;
     }

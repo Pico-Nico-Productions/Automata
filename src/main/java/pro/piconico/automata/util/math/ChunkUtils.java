@@ -5,6 +5,8 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 
 public class ChunkUtils {
+    public static final int CHUNK_SIZE = 16;
+
     public static BlockPos getStartPos(ChunkPos chunkPos, int minY) {
         return new BlockPos(chunkPos.getStartX(), minY, chunkPos.getStartZ());
     }

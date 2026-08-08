@@ -2,6 +2,7 @@ package pro.piconico.automata.block.entity;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
@@ -24,6 +25,8 @@ import net.minecraft.storage.WriteView;
 import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.poi.PointOfInterestStorage;
 import pro.piconico.automata.Automata;
 import pro.piconico.automata.bot.BotType;
 import pro.piconico.automata.bot.job.BotJob;
@@ -33,10 +36,12 @@ import pro.piconico.automata.item.BotItem;
 import pro.piconico.automata.registry.AutomataBlocks;
 import pro.piconico.automata.registry.AutomataBots;
 import pro.piconico.automata.registry.AutomataEntities;
+import pro.piconico.automata.registry.AutomataPointOfInterestTypes;
 import pro.piconico.automata.screen.RoboportScreenHandler;
+import pro.piconico.automata.util.math.ChunkUtils;
 
 public class RoboportBlockEntity extends BlockEntity implements Inventory, ExtendedScreenHandlerFactory<BlockPos> {
-    public static final int RANGE = 5;
+    public static final int CHUNK_RANGE = 1;
     public static final int BOT_SLOT_COUNT = 1;
 
     @FunctionalInterface
@@ -57,7 +62,7 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
     }
 
     public boolean isInRange(BlockPos blockPos) {
-        return getPos().getChebyshevDistance(blockPos) <= RANGE;
+        return new ChunkPos(getPos()).getChebyshevDistance(new ChunkPos(blockPos)) < CHUNK_RANGE;
     }
 
     private Optional<Integer> getBotSlotFor(BotJob job) {
@@ -102,7 +107,7 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         return Optional.of(botEntity);
     }
 
-    public boolean tryAdmit(BotEntity botEntity) {
+    public boolean tryAdd(BotEntity botEntity) {
         Item botItem = botEntity.getBotType().item();
 
         if (!InventoryUtils.canAdd(this, botItem))
@@ -206,5 +211,13 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
     @Override
     public BlockPos getScreenOpeningData(ServerPlayerEntity player) {
         return pos;
+    }
+
+    public static Optional<RoboportBlockEntity> getClosestTo(BlockPos pos, Predicate<RoboportBlockEntity> predicate, ServerWorld serverWorld) {
+        Optional<BlockPos> closestRoboportPos = serverWorld.getPointOfInterestStorage().getPosition(entry -> entry.matchesKey(AutomataPointOfInterestTypes.ROBOPORT),
+                roboportPos -> serverWorld.getBlockEntity(roboportPos) instanceof RoboportBlockEntity roboport && predicate.test(roboport), pos, ChunkUtils.CHUNK_SIZE * CHUNK_RANGE,
+                PointOfInterestStorage.OccupationStatus.ANY);
+
+        return Optional.ofNullable(closestRoboportPos.isPresent() ? (RoboportBlockEntity)serverWorld.getBlockEntity(closestRoboportPos.get()) : null);
     }
 }
