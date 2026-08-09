@@ -27,6 +27,8 @@ import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.job.BotJobAssignment;
 import pro.piconico.automata.bot.job.BotJobType;
 import pro.piconico.automata.bot.job.BotJobUtils;
+import pro.piconico.automata.bot.network.BotNetwork;
+import pro.piconico.automata.bot.network.BotNetworkManager;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.registry.AutomataPersistentStates;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
@@ -109,14 +111,17 @@ public class BotPersistentState extends PersistentState {
                 if (jobAssignment.isAssigned())
                     continue;
 
-                BotJob job = jobAssignment.getJob();
+                Optional<BotNetwork> network = BotNetworkManager.getNetworkAt(jobAssignment.job.pos(), serverWorld);
 
-                Optional<RoboportBlockEntity> roboportEntity = RoboportBlockEntity.getClosestTo(job.pos(), roboport -> roboport.canAssignJob(job), serverWorld);
-                if (roboportEntity.isEmpty())
+                if (network.isEmpty())
                     continue;
 
-                BotEntity botEntity = roboportEntity.get().assignJob(job).get();
-                jobAssignment.setAssignedBot(Optional.of(botEntity.getUuid()));
+                Optional<BotEntity> botEntity = network.get().assignJob(jobAssignment.job);
+
+                if (botEntity.isEmpty())
+                    continue;
+
+                jobAssignment.setAssignedBot(Optional.of(botEntity.get().getUuid()));
 
                 mutated = true;
             }

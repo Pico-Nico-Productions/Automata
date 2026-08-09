@@ -29,6 +29,7 @@ import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.poi.PointOfInterest;
 import net.minecraft.world.poi.PointOfInterestStorage;
 import pro.piconico.automata.Automata;
 import pro.piconico.automata.bot.BotType;
@@ -45,7 +46,7 @@ import pro.piconico.automata.util.math.ChunkUtils;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
 public class RoboportBlockEntity extends BlockEntity implements Inventory, ExtendedScreenHandlerFactory<BlockPos> {
-    public static final int CHUNK_RANGE = 1;
+    public static final int CHUNK_RANGE = 0;
     public static final int BOT_SLOT_COUNT = 1;
 
     @FunctionalInterface
@@ -63,10 +64,6 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
 
     public RoboportBlockEntity(BlockPos pos, BlockState state) {
         super(AutomataEntities.ROBOPORT, pos, state);
-    }
-
-    public boolean isInRange(BlockPos blockPos) {
-        return new ChunkPos(getPos()).getChebyshevDistance(new ChunkPos(blockPos)) < CHUNK_RANGE;
     }
 
     private Optional<BotEntity> getBotEntityFor(BotJob job) {
@@ -95,9 +92,6 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
     }
 
     public boolean canAssignJob(BotJob job) {
-        if (!isInRange(job.pos()))
-            return false;
-
         return getBotEntityFor(job).isPresent() || getBotSlotFor(job).isPresent();
     }
 
@@ -106,9 +100,6 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
             Automata.logError("Client can't assign jobs", IllegalCallerException::new);
             return Optional.empty();
         }
-
-        if (!isInRange(job.pos()))
-            return Optional.empty();
 
         Optional<BotEntity> botEntity = getBotEntityFor(job);
         if (botEntity.isPresent() && botEntity.get().setJob(Optional.of(job)))
@@ -235,11 +226,12 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         return pos;
     }
 
-    public static Optional<RoboportBlockEntity> getClosestTo(BlockPos pos, Predicate<RoboportBlockEntity> predicate, ServerWorld serverWorld) {
-        Optional<BlockPos> closestRoboportPos = serverWorld.getPointOfInterestStorage().getPosition(
-                entry -> entry.matchesKey(AutomataPointOfInterestTypes.ROBOPORT),
-                roboportPos -> serverWorld.getBlockEntity(roboportPos) instanceof RoboportBlockEntity roboport && predicate.test(roboport), pos,
-                ChunkUtils.CHUNK_SIZE * CHUNK_RANGE, PointOfInterestStorage.OccupationStatus.ANY);
+    public static Optional<RoboportBlockEntity> getClosestTo(BlockPos pos, int chunkRange, Predicate<RoboportBlockEntity> predicate, ServerWorld serverWorld) {
+        Optional<BlockPos> closestRoboportPos = serverWorld.getPointOfInterestStorage()
+                .getInSquare(entry -> entry.matchesKey(AutomataPointOfInterestTypes.ROBOPORT), pos, ChunkUtils.CHUNK_SIZE * chunkRange,
+                        PointOfInterestStorage.OccupationStatus.ANY)
+                .map(PointOfInterest::getPos)
+                .filter(roboportPos -> serverWorld.getBlockEntity(roboportPos) instanceof RoboportBlockEntity roboport && predicate.test(roboport)).findFirst();
 
         return Optional.ofNullable(closestRoboportPos.isPresent() ? (RoboportBlockEntity)serverWorld.getBlockEntity(closestRoboportPos.get()) : null);
     }

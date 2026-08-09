@@ -5,6 +5,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pro.piconico.automata.bot.network.BotNetworkManager;
 import pro.piconico.automata.registry.AutomataBlocks;
 import pro.piconico.automata.registry.AutomataCommands;
 import pro.piconico.automata.registry.AutomataComponents;
@@ -34,6 +35,8 @@ public class Automata implements ModInitializer {
         AutomataNetworkManagers.initialize();
 		AutomataScreenHandlers.initialize();
         AutomataCommands.initialize();
+
+        BotNetworkManager.initialize();
 
 		LOGGER.info("Automata Initialized!");
 	}

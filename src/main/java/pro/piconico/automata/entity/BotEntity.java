@@ -103,7 +103,7 @@ public abstract class BotEntity extends BeeEntity {
 
     private boolean returnToPort(ServerWorld serverWorld) {
         if (roboport.isEmpty() || !InventoryUtils.canAdd(roboport.get(), getBotType().item())) {
-            roboport = RoboportBlockEntity.getClosestTo(getBlockPos(), port -> InventoryUtils.canAdd(port, getBotType().item()), serverWorld);
+            roboport = RoboportBlockEntity.getClosestTo(getBlockPos(), RoboportBlockEntity.CHUNK_RANGE + 1, port -> InventoryUtils.canAdd(port, getBotType().item()), serverWorld);
             if (roboport.isEmpty())
                 return false;
         }

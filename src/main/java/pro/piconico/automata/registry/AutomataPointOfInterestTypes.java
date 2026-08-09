@@ -23,6 +23,5 @@ public class AutomataPointOfInterestTypes {
     }
 
     public static void initialize() {
-        
     }
 }
