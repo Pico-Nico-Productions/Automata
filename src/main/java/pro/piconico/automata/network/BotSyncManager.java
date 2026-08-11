@@ -11,6 +11,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import pro.piconico.automata.bot.job.BotJobAssignment;
 import pro.piconico.automata.bot.job.BotJobUtils;
 import pro.piconico.automata.network.packet.BotSyncS2CPacket;
@@ -18,32 +19,34 @@ import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 import pro.piconico.automata.world.BotPersistentState;
 
 public class BotSyncManager {
-    // TODO: Add world
-    private record SyncState(Set<BotJobAssignment> jobs) {
+    private record SyncState(ServerWorld serverWorld, Set<BotJobAssignment> jobs) {
     }
 
     private static final Map<UUID, SyncState> subscribers = new HashMap<>();
 
+    public static boolean isSubscribed(ServerPlayerEntity serverPlayer) {
+        return subscribers.containsKey(serverPlayer.getUuid());
+    }
+
     private static SyncState getCurrentState(ServerPlayerEntity serverPlayer) {
         ChunkBounds renderBounds = ChunkBounds.of(serverPlayer.getChunkPos(), serverPlayer.getViewDistance(), serverPlayer.getEntityWorld());
+
         Set<BotJobAssignment> currentJobs = new HashSet<>(BotPersistentState.getJobsIn(renderBounds, serverPlayer.getEntityWorld()));
 
-        return new SyncState(currentJobs);
+        return new SyncState(serverPlayer.getEntityWorld(), currentJobs);
     }
 
     public static void subscribe(ServerPlayerEntity serverPlayer) {
         SyncState currentState = getCurrentState(serverPlayer);
         subscribers.put(serverPlayer.getUuid(), currentState);
 
-        ServerPlayNetworking.send(serverPlayer, new BotSyncS2CPacket(BotJobUtils.map(currentState.jobs), Map.of()));
+        ServerPlayNetworking.send(serverPlayer, new BotSyncS2CPacket(Map.of(), BotJobUtils.map(currentState.jobs)));
     }
 
     public static void unsubscribe(ServerPlayerEntity serverPlayer) {
-        subscribers.remove(serverPlayer.getUuid());
-    }
+        ServerPlayNetworking.send(serverPlayer, BotSyncS2CPacket.CLEAR);
 
-    public static boolean isSubscribed(ServerPlayerEntity serverPlayer) {
-        return subscribers.containsKey(serverPlayer.getUuid());
+        subscribers.remove(serverPlayer.getUuid());
     }
 
     private static void syncTo(ServerPlayerEntity serverPlayer) {
@@ -52,16 +55,25 @@ public class BotSyncManager {
 
         SyncState oldState = subscribers.get(serverPlayer.getUuid());
         SyncState currentState = getCurrentState(serverPlayer);
+        Set<BotJobAssignment> staleJobs;
+        Set<BotJobAssignment> newJobs;
 
-        Set<BotJobAssignment> newJobs = new HashSet<>(currentState.jobs());
-        newJobs.removeAll(oldState.jobs());
-
-        Set<BotJobAssignment> staleJobs = new HashSet<>(oldState.jobs());
-        staleJobs.removeAll(currentState.jobs()); 
+        boolean newWorld = currentState.serverWorld != oldState.serverWorld;
+        if (newWorld) {
+            staleJobs = Set.of();
+            newJobs = currentState.jobs;
+        }
+        else {
+            staleJobs = new HashSet<>(oldState.jobs);
+            staleJobs.removeAll(currentState.jobs);
+    
+            newJobs = new HashSet<>(currentState.jobs);
+            newJobs.removeAll(oldState.jobs);
+        }
 
         subscribers.put(serverPlayer.getUuid(), currentState);
 
-        ServerPlayNetworking.send(serverPlayer, new BotSyncS2CPacket(BotJobUtils.map(newJobs), BotJobUtils.map(staleJobs)));
+        ServerPlayNetworking.send(serverPlayer, new BotSyncS2CPacket(newWorld, BotJobUtils.map(staleJobs), BotJobUtils.map(newJobs)));
     }
 
     private static void syncToSubscribers(MinecraftServer server) {

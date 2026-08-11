@@ -4,7 +4,6 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
 import net.minecraft.client.render.entity.EntityRendererFactories;
-import pro.piconico.automata.client.event.handler.CommandToolEventHandler;
 import pro.piconico.automata.client.network.handler.BotSyncS2CHandler;
 import pro.piconico.automata.client.render.CommandToolRenderer;
 import pro.piconico.automata.client.render.entity.ConstructionBotRenderer;
@@ -17,8 +16,6 @@ public class AutomataClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
         ClientPlayNetworking.registerGlobalReceiver(BotSyncS2CPacket.ID, BotSyncS2CHandler::handle);
-
-        CommandToolEventHandler.initialize();
 
 		CommandToolRenderer.initialize();
         EntityRendererFactories.register(AutomataEntities.CONSTRUCTION_BOT, ConstructionBotRenderer::new);

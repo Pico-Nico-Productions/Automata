@@ -1,12 +1,9 @@
 package pro.piconico.automata.world;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -72,17 +69,17 @@ public class BotPersistentState extends PersistentState {
         return Optional.of(botState.jobAssignmentMap.get(pos).get(jobType));
     }
 
-    public static Collection<BotJobAssignment> getJobsAt(BlockPos pos, ServerWorld serverWorld) {
+    public static Set<BotJobAssignment> getJobsAt(BlockPos pos, ServerWorld serverWorld) {
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
 
         if (!botState.jobAssignmentMap.containsKey(pos))
-            return List.of();
+            return Set.of();
 
-        return botState.jobAssignmentMap.get(pos).values();
+        return new HashSet<>(botState.jobAssignmentMap.get(pos).values());
     }
 
-    public static Collection<BotJobAssignment> getJobsIn(ChunkBounds chunkBounds, ServerWorld serverWorld) {
-        Collection<BotJobAssignment> inRangeJobs = new ArrayList<>();
+    public static Set<BotJobAssignment> getJobsIn(ChunkBounds chunkBounds, ServerWorld serverWorld) {
+        Set<BotJobAssignment> inRangeJobs = new HashSet<>();
 
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
         for (Map.Entry<BlockPos, Map<BotJobType<?>, BotJobAssignment>> entry : botState.jobAssignmentMap.entrySet()) {
