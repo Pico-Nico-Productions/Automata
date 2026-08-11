@@ -27,7 +27,6 @@ import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.job.BotJobAssignment;
 import pro.piconico.automata.bot.job.BotJobType;
 import pro.piconico.automata.bot.job.BotJobUtils;
-import pro.piconico.automata.bot.network.BotNetwork;
 import pro.piconico.automata.bot.network.BotNetworkManager;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.registry.AutomataPersistentStates;
@@ -63,7 +62,7 @@ public class BotPersistentState extends PersistentState {
         this.jobAssignmentMap = jobAssignmentMap;
     }
 
-    //#region Jobs
+    //#region Job Querying
     public static Optional<BotJobAssignment> getJobAt(BlockPos pos, BotJobType<?> jobType, ServerWorld serverWorld) {
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
 
@@ -101,7 +100,9 @@ public class BotPersistentState extends PersistentState {
 
         return Collections.unmodifiableMap(botState.jobAssignmentMap);
     }
+    //#endregion
 
+    //#region Job Assignment
     private static void assignJobs(ServerWorld serverWorld) {
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
         boolean mutated = false;
@@ -111,12 +112,7 @@ public class BotPersistentState extends PersistentState {
                 if (jobAssignment.isAssigned())
                     continue;
 
-                Optional<BotNetwork> network = BotNetworkManager.getNetworkAt(jobAssignment.job.pos(), serverWorld);
-
-                if (network.isEmpty())
-                    continue;
-
-                Optional<BotEntity> botEntity = network.get().assignJob(jobAssignment.job);
+                Optional<BotEntity> botEntity = BotNetworkManager.assignJob(jobAssignment.job, serverWorld);
 
                 if (botEntity.isEmpty())
                     continue;
@@ -133,6 +129,23 @@ public class BotPersistentState extends PersistentState {
         botState.markDirty();
         JOBS_MUTATED.invoker().onMutate(serverWorld, Mutation.Modify);
     }
+
+    private static void unassignJob(BotJobAssignment jobAssignment, ServerWorld serverWorld) {
+        if (jobAssignment.getAssignedBot().isEmpty())
+            return;
+
+        UUID assignedBot = jobAssignment.getAssignedBot().get();
+        jobAssignment.setAssignedBot(Optional.empty());
+
+        Entity entity = serverWorld.getEntity(assignedBot);
+        if (!(entity instanceof BotEntity botEntity)) {
+            Automata.logError(BotJobAssignment.class.getSimpleName() + " assigned to an invalid " + UUID.class.getSimpleName(), IllegalStateException::new);
+            return;
+        }
+
+        botEntity.endJob(false);
+    }
+    //#endregion
 
     public static int addJobs(Iterable<BotJob> toAdd, ServerWorld serverWorld) {
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
@@ -161,22 +174,7 @@ public class BotPersistentState extends PersistentState {
         return addedPositions.size();
     }
 
-    private static void unassignJob(BotJobAssignment jobAssignment, ServerWorld serverWorld) {
-        if (jobAssignment.getAssignedBot().isEmpty())
-            return;
-
-        UUID assignedBot = jobAssignment.getAssignedBot().get();
-        jobAssignment.setAssignedBot(Optional.empty());
-
-        Entity entity = serverWorld.getEntity(assignedBot);
-        if (!(entity instanceof BotEntity botEntity)) {
-            Automata.logError(BotJobAssignment.class.getSimpleName() + " assigned to an invalid " + UUID.class.getSimpleName(), IllegalStateException::new);
-            return;
-        }
-
-        botEntity.endJob(false);
-    }
-
+    //#region Job Removal
     public static boolean removeJobAt(BlockPos pos, BotJobType<?> type, ServerWorld serverWorld) {
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
 
@@ -243,6 +241,25 @@ public class BotPersistentState extends PersistentState {
 
         return removeCount;
     }
+    //#endregion
+
+    private static void onRoboportPlaced(BlockPos pos, ServerWorld serverWorld) {
+        assignJobs(serverWorld);
+    }
+
+    private static void onNetworksMutated(ServerWorld serverWorld, BotNetworkManager.Mutation mutation) {
+        if (mutation == BotNetworkManager.Mutation.Remove)
+            return;
+
+        assignJobs(serverWorld);
+    }
+
+    private static void onBotAdded(RoboportBlockEntity roboport) {
+        if (!(roboport.getWorld() instanceof ServerWorld serverWorld))
+            return;
+
+        assignJobs(serverWorld);
+    }
 
     private static void onJobEnded(BotEntity botEntity, BotJob job, boolean completed) {
         if (!(botEntity.getEntityWorld() instanceof ServerWorld serverWorld))
@@ -270,22 +287,11 @@ public class BotPersistentState extends PersistentState {
 
         assignJobs(serverWorld);
     }
-    //#endregion
-
-    private static void onRoboportPlaced(BlockPos pos, ServerWorld serverWorld) {
-        assignJobs(serverWorld);
-    }
-
-    private static void onBotAdded(RoboportBlockEntity roboport) {
-        if (!(roboport.getWorld() instanceof ServerWorld serverWorld))
-            return;
-
-        assignJobs(serverWorld);
-    }
 
     public static void initialize() {
-        BotEntity.JOB_ENDED.register(BotPersistentState::onJobEnded);
         RoboportBlock.PLACED.register(BotPersistentState::onRoboportPlaced);
+        BotNetworkManager.NETWORKS_MUTATED.register(BotPersistentState::onNetworksMutated);
         RoboportBlockEntity.BOT_ADDED.register(BotPersistentState::onBotAdded);
+        BotEntity.JOB_ENDED.register(BotPersistentState::onJobEnded);
     }
 }

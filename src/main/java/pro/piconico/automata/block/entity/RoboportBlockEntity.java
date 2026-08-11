@@ -1,5 +1,6 @@
 package pro.piconico.automata.block.entity;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -73,7 +74,7 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
 
         Box searchBox = ChunkBounds.of(new ChunkPos(getPos()), CHUNK_RANGE, world).toBox();
         List<BotEntity> capableBots = world.getEntitiesByType(TypeFilter.instanceOf(BotEntity.class), searchBox,
-                botEntity -> !botEntity.isRemoved() && !botEntity.hasJob() && botEntity.canDoJob(job));
+                botEntity -> botEntity.isAlive() && !botEntity.hasJob() && botEntity.canDoJob(job));
         return capableBots.isEmpty() ? Optional.empty() : Optional.of(capableBots.getFirst());
     }
 
@@ -231,8 +232,12 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
                 .getInSquare(entry -> entry.matchesKey(AutomataPointOfInterestTypes.ROBOPORT), pos, ChunkUtils.CHUNK_SIZE * chunkRange,
                         PointOfInterestStorage.OccupationStatus.ANY)
                 .map(PointOfInterest::getPos)
-                .filter(roboportPos -> serverWorld.getBlockEntity(roboportPos) instanceof RoboportBlockEntity roboport && predicate.test(roboport)).findFirst();
+                .filter(roboportPos -> serverWorld.getBlockEntity(roboportPos) instanceof RoboportBlockEntity roboport && predicate.test(roboport))
+                .min(Comparator.comparingInt(roboport -> pos.getChebyshevDistance(roboport)));
 
-        return Optional.ofNullable(closestRoboportPos.isPresent() ? (RoboportBlockEntity)serverWorld.getBlockEntity(closestRoboportPos.get()) : null);
+        if (closestRoboportPos.isEmpty())
+            return Optional.empty();
+
+        return Optional.of((RoboportBlockEntity)serverWorld.getBlockEntity(closestRoboportPos.get()));
     }
 }

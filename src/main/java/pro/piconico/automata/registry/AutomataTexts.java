@@ -4,6 +4,8 @@ import pro.piconico.automata.Automata;
 
 public class AutomataTexts {
     public static final String DECONSTRUCTION_FAILED = toTranslationKey("deconstruction_failed");
+    /** Expected arguments: network count */
+    public static final String NETWORKS_REMOVED = toTranslationKey("networks_removed");
     /** Expected arguments: job count */
     public static final String JOBS_ADDED = toTranslationKey("jobs_added");
     /** Expected arguments: job count */

@@ -6,8 +6,9 @@
 
 1. Clone repo
 2. Open in VS Code
-3. Run **Data Generation** launch task (generated data is git ignored)
-4. Run **Minecraft Client** launch task
+3. If it doesn't generate [`/run/`](/run/), open a terminal in the project root and run `gradlew genSources genRuns`
+4. Run **Data Generation** launch task (generated data is git ignored)
+5. Run **Minecraft Client** launch task
 
 ### Code Conventions
 

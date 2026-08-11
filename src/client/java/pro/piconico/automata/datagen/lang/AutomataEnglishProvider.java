@@ -16,6 +16,7 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
     @Override
     public void generateTranslations(WrapperLookup registryLookup, TranslationBuilder translationBuilder) {
         translationBuilder.add(AutomataTexts.DECONSTRUCTION_FAILED, "Must have 2 selections to deconstruct");
+        translationBuilder.add(AutomataTexts.NETWORKS_REMOVED, "Removed %1$s network(s)");
         translationBuilder.add(AutomataTexts.JOBS_ADDED, "Added %1$s job(s)");
         translationBuilder.add(AutomataTexts.JOBS_REMOVED, "Removed %1$s job(s)");
         translationBuilder.add(AutomataTexts.SELECTED, "Selection %1$s: (%2$s)");
