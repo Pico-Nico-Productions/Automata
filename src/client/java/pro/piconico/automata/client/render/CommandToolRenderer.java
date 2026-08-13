@@ -6,15 +6,10 @@ import java.util.Optional;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.RenderLayers;
-import net.minecraft.client.render.VertexRendering;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.util.math.ChunkPos;
 import pro.piconico.automata.bot.job.BotJobAssignment;
 import pro.piconico.automata.bot.job.BotJobType;
 import pro.piconico.automata.client.network.BotCache;
@@ -22,21 +17,19 @@ import pro.piconico.automata.component.CommandToolComponent;
 import pro.piconico.automata.registry.AutomataBotJobs;
 import pro.piconico.automata.registry.AutomataComponents;
 import pro.piconico.automata.registry.AutomataItems;
+import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
 public class CommandToolRenderer {
-    private static final double EXPAND = 0.002;
-    private static final RenderLayer OUTLINE_LAYER = RenderLayers.SECONDARY_BLOCK_OUTLINE;
-    private static final float OUTLINE_WIDTH = 4.0f;
-    private static final int DECONSTRUCTION_BOX_COLOR = 0xFFFF0000; // Red
+    private static final int NETWORK_ARGB = 0x60FFFF00; // Yellow
+    private static final int DECONSTRUCTION_BOX_ARGB = 0xFFFF0000; // Red
     private static final int SELECTION_BOX_COLOR = 0xFF00FFFF; // Cyan
     private static final int SELECTION1_COLOR = 0xFF00FF00; // Green
     private static final int SELECTION2_COLOR = 0xFF0000FF; // Blue
 
-    private static void renderBoxOutline(WorldRenderContext context, Box box, int color) {
-        Vec3d cameraPos = context.gameRenderer().getCamera().getCameraPos();
-        VoxelShape boxShape = VoxelShapes.cuboid(box.expand(EXPAND));
-        VertexRendering.drawOutline(context.matrices(), context.consumers().getBuffer(OUTLINE_LAYER), boxShape, -cameraPos.x, -cameraPos.y, -cameraPos.z, color,
-                OUTLINE_WIDTH);
+    private static void renderNetworks(WorldRenderContext context) {
+        for (ChunkPos chunkPos : BotCache.networks.keySet()) {
+            RenderUtils.drawBox(context, ChunkBounds.of(chunkPos, 0, MinecraftClient.getInstance().world).toBox(), NETWORK_ARGB);
+        }
     }
 
     private static void renderDeconstructionJobs(WorldRenderContext context) {
@@ -44,7 +37,7 @@ public class CommandToolRenderer {
             if (!entry.getValue().containsKey(AutomataBotJobs.DECONSTRUCTION_JOB))
                 continue;
 
-            renderBoxOutline(context, new Box(entry.getKey()), DECONSTRUCTION_BOX_COLOR);
+            RenderUtils.drawBoxOutline(context, new Box(entry.getKey()), DECONSTRUCTION_BOX_ARGB);
         }
     }
 
@@ -65,12 +58,13 @@ public class CommandToolRenderer {
         if (selectionBox.isEmpty())
             return;
 
-        renderBoxOutline(context, selectionBox.get(), SELECTION_BOX_COLOR);
-        renderBoxOutline(context, new Box(commandToolComponent.selection1().get()), SELECTION1_COLOR);
-        renderBoxOutline(context, new Box(commandToolComponent.selection2().get()), SELECTION2_COLOR);
+        RenderUtils.drawBoxOutline(context, selectionBox.get(), SELECTION_BOX_COLOR);
+        RenderUtils.drawBoxOutline(context, new Box(commandToolComponent.selection1().get()), SELECTION1_COLOR);
+        RenderUtils.drawBoxOutline(context, new Box(commandToolComponent.selection2().get()), SELECTION2_COLOR);
     }
 
     public static void initialize() {
+        WorldRenderEvents.END_MAIN.register(CommandToolRenderer::renderNetworks);
         WorldRenderEvents.END_MAIN.register(CommandToolRenderer::renderDeconstructionJobs);
         WorldRenderEvents.END_MAIN.register(CommandToolRenderer::renderSelectionOutline);
     }

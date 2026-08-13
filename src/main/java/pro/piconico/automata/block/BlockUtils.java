@@ -1,17 +1,11 @@
 package pro.piconico.automata.block;
 
 import net.minecraft.block.BlockState;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class BlockUtils {
-    @FunctionalInterface
-    public interface BlockAction {
-        void onAction(BlockPos pos, ServerWorld world);
-    }
-
     public static boolean hasBreakableBlock(World world, BlockPos blockPos) {
         BlockState blockState = world.getBlockState(blockPos);
         if (blockState.isAir() || blockState.getHardness(world, blockPos) < 0f)

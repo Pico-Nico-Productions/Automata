@@ -18,7 +18,6 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.PersistentState;
 import pro.piconico.automata.Automata;
-import pro.piconico.automata.block.RoboportBlock;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.job.BotJobAssignment;
@@ -92,7 +91,7 @@ public class BotPersistentState extends PersistentState {
         return inRangeJobs;
     }
 
-    public static Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> getJobs(ServerWorld serverWorld) {
+    public static Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> getJobMap(ServerWorld serverWorld) {
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
 
         return Collections.unmodifiableMap(botState.jobAssignmentMap);
@@ -142,6 +141,8 @@ public class BotPersistentState extends PersistentState {
 
         botEntity.endJob(false);
     }
+
+    // TODO: Add job unassigning check on network update
     //#endregion
 
     public static int addJobs(Iterable<BotJob> toAdd, ServerWorld serverWorld) {
@@ -240,10 +241,6 @@ public class BotPersistentState extends PersistentState {
     }
     //#endregion
 
-    private static void onRoboportPlaced(BlockPos pos, ServerWorld serverWorld) {
-        assignJobs(serverWorld);
-    }
-
     private static void onNetworksMutated(ServerWorld serverWorld, BotNetworkManager.Mutation mutation) {
         if (mutation == BotNetworkManager.Mutation.Remove)
             return;
@@ -286,7 +283,6 @@ public class BotPersistentState extends PersistentState {
     }
 
     public static void initialize() {
-        RoboportBlock.PLACED.register(BotPersistentState::onRoboportPlaced);
         BotNetworkManager.NETWORKS_MUTATED.register(BotPersistentState::onNetworksMutated);
         RoboportBlockEntity.BOT_ADDED.register(BotPersistentState::onBotAdded);
         BotEntity.JOB_ENDED.register(BotPersistentState::onJobEnded);

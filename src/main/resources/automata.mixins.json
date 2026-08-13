@@ -3,7 +3,8 @@
 	"package": "pro.piconico.automata.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
-		"PlayerHoldingTrackerMixin"
+		"PlayerHoldingTrackerMixin",
+		"PointOfInterestEventMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

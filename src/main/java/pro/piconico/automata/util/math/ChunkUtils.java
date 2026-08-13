@@ -1,5 +1,6 @@
 package pro.piconico.automata.util.math;
 
+import java.util.stream.Stream;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
@@ -36,6 +37,10 @@ public class ChunkUtils {
 
         public static ChunkBounds of(ChunkPos center, int chunkRadius) {
             return of(center, chunkRadius, World.MIN_Y, World.MAX_Y);
+        }
+
+        public Stream<ChunkPos> toStream() {
+            return ChunkPos.stream(minChunkPos, maxChunkPos);
         }
 
         public Box toBox() {
