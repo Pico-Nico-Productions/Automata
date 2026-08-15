@@ -1,63 +1,49 @@
 package pro.piconico.automata.network;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import pro.piconico.automata.bot.job.BotJobAssignment;
+import pro.piconico.automata.bot.job.BotJobAssignmentMap;
 import pro.piconico.automata.bot.network.BotNetworkManager;
 import pro.piconico.automata.bot.network.BotNetworkManager.ServerBotNetwork;
+import pro.piconico.automata.bot.network.BotNetworkMap;
 import pro.piconico.automata.network.packet.BotSyncS2CPacket;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 import pro.piconico.automata.world.BotPersistentState;
 
 public class BotSyncManager {
-    private record SyncState(Set<ServerBotNetwork> networks, Set<BotJobAssignment> jobs, ServerWorld serverWorld) {
+    private record SyncState(BotNetworkMap<ServerBotNetwork> networkMap, BotJobAssignmentMap jobAssignmentMap, ServerWorld serverWorld) {
         private static SyncState getCurrent(ServerPlayerEntity serverPlayer) {
             ServerWorld serverWorld = serverPlayer.getEntityWorld();
             ChunkBounds renderBounds = ChunkBounds.of(serverPlayer.getChunkPos(), serverPlayer.getViewDistance(), serverWorld);
-            Set<ServerBotNetwork> currentNetworks = BotNetworkManager.getOrLoadNetworks(renderBounds, serverWorld);
-            Set<BotJobAssignment> currentJobs = BotPersistentState.getJobsIn(renderBounds, serverWorld);
+            BotNetworkMap<ServerBotNetwork> currentNetworkMap = new BotNetworkMap<>(BotNetworkManager.getOrLoadNetworks(renderBounds, serverWorld));
+            BotJobAssignmentMap currentJobMap = new BotJobAssignmentMap(BotPersistentState.getJobsIn(renderBounds, serverWorld));
 
-            return new SyncState(currentNetworks, currentJobs, serverWorld);
+            return new SyncState(currentNetworkMap, currentJobMap, serverWorld);
         }
 
         private BotSyncS2CPacket calculateDelta(SyncState newState) {
             boolean newWorld = newState.serverWorld != serverWorld;
-            Set<ServerBotNetwork> obsoleteNetworks, mutatedNetworks;
-            Set<BotJobAssignment> obsoleteJobAssignments, mutatedJobAssignments;
+            BotNetworkMap<ServerBotNetwork> deltaNetworkMap;
+            BotJobAssignmentMap deltaJobAssignmentMap;
 
             if (newWorld) {
-                obsoleteNetworks = Set.of();
-                mutatedNetworks = newState.networks;
-
-                obsoleteJobAssignments = Set.of();
-                mutatedJobAssignments = newState.jobs;
+                deltaNetworkMap = new BotNetworkMap<>(newState.networkMap);
+                deltaJobAssignmentMap = new BotJobAssignmentMap(newState.jobAssignmentMap);
             }
             else {
-                obsoleteNetworks = new HashSet<>(networks);
-                obsoleteNetworks.removeAll(newState.networks);
-                mutatedNetworks = newState.networks.stream().filter(net -> !networks.contains(net) || net.isDirty()).collect(Collectors.toSet());
-                for (ServerBotNetwork net : newState.networks) {
-                    net.markNotDirty();
-                }
-
-                obsoleteJobAssignments = new HashSet<>(jobs);
-                obsoleteJobAssignments.removeAll(newState.jobs);
-                mutatedJobAssignments = new HashSet<>(newState.jobs);
-                mutatedJobAssignments.removeAll(jobs);
+                deltaNetworkMap = BotNetworkMap.calculateDelta(networkMap, newState.networkMap);
+                deltaJobAssignmentMap = BotJobAssignmentMap.calculateDelta(jobAssignmentMap, newState.jobAssignmentMap);
             }
 
-            return new BotSyncS2CPacket(newWorld, obsoleteNetworks, mutatedNetworks, obsoleteJobAssignments, mutatedJobAssignments);
+            return new BotSyncS2CPacket(newWorld, deltaNetworkMap, deltaJobAssignmentMap);
         }
     }
 
@@ -71,7 +57,7 @@ public class BotSyncManager {
         SyncState currentState = SyncState.getCurrent(serverPlayer);
         subscribers.put(serverPlayer.getUuid(), currentState);
 
-        ServerPlayNetworking.send(serverPlayer, new BotSyncS2CPacket(Set.of(), currentState.networks, Set.of(), currentState.jobs));
+        ServerPlayNetworking.send(serverPlayer, new BotSyncS2CPacket(currentState.networkMap, currentState.jobAssignmentMap));
     }
 
     public static void unsubscribe(ServerPlayerEntity serverPlayer) {

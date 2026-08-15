@@ -27,13 +27,13 @@ public class CommandToolRenderer {
     private static final int SELECTION2_COLOR = 0xFF0000FF; // Blue
 
     private static void renderNetworks(WorldRenderContext context) {
-        for (ChunkPos chunkPos : BotCache.networks.keySet()) {
+        for (ChunkPos chunkPos : BotCache.networkMap.keySet()) {
             RenderUtils.drawBox(context, ChunkBounds.of(chunkPos, 0, MinecraftClient.getInstance().world).toBox(), NETWORK_ARGB);
         }
     }
 
     private static void renderDeconstructionJobs(WorldRenderContext context) {
-        for (Entry<BlockPos, Map<BotJobType<?>, BotJobAssignment>> entry : BotCache.jobAssignments.entrySet()) {
+        for (Entry<BlockPos, Map<BotJobType<?>, BotJobAssignment>> entry : BotCache.jobAssignmentMap.entrySet()) {
             if (!entry.getValue().containsKey(AutomataBotJobs.DECONSTRUCTION_JOB))
                 continue;
 

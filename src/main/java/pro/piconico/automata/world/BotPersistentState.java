@@ -1,6 +1,5 @@
 package pro.piconico.automata.world;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -21,17 +20,16 @@ import pro.piconico.automata.Automata;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.job.BotJobAssignment;
+import pro.piconico.automata.bot.job.BotJobAssignmentMap;
 import pro.piconico.automata.bot.job.BotJobType;
-import pro.piconico.automata.bot.job.BotJobUtils;
 import pro.piconico.automata.bot.network.BotNetworkManager;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.registry.AutomataPersistentStates;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
 public class BotPersistentState extends PersistentState {
-    public static final Codec<BotPersistentState> CODEC = RecordCodecBuilder
-            .create(instance -> instance.group(BotJobUtils.JOB_ASSIGNMENT_CODEC.fieldOf("job_assignments").forGetter(state -> state.jobAssignmentMap))
-                    .apply(instance, BotPersistentState::new));
+    public static final Codec<BotPersistentState> CODEC = RecordCodecBuilder.create(instance -> instance
+            .group(BotJobAssignmentMap.CODEC.fieldOf("job_assignments").forGetter(state -> state.jobAssignmentMap)).apply(instance, BotPersistentState::new));
 
     public enum Mutation {
         Add, Remove, Modify
@@ -48,13 +46,13 @@ public class BotPersistentState extends PersistentState {
         }
     });
 
-    private final Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> jobAssignmentMap;
+    private final BotJobAssignmentMap jobAssignmentMap;
 
     public BotPersistentState() {
-        jobAssignmentMap = new HashMap<>();
+        jobAssignmentMap = new BotJobAssignmentMap();
     }
 
-    public BotPersistentState(Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> jobAssignmentMap) {
+    public BotPersistentState(BotJobAssignmentMap jobAssignmentMap) {
         this.jobAssignmentMap = jobAssignmentMap;
     }
 
@@ -91,10 +89,10 @@ public class BotPersistentState extends PersistentState {
         return inRangeJobs;
     }
 
-    public static Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> getJobMap(ServerWorld serverWorld) {
+    public static BotJobAssignmentMap getJobMap(ServerWorld serverWorld) {
         BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
 
-        return Collections.unmodifiableMap(botState.jobAssignmentMap);
+        return botState.jobAssignmentMap;
     }
     //#endregion
 

@@ -21,7 +21,7 @@ public class AutomataBots {
 
     private static <T extends BotEntity> BotType register(String name, Item botItem, EntityType<? extends BotEntity> botEntityType, Set<BotJobType<?>> supportedJobTypes) {
         Identifier identifier = AutomataRegistry.id(name);
-        BotType botType = Registry.register(AutomataRegistries.BOT, identifier, new BotType(botItem, botEntityType, supportedJobTypes));
+        BotType botType = Registry.register(AutomataRegistries.BOT_TYPE, identifier, new BotType(botItem, botEntityType, supportedJobTypes));
         
         for (BotJobType<?> botJobType : supportedJobTypes) {
             capableBotTypes.computeIfAbsent(botJobType, (bjt) -> new HashSet<>()).add(botType);

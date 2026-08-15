@@ -6,48 +6,61 @@ import java.util.Map.Entry;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import pro.piconico.automata.bot.job.BotJobAssignment;
+import pro.piconico.automata.bot.job.BotJobAssignmentMap;
 import pro.piconico.automata.bot.job.BotJobType;
 import pro.piconico.automata.bot.network.BotNetwork;
+import pro.piconico.automata.bot.network.BotNetworkMap;
 
 public class BotCache {
-    public static final Map<ChunkPos, BotNetwork> networks = new HashMap<>();
-    public static final Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> jobAssignments = new HashMap<>();
+    public static final BotNetworkMap<BotNetwork> networkMap = new BotNetworkMap<>();
+    public static final BotJobAssignmentMap jobAssignmentMap = new BotJobAssignmentMap();
 
-    public static void addNetwork(Entry<ChunkPos, BotNetwork> entry) {
-        BotCache.networks.put(entry.getKey(), entry.getValue());
-    }
+    public static void applyDelta(BotNetworkMap<?> deltaMap) {
+        for (Entry<ChunkPos, ?> networkEntry : deltaMap.entrySet()) {
+            ChunkPos chunkPos = networkEntry.getKey();
+            Object network = networkEntry.getValue();
 
-    public static void removeNetwork(BotNetwork network) {
-        for (ChunkPos chunkPos : network.getChunks()) {
-            BotCache.networks.remove(chunkPos);
+            if (network == null) {
+                networkMap.remove(chunkPos);
+                continue;
+            }
+
+            networkMap.put(chunkPos, (BotNetwork)network);
         }
     }
 
-    public static void addJobAssignment(Entry<BlockPos, Map<BotJobType<?>, BotJobAssignment>> entry) {
-        BotCache.jobAssignments.computeIfAbsent(entry.getKey(), blockPos -> new HashMap<>()).putAll(entry.getValue());
-    }
+    public static void applyDelta(BotJobAssignmentMap deltaMap) {
+        for (Entry<BlockPos, Map<BotJobType<?>, BotJobAssignment>> jobAssignmentEntry : deltaMap.entrySet()) {
+            BlockPos blockPos = jobAssignmentEntry.getKey();
+            Map<BotJobType<?>, BotJobAssignment> typeMap = jobAssignmentEntry.getValue();
 
-    public static void removeJobAssignment(Entry<BlockPos, Map<BotJobType<?>, BotJobAssignment>> entry) {
-        if (!BotCache.jobAssignments.containsKey(entry.getKey()))
-            return;
-
-        Map<BotJobType<?>, BotJobAssignment> typeMap = BotCache.jobAssignments.get(entry.getKey());
-        for (BotJobType<?> type : entry.getValue().keySet()) {
-            if (!typeMap.containsKey(type))
+            if (typeMap == null) {
+                jobAssignmentMap.remove(blockPos);
                 continue;
-
-            if (typeMap.size() > 1) {
-                typeMap.remove(type);
             }
-            else {
-                BotCache.jobAssignments.remove(entry.getKey());
-                break;
+            
+            Map<BotJobType<?>, BotJobAssignment> cacheTypeMap = jobAssignmentMap.computeIfAbsent(blockPos, pos -> new HashMap<>());
+            
+            for (Entry<BotJobType<?>, BotJobAssignment> typeEntry : typeMap.entrySet()) {
+                BotJobType<?> type = typeEntry.getKey();
+                BotJobAssignment jobAssignment = typeEntry.getValue();
+
+                if (jobAssignment == null) {
+                    cacheTypeMap.remove(type);
+                    continue;
+                }
+
+                cacheTypeMap.put(type, jobAssignment);
+            }
+
+            if (cacheTypeMap.isEmpty()) {
+                jobAssignmentMap.remove(blockPos);
             }
         }
     }
 
     public static void clear() {
-        networks.clear();
-        jobAssignments.clear();
+        networkMap.clear();
+        jobAssignmentMap.clear();
     }
 }

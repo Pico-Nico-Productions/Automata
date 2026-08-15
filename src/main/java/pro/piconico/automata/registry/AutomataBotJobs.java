@@ -15,7 +15,7 @@ public class AutomataBotJobs {
 
     private static <T extends BotJob> BotJobType<T> register(String name, MapCodec<T> codec) {
         Identifier identifier = AutomataRegistry.id(name);
-        BotJobType<T> botJobType = Registry.register(AutomataRegistries.BOT_JOB, identifier, new BotJobType<>(codec));
+        BotJobType<T> botJobType = Registry.register(AutomataRegistries.BOT_JOB_TYPE, identifier, new BotJobType<>(codec));
         ALL.add(botJobType);
 
         return botJobType;
