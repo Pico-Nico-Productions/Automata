@@ -39,8 +39,8 @@ public class BotSyncManager {
                 deltaJobAssignmentMap = new BotJobAssignmentMap(newState.jobAssignmentMap);
             }
             else {
-                deltaNetworkMap = BotNetworkMap.calculateDelta(networkMap, newState.networkMap);
-                deltaJobAssignmentMap = BotJobAssignmentMap.calculateDelta(jobAssignmentMap, newState.jobAssignmentMap);
+                deltaNetworkMap = networkMap.calculateDelta(newState.networkMap);
+                deltaJobAssignmentMap = jobAssignmentMap.calculateDelta(newState.jobAssignmentMap);
             }
 
             return new BotSyncS2CPacket(newWorld, deltaNetworkMap, deltaJobAssignmentMap);
@@ -61,9 +61,9 @@ public class BotSyncManager {
     }
 
     public static void unsubscribe(ServerPlayerEntity serverPlayer) {
-        ServerPlayNetworking.send(serverPlayer, BotSyncS2CPacket.CLEAR);
-
         subscribers.remove(serverPlayer.getUuid());
+        
+        ServerPlayNetworking.send(serverPlayer, BotSyncS2CPacket.CLEAR);
     }
 
     private static void syncTo(ServerPlayerEntity serverPlayer) {
@@ -93,9 +93,9 @@ public class BotSyncManager {
 
             syncTo(serverPlayer);
         }
-    }
 
-    // TODO: Sync on player movement
+        BotNetworkManager.markAllNotDirty();
+    }
 
     public static void initialize() {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> unsubscribe(handler.getPlayer()));

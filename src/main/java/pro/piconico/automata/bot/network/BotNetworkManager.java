@@ -28,7 +28,7 @@ import pro.piconico.automata.event.PointOfInterestCallback;
 import pro.piconico.automata.registry.AutomataPointOfInterestTypes;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
-// TODO: Add unloaded network clearing
+// TODO: Hook into ServerChunkEvents to load/unload networks
 public class BotNetworkManager {
     private static Map<ServerWorld, Map<ChunkPos, ServerBotNetwork>> networkMapCache = new HashMap<>();
 
@@ -87,7 +87,7 @@ public class BotNetworkManager {
             dirty = true;
         }
 
-        public void markNotDirty() {
+        private void markNotDirty() {
             dirty = false;
         }
 
@@ -287,6 +287,14 @@ public class BotNetworkManager {
             return Optional.empty();
 
         return network.get().assignJob(job);
+    }
+
+    public static void markAllNotDirty() {
+        for (Map<ChunkPos, ServerBotNetwork> networkMap : networkMapCache.values()) {
+            for (ServerBotNetwork serverNetwork : networkMap.values()) {
+                serverNetwork.markNotDirty();
+            }
+        }
     }
 
     public static int clearCache(ServerWorld serverWorld) {

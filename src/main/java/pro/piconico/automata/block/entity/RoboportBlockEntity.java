@@ -233,7 +233,7 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
                         PointOfInterestStorage.OccupationStatus.ANY)
                 .map(PointOfInterest::getPos)
                 .filter(roboportPos -> serverWorld.getBlockEntity(roboportPos) instanceof RoboportBlockEntity roboport && predicate.test(roboport))
-                .min(Comparator.comparingInt(roboport -> pos.getChebyshevDistance(roboport)));
+                .min(Comparator.comparingDouble(roboport -> pos.getSquaredDistance(roboport)));
 
         if (closestRoboportPos.isEmpty())
             return Optional.empty();

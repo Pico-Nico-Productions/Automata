@@ -48,10 +48,10 @@ public class BotJobAssignmentMap extends HashMap<BlockPos, Map<BotJobType<?>, Bo
         }
     }
 
-    public static BotJobAssignmentMap calculateDelta(BotJobAssignmentMap oldMap, BotJobAssignmentMap newMap) {
+    public BotJobAssignmentMap calculateDelta(BotJobAssignmentMap newMap) {
         BotJobAssignmentMap deltaMap = new BotJobAssignmentMap(newMap);
 
-        for (Entry<BlockPos, Map<BotJobType<?>, BotJobAssignment>> jobAssignmentEntry : oldMap.entrySet()) {
+        for (Entry<BlockPos, Map<BotJobType<?>, BotJobAssignment>> jobAssignmentEntry : entrySet()) {
             BlockPos blockPos = jobAssignmentEntry.getKey();
 
             if (!newMap.containsKey(blockPos)) {

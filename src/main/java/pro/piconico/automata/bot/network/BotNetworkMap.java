@@ -12,7 +12,8 @@ import pro.piconico.automata.bot.network.BotNetworkManager.ServerBotNetwork;
 
 public class BotNetworkMap<T extends BotNetwork> extends HashMap<ChunkPos, T> {
     public static final PacketCodec<ByteBuf, BotNetworkMap<?>> PACKET_CODEC = PacketCodec.tuple(
-            PacketCodecs.map(HashMap::new, ChunkPos.PACKET_CODEC, PacketCodecs.optional(BotNetwork.PACKET_CODEC)), BotNetworkMap::toOptionalMap, BotNetworkMap::new);
+            PacketCodecs.map(HashMap::new, ChunkPos.PACKET_CODEC, PacketCodecs.optional(BotNetwork.PACKET_CODEC)), BotNetworkMap::toOptionalMap,
+            BotNetworkMap::new);
 
     public BotNetworkMap() {
         super();
@@ -38,10 +39,10 @@ public class BotNetworkMap<T extends BotNetwork> extends HashMap<ChunkPos, T> {
         }
     }
 
-    public static <T extends BotNetwork> BotNetworkMap<T> calculateDelta(BotNetworkMap<T> oldMap, BotNetworkMap<T> newMap) {
+    public BotNetworkMap<T> calculateDelta(BotNetworkMap<T> newMap) {
         BotNetworkMap<T> deltaMap = new BotNetworkMap<>(newMap);
 
-        for (Entry<ChunkPos, T> networkEntry : oldMap.entrySet()) {
+        for (Entry<ChunkPos, T> networkEntry : entrySet()) {
             ChunkPos chunkPos = networkEntry.getKey();
 
             if (!newMap.containsKey(chunkPos)) {
@@ -51,16 +52,8 @@ public class BotNetworkMap<T extends BotNetwork> extends HashMap<ChunkPos, T> {
 
             T oldNetwork = networkEntry.getValue(), newNetwork = newMap.get(chunkPos);
 
-            if (oldNetwork.equals(newNetwork)) {
+            if (oldNetwork.equals(newNetwork) || newNetwork instanceof ServerBotNetwork serverNetwork && !serverNetwork.isDirty()) {
                 deltaMap.remove(chunkPos);
-            }
-            else if (newNetwork instanceof ServerBotNetwork serverNetwork) {
-                if (serverNetwork.isDirty()) {
-                    serverNetwork.markNotDirty();
-                }
-                else {
-                    deltaMap.remove(chunkPos);
-                }
             }
         }
 
