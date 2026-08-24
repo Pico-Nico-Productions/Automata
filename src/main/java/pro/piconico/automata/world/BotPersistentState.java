@@ -15,6 +15,7 @@ import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.entity.Entity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.PersistentState;
 import pro.piconico.automata.Automata;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
@@ -140,7 +141,30 @@ public class BotPersistentState extends PersistentState {
         botEntity.endJob(false);
     }
 
-    // TODO: Add job unassigning check on network update
+    private static void unassignJobs(ServerWorld serverWorld) {
+        BotPersistentState botState = serverWorld.getPersistentStateManager().getOrCreate(AutomataPersistentStates.BOT_PERSISTENT_STATE);
+        boolean mutated = false;
+
+        for (Map<BotJobType<?>, BotJobAssignment> typeMap : botState.jobAssignmentMap.values()) {
+            for (BotJobAssignment jobAssignment : typeMap.values()) {
+                if (!jobAssignment.isAssigned())
+                    continue;
+
+                if (BotNetworkManager.getNetwork(new ChunkPos(jobAssignment.job.pos()), serverWorld).isPresent())
+                    continue;
+
+                unassignJob(jobAssignment, serverWorld);
+
+                mutated = true;
+            }
+        }
+
+        if (!mutated)
+            return;
+
+        botState.markDirty();
+        JOBS_MUTATED.invoker().onMutate(serverWorld, Mutation.Modify);
+    }
     //#endregion
 
     public static int addJobs(Iterable<BotJob> toAdd, ServerWorld serverWorld) {
@@ -240,10 +264,14 @@ public class BotPersistentState extends PersistentState {
     //#endregion
 
     private static void onNetworksMutated(ServerWorld serverWorld, BotNetworkManager.Mutation mutation) {
-        if (mutation == BotNetworkManager.Mutation.Remove)
-            return;
-
-        assignJobs(serverWorld);
+        switch (mutation) {
+        case BotNetworkManager.Mutation.Add:
+            assignJobs(serverWorld);
+            break;
+        case BotNetworkManager.Mutation.Remove:
+            unassignJobs(serverWorld);
+            break;
+        }
     }
 
     private static void onBotAdded(RoboportBlockEntity roboport) {

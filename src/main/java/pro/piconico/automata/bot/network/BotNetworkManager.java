@@ -35,7 +35,7 @@ public class BotNetworkManager {
     private static final Map<ServerWorld, BotNetworkMap<ServerBotNetwork>> NETWORK_MAP_CACHE = new HashMap<>();
 
     public enum Mutation {
-        Add, Remove, Modify
+        Add, Remove
     }
 
     @FunctionalInterface
@@ -184,7 +184,7 @@ public class BotNetworkManager {
     }
 
     //#region Network Fetching
-    private static Optional<ServerBotNetwork> getNetwork(ChunkPos chunkPos, ServerWorld serverWorld) {
+    public static Optional<ServerBotNetwork> getNetwork(ChunkPos chunkPos, ServerWorld serverWorld) {
         if (!NETWORK_MAP_CACHE.containsKey(serverWorld))
             return Optional.empty();
 
