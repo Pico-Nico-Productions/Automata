@@ -10,13 +10,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.poi.PointOfInterest;
 import net.minecraft.world.poi.PointOfInterestStorage;
 import net.minecraft.world.poi.PointOfInterestType;
@@ -28,9 +31,23 @@ import pro.piconico.automata.event.PointOfInterestCallback;
 import pro.piconico.automata.registry.AutomataPointOfInterestTypes;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
-// TODO: Hook into ServerChunkEvents to load/unload networks
 public class BotNetworkManager {
-    private static Map<ServerWorld, Map<ChunkPos, ServerBotNetwork>> networkMapCache = new HashMap<>();
+    private static final Map<ServerWorld, BotNetworkMap<ServerBotNetwork>> NETWORK_MAP_CACHE = new HashMap<>();
+
+    public enum Mutation {
+        Add, Remove, Modify
+    }
+
+    @FunctionalInterface
+    public interface Mutate {
+        void onMutate(ServerWorld serverWorld, Mutation mutation);
+    }
+
+    public static final Event<Mutate> NETWORKS_MUTATED = EventFactory.createArrayBacked(Mutate.class, callbacks -> (serverWorld, mutation) -> {
+        for (Mutate callback : callbacks) {
+            callback.onMutate(serverWorld, mutation);
+        }
+    });
 
     public static class ServerBotNetwork extends BotNetwork {
         private final ServerWorld serverWorld;
@@ -38,11 +55,6 @@ public class BotNetworkManager {
 
         private ServerBotNetwork(Collection<BlockPos> roboports, ServerWorld serverWorld) {
             super(roboports);
-            this.serverWorld = serverWorld;
-        }
-
-        private ServerBotNetwork(BotNetwork network, ServerWorld serverWorld) {
-            super(network.roboportMap);
             this.serverWorld = serverWorld;
         }
 
@@ -72,8 +84,12 @@ public class BotNetworkManager {
                     });
                 }
 
+                ServerBotNetwork serverNetwork = new ServerBotNetwork(subnetworkRoboports, serverWorld);
+                if (equals(serverNetwork))
+                    return Set.of(this);
+
+                subnetworks.add(serverNetwork);
                 subneted.addAll(subnetworkRoboports.stream().map(roboportPos -> new ChunkPos(roboportPos)).toList());
-                subnetworks.add(new ServerBotNetwork(subnetworkRoboports, serverWorld));
             }
 
             return subnetworks;
@@ -167,26 +183,12 @@ public class BotNetworkManager {
         }
     }
 
-    public enum Mutation {
-        Add, Remove, Modify
-    }
-
-    @FunctionalInterface
-    public interface Mutate {
-        void onMutate(ServerWorld serverWorld, Mutation mutation);
-    }
-
-    public static final Event<Mutate> NETWORKS_MUTATED = EventFactory.createArrayBacked(Mutate.class, callbacks -> (serverWorld, mutation) -> {
-        for (Mutate callback : callbacks) {
-            callback.onMutate(serverWorld, mutation);
-        }
-    });
-
+    //#region Network Fetching
     private static Optional<ServerBotNetwork> getNetwork(ChunkPos chunkPos, ServerWorld serverWorld) {
-        if (!networkMapCache.containsKey(serverWorld))
+        if (!NETWORK_MAP_CACHE.containsKey(serverWorld))
             return Optional.empty();
 
-        Map<ChunkPos, ServerBotNetwork> worldNetworkMap = networkMapCache.get(serverWorld);
+        BotNetworkMap<ServerBotNetwork> worldNetworkMap = NETWORK_MAP_CACHE.get(serverWorld);
 
         if (!worldNetworkMap.containsKey(chunkPos))
             return Optional.empty();
@@ -194,30 +196,10 @@ public class BotNetworkManager {
         return Optional.of(worldNetworkMap.get(chunkPos));
     }
 
-    private static Set<ServerBotNetwork> getNeighborNetworks(ChunkPos chunkPos, ServerWorld serverWorld) {
-        if (!networkMapCache.containsKey(serverWorld))
-            return Set.of();
-
-        Set<ServerBotNetwork> networks = new HashSet<>();
-
-        ChunkPos.stream(chunkPos, 1).forEach(chunk -> {
-            if (chunk.equals(chunkPos))
-                return;
-
-            Optional<ServerBotNetwork> network = getNetwork(chunk, serverWorld);
-            if (network.isEmpty())
-                return;
-
-            networks.add(network.get());
-        });
-
-        return networks;
-    }
-
-    private static boolean putNetwork(ServerBotNetwork network, ServerWorld serverWorld) {
-        Map<ChunkPos, ServerBotNetwork> worldNetworkMap = networkMapCache.computeIfAbsent(serverWorld, s -> new HashMap<>());
-        for (ChunkPos chunkPos : network.roboportMap.keySet()) {
-            worldNetworkMap.put(chunkPos, network);
+    private static boolean putNetwork(ServerBotNetwork serverNetwork) {
+        BotNetworkMap<ServerBotNetwork> worldNetworkMap = NETWORK_MAP_CACHE.computeIfAbsent(serverNetwork.serverWorld, s -> new BotNetworkMap<>());
+        for (ChunkPos chunkPos : serverNetwork.roboportMap.keySet()) {
+            worldNetworkMap.put(chunkPos, serverNetwork);
         }
 
         return true;
@@ -247,65 +229,101 @@ public class BotNetworkManager {
         if (roboports.isEmpty())
             return Optional.empty();
 
-        ServerBotNetwork network = new ServerBotNetwork(roboports, serverWorld);
-        putNetwork(network, serverWorld);
-        return Optional.of(network);
+        ServerBotNetwork serverNetwork = new ServerBotNetwork(roboports, serverWorld);
+        putNetwork(serverNetwork);
+        return Optional.of(serverNetwork);
     }
 
     private static Optional<ServerBotNetwork> getOrLoadNetwork(ChunkPos chunkPos, ServerWorld serverWorld) {
-        Optional<ServerBotNetwork> network = getNetwork(chunkPos, serverWorld);
-        if (network.isPresent())
-            return network;
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(chunkPos, serverWorld);
+        if (serverNetwork.isPresent())
+            return serverNetwork;
 
         return loadNetwork(chunkPos, serverWorld);
     }
 
-    public static Set<ServerBotNetwork> getOrLoadNetworks(ChunkBounds chunkBounds, ServerWorld serverWorld) {
+    private static Set<ServerBotNetwork> fetchNetworks(Iterable<ChunkPos> chunks, BiFunction<ChunkPos, ServerWorld, Optional<ServerBotNetwork>> fetchNetwork,
+            ServerWorld serverWorld) {
+        if (!NETWORK_MAP_CACHE.containsKey(serverWorld))
+            return Set.of();
+
         Set<ServerBotNetwork> networks = new HashSet<>();
 
         Set<ChunkPos> networkChunks = new HashSet<>();
-        for (ChunkPos chunkPos : chunkBounds.toStream().toList()) {
+        for (ChunkPos chunkPos : chunks) {
             if (networkChunks.contains(chunkPos))
                 continue;
 
-            Optional<ServerBotNetwork> network = getOrLoadNetwork(chunkPos, serverWorld);
-            if (network.isEmpty())
+            Optional<ServerBotNetwork> serverNetwork = fetchNetwork.apply(chunkPos, serverWorld);
+            if (serverNetwork.isEmpty())
                 continue;
 
-            networks.add(network.get());
-            networkChunks.addAll(network.get().roboportMap.keySet());
+            networks.add(serverNetwork.get());
+            networkChunks.addAll(serverNetwork.get().roboportMap.keySet());
         }
 
         return networks;
     }
 
-    public static Optional<BotEntity> assignJob(BotJob job, ServerWorld serverWorld) {
-        ChunkPos chunkPos = new ChunkPos(job.pos());
-
-        Optional<ServerBotNetwork> network = getOrLoadNetwork(chunkPos, serverWorld);
-        if (network.isEmpty())
-            return Optional.empty();
-
-        return network.get().assignJob(job);
+    public static Set<ServerBotNetwork> getNetworks(ChunkBounds chunkBounds, ServerWorld serverWorld) {
+        return fetchNetworks(chunkBounds.toStream().toList(), BotNetworkManager::getNetwork, serverWorld);
     }
+    //#endregion
 
+    //#region Operations
     public static void markAllNotDirty() {
-        for (Map<ChunkPos, ServerBotNetwork> networkMap : networkMapCache.values()) {
+        for (BotNetworkMap<ServerBotNetwork> networkMap : NETWORK_MAP_CACHE.values()) {
             for (ServerBotNetwork serverNetwork : networkMap.values()) {
                 serverNetwork.markNotDirty();
             }
         }
     }
 
-    public static int clearCache(ServerWorld serverWorld) {
-        if (!networkMapCache.containsKey(serverWorld))
-            return 0;
+    public static Optional<BotEntity> assignJob(BotJob job, ServerWorld serverWorld) {
+        ChunkPos chunkPos = new ChunkPos(job.pos());
 
-        int clearCount = (int)networkMapCache.get(serverWorld).values().stream().distinct().count();
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(chunkPos, serverWorld);
+        if (serverNetwork.isEmpty())
+            return Optional.empty();
 
-        networkMapCache.remove(serverWorld);
+        return serverNetwork.get().assignJob(job);
+    }
+    //#endregion
 
-        return clearCount;
+    //#region Mutations
+    private static void onChunkLoaded(ServerWorld serverWorld, WorldChunk chunk) {
+        ChunkPos chunkPos = chunk.getPos();
+
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(chunkPos, serverWorld);
+        if (serverNetwork.isPresent())
+            return;
+
+        serverNetwork = loadNetwork(chunkPos, serverWorld);
+        if (serverNetwork.isEmpty())
+            return;
+
+        NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.Add);
+    }
+
+    private static void onChunkUnloaded(ServerWorld serverWorld, WorldChunk chunk) {
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(chunk.getPos(), serverWorld);
+        if (serverNetwork.isEmpty())
+            return;
+
+        Set<ChunkPos> chunks = serverNetwork.get().getChunks();
+
+        if (chunks.stream().anyMatch(chunkPos -> serverWorld.isChunkLoaded(chunkPos.x, chunkPos.z)))
+            return;
+
+        BotNetworkMap<ServerBotNetwork> worldNetworkMap = NETWORK_MAP_CACHE.get(serverWorld);
+        for (ChunkPos chunkPos : chunks) {
+            worldNetworkMap.remove(chunkPos);
+        }
+        if (worldNetworkMap.isEmpty()) {
+            NETWORK_MAP_CACHE.remove(serverWorld);
+        }
+        
+        NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.Remove);
     }
 
     private static void onPointOfInterestAdded(BlockPos pos, RegistryEntry<PointOfInterestType> type, ServerWorld serverWorld) {
@@ -314,30 +332,26 @@ public class BotNetworkManager {
 
         ChunkPos chunkPos = new ChunkPos(pos);
 
-        Optional<ServerBotNetwork> network = getNetwork(chunkPos, serverWorld);
-        if (network.isPresent()) {
-            network.get().add(pos);
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(chunkPos, serverWorld);
+        if (serverNetwork.isPresent()) {
+            serverNetwork.get().add(pos);
             NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.Add);
             return;
         }
 
-        Set<ServerBotNetwork> neighborNetworks = getNeighborNetworks(chunkPos, serverWorld);
+        List<ChunkPos> neighborChunks = ChunkPos.stream(chunkPos, 1).filter(chunk -> !chunk.equals(chunkPos)).toList();
+        Set<ServerBotNetwork> neighborNetworks = fetchNetworks(neighborChunks, BotNetworkManager::getNetwork, serverWorld);
+
+        if (neighborNetworks.isEmpty() && !serverWorld.isChunkLoaded(chunkPos.x, chunkPos.z))
+            return;
+
+        neighborNetworks.addAll(fetchNetworks(neighborChunks, BotNetworkManager::getOrLoadNetwork, serverWorld));
 
         if (neighborNetworks.isEmpty()) {
+            putNetwork(new ServerBotNetwork(List.of(pos), serverWorld));
             NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.Add);
             return;
         }
-
-        ChunkPos.stream(chunkPos, 1).forEach(chunk -> {
-            if (chunkPos.equals(chunk) || neighborNetworks.stream().anyMatch(net -> net.roboportMap.containsKey(chunk)))
-                return;
-
-            Optional<ServerBotNetwork> net = loadNetwork(chunk, serverWorld);
-            if (net.isEmpty())
-                return;
-
-            neighborNetworks.add(net.get());
-        });
 
         ServerBotNetwork biggestNeighbor = neighborNetworks.stream().max(Comparator.comparingInt(net -> (int)net.getRoboports().count())).get();
         biggestNeighbor.add(pos);
@@ -345,7 +359,7 @@ public class BotNetworkManager {
         for (ServerBotNetwork neighborNetwork : neighborNetworks) {
             biggestNeighbor.addAll(neighborNetwork.getRoboports().toList());
         }
-        putNetwork(biggestNeighbor, serverWorld);
+        putNetwork(biggestNeighbor);
         NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.Add);
     }
 
@@ -353,29 +367,34 @@ public class BotNetworkManager {
         if (type.getKey().get() != AutomataPointOfInterestTypes.ROBOPORT)
             return;
 
-        Optional<ServerBotNetwork> network = getNetwork(new ChunkPos(pos), serverWorld);
-        if (network.isEmpty()) {
-            NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.Remove);
-            return;
-        }
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(new ChunkPos(pos), serverWorld);
 
-        ServerBotNetwork.RemovedObjects removedObjects = network.get().remove(pos);
-        if (removedObjects == ServerBotNetwork.RemovedObjects.NONE) {
-            NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.Remove);
+        if (serverNetwork.isEmpty())
             return;
-        }
 
+        ServerBotNetwork.RemovedObjects removedObjects = serverNetwork.get().remove(pos);
+
+        if (removedObjects == ServerBotNetwork.RemovedObjects.NONE)
+            return;
+
+        BotNetworkMap<ServerBotNetwork> worldNetworkMap = NETWORK_MAP_CACHE.get(serverWorld);
         if (removedObjects.chunk.isPresent()) {
-            networkMapCache.get(serverWorld).remove(removedObjects.chunk.get());
+            worldNetworkMap.remove(removedObjects.chunk.get());
         }
         for (ServerBotNetwork subnetwork : removedObjects.subnetworks) {
-            putNetwork(subnetwork, serverWorld);
+            putNetwork(subnetwork);
+        }
+        if (worldNetworkMap.isEmpty()) {
+            NETWORK_MAP_CACHE.remove(serverWorld);
         }
 
         NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.Remove);
     }
+    //#region Network Updating
 
     public static void initialize() {
+        ServerChunkEvents.CHUNK_LOAD.register(BotNetworkManager::onChunkLoaded);
+        ServerChunkEvents.CHUNK_UNLOAD.register(BotNetworkManager::onChunkUnloaded);
         PointOfInterestCallback.ADDED.register(BotNetworkManager::onPointOfInterestAdded);
         PointOfInterestCallback.REMOVED.register(BotNetworkManager::onPointOfInterestRemoved);
     }

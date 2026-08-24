@@ -15,7 +15,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 
 public class BotNetwork {
-    public static final PacketCodec<ByteBuf, BotNetwork> PACKET_CODEC = PacketCodec.tuple(PacketCodecs.collection(ArrayList::new, BlockPos.PACKET_CODEC), net -> flatten(net.roboportMap), BotNetwork::new);
+    public static final PacketCodec<ByteBuf, BotNetwork> PACKET_CODEC = PacketCodec.tuple(PacketCodecs.collection(ArrayList::new, BlockPos.PACKET_CODEC), BotNetwork::flatten, BotNetwork::new);
 
     protected final Map<ChunkPos, Set<BlockPos>> roboportMap;
 
@@ -23,8 +23,15 @@ public class BotNetwork {
         roboportMap = map(roboports);
     }
 
-    protected BotNetwork(Map<ChunkPos, Set<BlockPos>> roboportMap) {
-        this.roboportMap = roboportMap;
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+
+        if (!(obj instanceof BotNetwork net)) return false;
+
+        Set<BlockPos> roboports = roboportMap.values().stream().flatMap(s -> s.stream()).collect(Collectors.toSet());
+        Set<BlockPos> otherRoboports = net.roboportMap.values().stream().flatMap(s -> s.stream()).collect(Collectors.toSet());
+        return roboports.equals(otherRoboports);
     }
 
     public Set<ChunkPos> getChunks() {
@@ -35,7 +42,7 @@ public class BotNetwork {
         return roboportMap.values().stream().flatMap(roboportsInChunk -> roboportsInChunk.stream());
     }
 
-    private static List<BlockPos> flatten(Map<ChunkPos, Set<BlockPos>> roboportMap) {
+    private List<BlockPos> flatten() {
         return roboportMap.values().stream().flatMap(set -> set.stream()).toList();
     }
 

@@ -23,7 +23,7 @@ public class BotSyncManager {
         private static SyncState getCurrent(ServerPlayerEntity serverPlayer) {
             ServerWorld serverWorld = serverPlayer.getEntityWorld();
             ChunkBounds renderBounds = ChunkBounds.of(serverPlayer.getChunkPos(), serverPlayer.getViewDistance(), serverWorld);
-            BotNetworkMap<ServerBotNetwork> currentNetworkMap = new BotNetworkMap<>(BotNetworkManager.getOrLoadNetworks(renderBounds, serverWorld));
+            BotNetworkMap<ServerBotNetwork> currentNetworkMap = new BotNetworkMap<>(BotNetworkManager.getNetworks(renderBounds, serverWorld));
             BotJobAssignmentMap currentJobMap = new BotJobAssignmentMap(BotPersistentState.getJobsIn(renderBounds, serverWorld));
 
             return new SyncState(currentNetworkMap, currentJobMap, serverWorld);
