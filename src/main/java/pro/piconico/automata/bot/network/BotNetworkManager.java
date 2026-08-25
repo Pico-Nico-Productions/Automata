@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -271,11 +272,12 @@ public class BotNetworkManager {
     //#endregion
 
     //#region Operations
-    public static void markAllNotDirty() {
-        for (BotNetworkMap<ServerBotNetwork> networkMap : NETWORK_MAP_CACHE.values()) {
-            for (ServerBotNetwork serverNetwork : networkMap.values()) {
-                serverNetwork.markNotDirty();
-            }
+    public static void markAllNotDirty(ServerWorld serverWorld) {
+        if (!NETWORK_MAP_CACHE.containsKey(serverWorld))
+            return;
+
+        for (ServerBotNetwork serverNetwork : NETWORK_MAP_CACHE.get(serverWorld).values()) {
+            serverNetwork.markNotDirty();
         }
     }
 
@@ -322,7 +324,7 @@ public class BotNetworkManager {
         if (worldNetworkMap.isEmpty()) {
             NETWORK_MAP_CACHE.remove(serverWorld);
         }
-        
+
         NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.Remove);
     }
 
@@ -397,5 +399,8 @@ public class BotNetworkManager {
         ServerChunkEvents.CHUNK_UNLOAD.register(BotNetworkManager::onChunkUnloaded);
         PointOfInterestCallback.ADDED.register(BotNetworkManager::onPointOfInterestAdded);
         PointOfInterestCallback.REMOVED.register(BotNetworkManager::onPointOfInterestRemoved);
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            NETWORK_MAP_CACHE.clear();
+        });
     }
 }

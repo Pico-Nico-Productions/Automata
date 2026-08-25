@@ -7,7 +7,6 @@ import java.util.UUID;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import pro.piconico.automata.bot.job.BotJobAssignmentMap;
@@ -62,7 +61,7 @@ public class BotSyncManager {
 
     public static void unsubscribe(ServerPlayerEntity serverPlayer) {
         subscribers.remove(serverPlayer.getUuid());
-        
+
         ServerPlayNetworking.send(serverPlayer, BotSyncS2CPacket.CLEAR);
     }
 
@@ -80,27 +79,29 @@ public class BotSyncManager {
         ServerPlayNetworking.send(serverPlayer, syncPacket);
     }
 
-    private static void syncToSubscribers(MinecraftServer server) {
+    private static void syncToSubscribers(ServerWorld serverWorld) {
         Iterator<UUID> subscriberIterator = subscribers.keySet().iterator();
         while (subscriberIterator.hasNext()) {
             UUID subscriberUuid = subscriberIterator.next();
-            ServerPlayerEntity serverPlayer = server.getPlayerManager().getPlayer(subscriberUuid);
-
+            ServerPlayerEntity serverPlayer = serverWorld.getServer().getPlayerManager().getPlayer(subscriberUuid);
             if (serverPlayer == null) {
                 subscriberIterator.remove();
                 continue;
             }
+            
+            if (serverPlayer.getEntityWorld() != serverWorld)
+                continue;
 
             syncTo(serverPlayer);
         }
 
-        BotNetworkManager.markAllNotDirty();
+        BotNetworkManager.markAllNotDirty(serverWorld);
     }
 
     public static void initialize() {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> unsubscribe(handler.getPlayer()));
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((serverPlayer, oldServerWorld, newServerWorld) -> syncTo(serverPlayer));
-        BotNetworkManager.NETWORKS_MUTATED.register((serverWorld, mutation) -> syncToSubscribers(serverWorld.getServer()));
-        BotPersistentState.JOBS_MUTATED.register((serverWorld, mutation) -> syncToSubscribers(serverWorld.getServer()));
+        BotNetworkManager.NETWORKS_MUTATED.register((serverWorld, mutation) -> syncToSubscribers(serverWorld));
+        BotPersistentState.JOBS_MUTATED.register((serverWorld, mutation) -> syncToSubscribers(serverWorld));
     }
 }

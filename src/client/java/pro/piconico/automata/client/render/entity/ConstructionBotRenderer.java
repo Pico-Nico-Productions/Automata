@@ -6,6 +6,7 @@ import net.minecraft.client.render.entity.state.BeeEntityRenderState;
 import net.minecraft.util.Identifier;
 import pro.piconico.automata.registry.AutomataRegistry;
 
+// TODO: Extend MobEntityRenderer instead and customize rendering
 public class ConstructionBotRenderer extends BeeEntityRenderer {
     private static final Identifier TEXTURE = AutomataRegistry.entityTextureId(AutomataRegistry.CONSTRUCTION_BOT);
 
