@@ -36,7 +36,7 @@ public class BotNetworkManager {
     private static final Map<ServerWorld, BotNetworkMap<ServerBotNetwork>> NETWORK_MAP_CACHE = new HashMap<>();
 
     public enum Mutation {
-        Add, Remove
+        ADD, REMOVE
     }
 
     @FunctionalInterface
@@ -304,7 +304,7 @@ public class BotNetworkManager {
         if (serverNetwork.isEmpty())
             return;
 
-        NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.Add);
+        NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.ADD);
     }
 
     private static void onChunkUnloaded(ServerWorld serverWorld, WorldChunk chunk) {
@@ -325,7 +325,7 @@ public class BotNetworkManager {
             NETWORK_MAP_CACHE.remove(serverWorld);
         }
 
-        NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.Remove);
+        NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.REMOVE);
     }
 
     private static void onPointOfInterestAdded(BlockPos pos, RegistryEntry<PointOfInterestType> type, ServerWorld serverWorld) {
@@ -337,7 +337,7 @@ public class BotNetworkManager {
         Optional<ServerBotNetwork> serverNetwork = getNetwork(chunkPos, serverWorld);
         if (serverNetwork.isPresent()) {
             serverNetwork.get().add(pos);
-            NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.Add);
+            NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.ADD);
             return;
         }
 
@@ -351,7 +351,7 @@ public class BotNetworkManager {
 
         if (neighborNetworks.isEmpty()) {
             putNetwork(new ServerBotNetwork(List.of(pos), serverWorld));
-            NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.Add);
+            NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.ADD);
             return;
         }
 
@@ -362,7 +362,7 @@ public class BotNetworkManager {
             biggestNeighbor.addAll(neighborNetwork.getRoboports().toList());
         }
         putNetwork(biggestNeighbor);
-        NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.Add);
+        NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.ADD);
     }
 
     private static void onPointOfInterestRemoved(BlockPos pos, RegistryEntry<PointOfInterestType> type, ServerWorld serverWorld) {
@@ -390,7 +390,7 @@ public class BotNetworkManager {
             NETWORK_MAP_CACHE.remove(serverWorld);
         }
 
-        NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.Remove);
+        NETWORKS_MUTATED.invoker().onMutate(serverWorld, Mutation.REMOVE);
     }
     //#region Network Updating
 

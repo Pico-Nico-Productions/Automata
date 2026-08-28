@@ -15,7 +15,7 @@ import pro.piconico.automata.bot.network.BotNetworkManager.ServerBotNetwork;
 import pro.piconico.automata.bot.network.BotNetworkMap;
 import pro.piconico.automata.network.packet.BotSyncS2CPacket;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
-import pro.piconico.automata.world.BotPersistentState;
+import pro.piconico.automata.world.BotJobPersistentState;
 
 public class BotSyncManager {
     private record SyncState(BotNetworkMap<ServerBotNetwork> networkMap, BotJobAssignmentMap jobAssignmentMap, ServerWorld serverWorld) {
@@ -23,7 +23,7 @@ public class BotSyncManager {
             ServerWorld serverWorld = serverPlayer.getEntityWorld();
             ChunkBounds renderBounds = ChunkBounds.of(serverPlayer.getChunkPos(), serverPlayer.getViewDistance(), serverWorld);
             BotNetworkMap<ServerBotNetwork> currentNetworkMap = new BotNetworkMap<>(BotNetworkManager.getNetworks(renderBounds, serverWorld));
-            BotJobAssignmentMap currentJobMap = new BotJobAssignmentMap(BotPersistentState.getJobsIn(renderBounds, serverWorld));
+            BotJobAssignmentMap currentJobMap = new BotJobAssignmentMap(BotJobPersistentState.getJobsIn(renderBounds, serverWorld));
 
             return new SyncState(currentNetworkMap, currentJobMap, serverWorld);
         }
@@ -102,6 +102,6 @@ public class BotSyncManager {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> unsubscribe(handler.getPlayer()));
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((serverPlayer, oldServerWorld, newServerWorld) -> syncTo(serverPlayer));
         BotNetworkManager.NETWORKS_MUTATED.register((serverWorld, mutation) -> syncToSubscribers(serverWorld));
-        BotPersistentState.JOBS_MUTATED.register((serverWorld, mutation) -> syncToSubscribers(serverWorld));
+        BotJobPersistentState.JOBS_MUTATED.register((serverWorld, mutation) -> syncToSubscribers(serverWorld));
     }
 }

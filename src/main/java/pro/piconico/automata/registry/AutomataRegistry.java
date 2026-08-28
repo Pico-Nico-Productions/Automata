@@ -8,8 +8,9 @@ import pro.piconico.automata.Automata;
 public class AutomataRegistry {
     public static final String BOT = "bot";
     public static final String BOT_JOB = "bot_job";
-    public static final String BOT_PERSISTENT_STATE = "bot_persistent_state";
+    public static final String BOT_JOB_PERSISTENT_STATE = "bot_job_persistent_state";
     public static final String BOT_SYNC_S2C_PACKET = "bot_sync_s2c_packet";
+    public static final String BOT_TEAM_PERSISTENT_STATE = "bot_team_persistent_state";
     public static final String COMMAND_TOOL = "command_tool";
     public static final String CONSTRUCTION_BOT = "construction_bot";
     public static final String DECONSTRUCTION_JOB = "deconstruction_job";

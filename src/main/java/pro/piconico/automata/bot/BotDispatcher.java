@@ -12,7 +12,7 @@ import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.job.DeconstructionJob;
 import pro.piconico.automata.component.CommandToolComponent;
 import pro.piconico.automata.registry.AutomataTexts;
-import pro.piconico.automata.world.BotPersistentState;
+import pro.piconico.automata.world.BotJobPersistentState;
 
 public class BotDispatcher {
     public static ActionResult markForDeconstruction(PlayerEntity player, CommandToolComponent commandToolComponent) {
@@ -43,7 +43,7 @@ public class BotDispatcher {
                 }
             }
         }
-        long jobCount = BotPersistentState.addJobs(jobsToAdd, (ServerWorld)world);
+        long jobCount = BotJobPersistentState.addJobs(jobsToAdd, (ServerWorld)world);
 
         player.sendMessage(Text.translatable(AutomataTexts.JOBS_ADDED, jobCount), true);
 

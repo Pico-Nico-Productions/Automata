@@ -25,7 +25,7 @@ public class BotJobAssignmentMap extends HashMap<BlockPos, Map<BotJobType<?>, Bo
         super();
 
         for (BotJobAssignment jobAssignment : jobAssignments) {
-            computeIfAbsent(jobAssignment.job.pos(), pos -> new HashMap<>()).put(jobAssignment.job.getType(), jobAssignment);
+            computeIfAbsent(jobAssignment.JOB.pos(), pos -> new HashMap<>()).put(jobAssignment.JOB.getType(), jobAssignment);
         }
     }
 
@@ -93,8 +93,8 @@ public class BotJobAssignmentMap extends HashMap<BlockPos, Map<BotJobType<?>, Bo
     }
 
     private static BotJobAssignmentMap map(Collection<BotJobAssignment> jobAssignments) {
-        return jobAssignments.stream().collect(Collectors.groupingBy(assignment -> assignment.job.pos(), BotJobAssignmentMap::new,
-                Collectors.toMap(assignment -> assignment.job.getType(), assignment -> assignment, (existing, replacement) -> replacement, HashMap::new)));
+        return jobAssignments.stream().collect(Collectors.groupingBy(assignment -> assignment.JOB.pos(), BotJobAssignmentMap::new,
+                Collectors.toMap(assignment -> assignment.JOB.getType(), assignment -> assignment, (existing, replacement) -> replacement, HashMap::new)));
     }
 
     private static Map<BlockPos, Optional<Map<BotJobType<?>, Optional<BotJobAssignment>>>> toOptionalMap(BotJobAssignmentMap jobAssignmentMap) {

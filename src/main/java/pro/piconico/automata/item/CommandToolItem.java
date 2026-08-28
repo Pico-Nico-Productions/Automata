@@ -1,6 +1,8 @@
 package pro.piconico.automata.item;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -16,7 +18,9 @@ import pro.piconico.automata.component.CommandToolComponent;
 import pro.piconico.automata.network.BotSyncManager;
 import pro.piconico.automata.registry.AutomataComponents;
 import pro.piconico.automata.registry.AutomataTexts;
+import pro.piconico.automata.world.BotTeamPersistentState;
 import pro.piconico.automata.bot.BotDispatcher;
+import pro.piconico.automata.bot.team.BotTeam;
 
 public class CommandToolItem extends Item {
     public CommandToolItem(Settings settings) {
@@ -50,30 +54,55 @@ public class CommandToolItem extends Item {
         BotSyncManager.unsubscribe(serverPlayer);
     }
 
+    // TODO: Replace with team select screen
+    private static ActionResult cycleTeam(PlayerEntity player, ItemStack stack) {
+        if (player.getEntityWorld().isClient())
+            return ActionResult.SUCCESS;
+
+        CommandToolComponent commandToolComponent = getCommandToolComponent(stack);
+        List<BotTeam> sortedTeams = BotTeamPersistentState.getTeamMap().values().stream().toList();
+        Optional<Integer> newTeamIndex;
+        if (commandToolComponent.teamUuid().isEmpty()) {
+            newTeamIndex = Optional.ofNullable(sortedTeams.isEmpty() ? null : 0);
+        }
+        else {
+            UUID currentTeamUuid = commandToolComponent.teamUuid().get();
+            Optional<Integer> currentTeamIndex = sortedTeams.stream().filter(team -> team.UUID.equals(currentTeamUuid)).findAny()
+                    .map(team -> sortedTeams.indexOf(team));
+            newTeamIndex = currentTeamIndex.map(index -> index + 1 < sortedTeams.size() ? index + 1 : null);
+        }
+        Optional<BotTeam> newTeam = newTeamIndex.map(index -> sortedTeams.get(index));
+        stack.set(AutomataComponents.COMMAND_TOOL, commandToolComponent.of(newTeam.map(team -> team.UUID)));
+        player.sendMessage(Text.translatable(AutomataTexts.TEAM_SELECTED, newTeam.map(team -> team.getName()).orElse(" ")), true);
+
+        return ActionResult.SUCCESS;
+    }
+
     private static ActionResult select(PlayerEntity player, ItemStack stack, BlockPos selection, boolean isSelection2) {
         if (player.getEntityWorld().isClient())
             return ActionResult.SUCCESS;
 
-        Optional<BlockPos> selection1 = isSelection2 ? getCommandToolComponent(stack).selection1() : Optional.of(selection);
-        Optional<BlockPos> selection2 = isSelection2 ? Optional.of(selection) : getCommandToolComponent(stack).selection2();
-        stack.set(AutomataComponents.COMMAND_TOOL, new CommandToolComponent(selection1, selection2));
-        player.sendMessage(Text.translatable(AutomataTexts.SELECTED, isSelection2 ? 2 : 1, selection.toShortString()), true);
+        CommandToolComponent commandToolComponent = getCommandToolComponent(stack);
+        stack.set(AutomataComponents.COMMAND_TOOL, commandToolComponent.of(Optional.of(selection), isSelection2));
+        player.sendMessage(Text.translatable(AutomataTexts.BLOCK_SELECTED, isSelection2 ? 2 : 1, selection.toShortString()), true);
 
         return ActionResult.SUCCESS;
     }
 
     public static ActionResult onAttackBlock(PlayerEntity player, World world, Hand hand, BlockPos blockPos, Direction direction) {
         ItemStack stack = player.getStackInHand(hand);
+
         if (!(stack.getItem() instanceof CommandToolItem))
             return ActionResult.PASS;
 
-        return select(player, stack, blockPos, false);
+        return select(player, player.getStackInHand(hand), blockPos, false);
     }
 
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
         PlayerEntity player = context.getPlayer();
         ItemStack stack = context.getStack();
+
         if (player.isSneaking())
             return BotDispatcher.markForDeconstruction(player, getCommandToolComponent(stack));
 
@@ -82,10 +111,11 @@ public class CommandToolItem extends Item {
 
     @Override
     public ActionResult use(World world, PlayerEntity player, Hand hand) {
-        if (!player.isSneaking())
-            return ActionResult.FAIL;
+        ItemStack stack = player.getStackInHand(hand);
 
-        CommandToolComponent commandToolComponent = getCommandToolComponent(player.getMainHandStack());
-        return BotDispatcher.markForDeconstruction(player, commandToolComponent);
+        if (!player.isSneaking())
+            return cycleTeam(player, stack);
+
+        return BotDispatcher.markForDeconstruction(player, getCommandToolComponent(stack));
     }
 }
