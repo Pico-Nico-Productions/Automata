@@ -245,9 +245,6 @@ public class BotNetworkManager {
 
     private static Set<ServerBotNetwork> fetchNetworks(Iterable<ChunkPos> chunks, BiFunction<ChunkPos, ServerWorld, Optional<ServerBotNetwork>> fetchNetwork,
             ServerWorld serverWorld) {
-        if (!NETWORK_MAP_CACHE.containsKey(serverWorld))
-            return Set.of();
-
         Set<ServerBotNetwork> networks = new HashSet<>();
 
         Set<ChunkPos> networkChunks = new HashSet<>();

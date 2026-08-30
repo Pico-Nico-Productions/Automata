@@ -1,5 +1,7 @@
 package pro.piconico.automata.mixin;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -13,33 +15,27 @@ import pro.piconico.automata.event.HoldItemCallback;
 @Mixin(PlayerEntity.class)
 public abstract class PlayerHoldingTrackerMixin {
     @Unique
-    private ItemStack lastMainHand = ItemStack.EMPTY;
-    @Unique
-    private ItemStack lastOffHand = ItemStack.EMPTY;
+    private final Map<Hand, ItemStack> LAST_HELD_ITEMS = new HashMap<>(Hand.values().length);
 
     @Inject(method = "tick", at = @At("TAIL"))
     private void trackHandChanges(CallbackInfo callbackInfo) {
         PlayerEntity player = (PlayerEntity)(Object)this;
 
-        ItemStack currentMainHand = player.getMainHandStack();
-        checkHandSlot(player, Hand.MAIN_HAND, lastMainHand, currentMainHand);
-        this.lastMainHand = currentMainHand.copy();
+        for (Hand hand : Hand.values()) {
+            ItemStack lastStack = LAST_HELD_ITEMS.getOrDefault(hand, ItemStack.EMPTY);
+            ItemStack currentStack = player.getStackInHand(hand);
 
-        ItemStack currentOffHand = player.getOffHandStack();
-        checkHandSlot(player, Hand.OFF_HAND, lastOffHand, currentOffHand);
-        this.lastOffHand = currentOffHand.copy();
-    }
+            if (ItemStack.areItemsAndComponentsEqual(lastStack, currentStack))
+                continue;
 
-    @Unique
-    private void checkHandSlot(PlayerEntity player, Hand hand, ItemStack oldStack, ItemStack newStack) {
-        if (ItemStack.areItemsAndComponentsEqual(oldStack, newStack))
-            return;
+            if (!lastStack.isEmpty()) {
+                HoldItemCallback.HOLD_ENDED.invoker().onHold(player, hand, lastStack);
+            }
+            if (!currentStack.isEmpty()) {
+                HoldItemCallback.HOLD_STARTED.invoker().onHold(player, hand, currentStack);
+            }
 
-        if (!oldStack.isEmpty()) {
-            HoldItemCallback.HOLD_ENDED.invoker().onHold(player, hand, oldStack);
-        }
-        if (!newStack.isEmpty()) {
-            HoldItemCallback.HOLD_STARTED.invoker().onHold(player, hand, newStack);
+            LAST_HELD_ITEMS.put(hand, currentStack.copy());
         }
     }
 }

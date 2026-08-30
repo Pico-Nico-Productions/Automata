@@ -17,6 +17,7 @@ import net.minecraft.world.World;
 import pro.piconico.automata.component.CommandToolComponent;
 import pro.piconico.automata.network.BotSyncManager;
 import pro.piconico.automata.registry.AutomataComponents;
+import pro.piconico.automata.registry.AutomataItems;
 import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.world.BotTeamPersistentState;
 import pro.piconico.automata.bot.BotDispatcher;
@@ -32,7 +33,7 @@ public class CommandToolItem extends Item {
     }
 
     public static void onHoldStarted(PlayerEntity player, Hand hand, ItemStack stack) {
-        if (!(stack.getItem() instanceof CommandToolItem))
+        if (!(stack.isOf(AutomataItems.COMMAND_TOOL)))
             return;
 
         if (!(player instanceof ServerPlayerEntity serverPlayer) || BotSyncManager.isSubscribed(serverPlayer))
@@ -42,10 +43,10 @@ public class CommandToolItem extends Item {
     }
 
     public static void onHoldEnded(PlayerEntity player, Hand hand, ItemStack stack) {
-        if (!(stack.getItem() instanceof CommandToolItem))
+        if (!(stack.isOf(AutomataItems.COMMAND_TOOL)))
             return;
 
-        if (player.getMainHandStack().getItem() instanceof CommandToolItem || player.getOffHandStack().getItem() instanceof CommandToolItem)
+        if (player.getMainHandStack().isOf(AutomataItems.COMMAND_TOOL) || player.getOffHandStack().isOf(AutomataItems.COMMAND_TOOL))
             return;
 
         if (!(player instanceof ServerPlayerEntity serverPlayer))
@@ -73,7 +74,7 @@ public class CommandToolItem extends Item {
         }
         Optional<BotTeam> newTeam = newTeamIndex.map(index -> sortedTeams.get(index));
         stack.set(AutomataComponents.COMMAND_TOOL, commandToolComponent.of(newTeam.map(team -> team.UUID)));
-        player.sendMessage(Text.translatable(AutomataTexts.TEAM_SELECTED, newTeam.map(team -> team.getName()).orElse(" ")), true);
+        player.sendMessage(Text.translatable(AutomataTexts.TEAM_SELECTED, newTeam.map(team -> team.getName()).orElse(BotTeam.EMPTY_BOT_TEAM_STRING)), true);
 
         return ActionResult.SUCCESS;
     }
@@ -92,7 +93,7 @@ public class CommandToolItem extends Item {
     public static ActionResult onAttackBlock(PlayerEntity player, World world, Hand hand, BlockPos blockPos, Direction direction) {
         ItemStack stack = player.getStackInHand(hand);
 
-        if (!(stack.getItem() instanceof CommandToolItem))
+        if (!(stack.isOf(AutomataItems.COMMAND_TOOL)))
             return ActionResult.PASS;
 
         return select(player, player.getStackInHand(hand), blockPos, false);

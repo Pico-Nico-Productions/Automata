@@ -3,8 +3,6 @@ package pro.piconico.automata.bot.team;
 import java.util.UUID;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.util.Uuids;
@@ -20,8 +18,12 @@ public class BotTeam {
             callback.onMutate(team);
         }
     });
-    
-    public static final Codec<BotTeam> CODEC = RecordCodecBuilder.create(instance -> instance.group(Uuids.INT_STREAM_CODEC.fieldOf("uuid").forGetter(team -> team.UUID), Codec.STRING.fieldOf("name").forGetter(BotTeam::getName)).apply(instance, BotTeam::new));
+
+    public static final Codec<BotTeam> CODEC = RecordCodecBuilder.create(instance -> instance
+            .group(Uuids.INT_STREAM_CODEC.fieldOf("uuid").forGetter(team -> team.UUID), Codec.STRING.fieldOf("name").forGetter(BotTeam::getName))
+            .apply(instance, BotTeam::new));
+
+    public static final String EMPTY_BOT_TEAM_STRING = " ";
 
     private String name;
 
@@ -41,7 +43,6 @@ public class BotTeam {
         return name;
     }
 
-    @Environment(EnvType.SERVER)
     public void setName(String name) {
         this.name = name;
         MUTATED.invoker().onMutate(this);

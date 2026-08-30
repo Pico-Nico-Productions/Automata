@@ -1,14 +1,17 @@
 package pro.piconico.automata.entity;
 
 import java.util.Optional;
+import java.util.UUID;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.passive.BeeEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
+import net.minecraft.util.Uuids;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
@@ -18,6 +21,7 @@ import pro.piconico.automata.inventory.InventoryUtils;
 
 // TODO: Extend PathAwareEntity instead and create goals
 public abstract class BotEntity extends BeeEntity {
+    private static final String TEAM_UUID_KEY = "team_uuid";
     private static final String JOB_KEY = "job";
 
     public static final double SPEED = 0.5;
@@ -34,6 +38,7 @@ public abstract class BotEntity extends BeeEntity {
         }
     });
 
+    private UUID teamUuid;
     private Optional<BotJob> job = Optional.empty();
     private Optional<RoboportBlockEntity> roboport = Optional.empty();
 
@@ -42,6 +47,10 @@ public abstract class BotEntity extends BeeEntity {
     }
 
     public abstract BotType getBotType();
+
+    public UUID getTeamUuid() {
+        return teamUuid;
+    }
 
     public Optional<BotJob> getJob() {
         return job;
@@ -53,6 +62,11 @@ public abstract class BotEntity extends BeeEntity {
 
     public boolean canDoJob(BotJob job) {
         return getBotType().supportedJobTypes().contains(job.getType());
+    }
+
+    private void assertStateIsLegal() {
+        if (teamUuid == null)
+            throw new IllegalStateException("Bot has no team. Was this spawned without the static factory method?");
     }
 
     public void endJob(boolean completed) {
@@ -123,6 +137,8 @@ public abstract class BotEntity extends BeeEntity {
         if (!(getEntityWorld() instanceof ServerWorld serverWorld))
             return;
 
+        assertStateIsLegal();
+
         if (!doJob(serverWorld))
             return;
 
@@ -140,6 +156,7 @@ public abstract class BotEntity extends BeeEntity {
     public void readData(ReadView view) {
         super.readData(view);
 
+        teamUuid = view.read(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC).get();
         job = view.read(JOB_KEY, BotJob.CODEC);
     }
 
@@ -147,9 +164,18 @@ public abstract class BotEntity extends BeeEntity {
     public void writeData(WriteView view) {
         super.writeData(view);
 
+        view.put(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC, teamUuid);
+
         if (job.isEmpty())
             return;
 
         view.put(JOB_KEY, BotJob.CODEC, job.get());
+    }
+
+    public static BotEntity spawn(EntityType<? extends BotEntity> botEntityType, ServerWorld serverWorld, BlockPos pos, UUID teamUuid) {
+        BotEntity newBotEntity = botEntityType.spawn(serverWorld, pos, SpawnReason.MOB_SUMMONED);
+        newBotEntity.teamUuid = teamUuid;
+
+        return newBotEntity;
     }
 }

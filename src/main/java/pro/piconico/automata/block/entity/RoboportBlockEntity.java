@@ -4,6 +4,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import net.fabricmc.fabric.api.event.Event;
@@ -12,7 +13,6 @@ import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
@@ -26,13 +26,13 @@ import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
 import net.minecraft.text.Text;
 import net.minecraft.util.TypeFilter;
+import net.minecraft.util.Uuids;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.poi.PointOfInterest;
 import net.minecraft.world.poi.PointOfInterestStorage;
-import pro.piconico.automata.Automata;
 import pro.piconico.automata.bot.BotType;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.entity.BotEntity;
@@ -45,8 +45,10 @@ import pro.piconico.automata.registry.AutomataPointOfInterestTypes;
 import pro.piconico.automata.screen.RoboportScreenHandler;
 import pro.piconico.automata.util.math.ChunkUtils;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
+import pro.piconico.automata.world.BotTeamPersistentState;
 
 public class RoboportBlockEntity extends BlockEntity implements Inventory, ExtendedScreenHandlerFactory<BlockPos> {
+    private static final String TEAM_UUID_KEY = "team_uuid";
     public static final int CHUNK_RANGE = 0;
     public static final int BOT_SLOT_COUNT = 1;
 
@@ -55,6 +57,12 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         void onUpdated(RoboportBlockEntity roboport);
     }
 
+    public static final Event<UpdateRoboport> TEAM_CHANGED = EventFactory.createArrayBacked(UpdateRoboport.class, callbacks -> (roboport) -> {
+        for (UpdateRoboport callback : callbacks) {
+            callback.onUpdated(roboport);
+        }
+    });
+
     public static final Event<UpdateRoboport> BOT_ADDED = EventFactory.createArrayBacked(UpdateRoboport.class, callbacks -> (roboport) -> {
         for (UpdateRoboport callback : callbacks) {
             callback.onUpdated(roboport);
@@ -62,9 +70,12 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
     });
 
     private final DefaultedList<ItemStack> itemStacks = DefaultedList.ofSize(BOT_SLOT_COUNT, ItemStack.EMPTY);
+    private Optional<UUID> teamUuid = Optional.empty();
 
     public RoboportBlockEntity(BlockPos pos, BlockState state) {
         super(AutomataEntities.ROBOPORT, pos, state);
+        // TODO: Replace with team select screen
+        teamUuid = Optional.of(BotTeamPersistentState.getTeamMap().firstEntry().getKey());
     }
 
     private Optional<BotEntity> getBotEntityFor(BotJob job) {
@@ -74,7 +85,7 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
 
         Box searchBox = ChunkBounds.of(new ChunkPos(getPos()), CHUNK_RANGE, world).toBox();
         List<BotEntity> capableBots = world.getEntitiesByType(TypeFilter.instanceOf(BotEntity.class), searchBox,
-                botEntity -> botEntity.isAlive() && !botEntity.hasJob() && botEntity.canDoJob(job));
+                botEntity -> botEntity.isAlive() && botEntity.getTeamUuid().equals(teamUuid.get()) && !botEntity.hasJob() && botEntity.canDoJob(job));
         return capableBots.isEmpty() ? Optional.empty() : Optional.of(capableBots.getFirst());
     }
 
@@ -93,14 +104,17 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
     }
 
     public boolean canAssignJob(BotJob job) {
-        return getBotEntityFor(job).isPresent() || getBotSlotFor(job).isPresent();
+        return teamUuid.isPresent() && (getBotEntityFor(job).isPresent() || getBotSlotFor(job).isPresent());
+    }
+
+    public void setTeam(Optional<UUID> teamUuid) {
+        this.teamUuid = teamUuid;
+        TEAM_CHANGED.invoker().onUpdated(this);
     }
 
     public Optional<BotEntity> assignJob(BotJob job) {
-        if (!(getWorld() instanceof ServerWorld serverWorld)) {
-            Automata.logError("Client can't assign jobs", IllegalCallerException::new);
+        if (teamUuid.isEmpty())
             return Optional.empty();
-        }
 
         Optional<BotEntity> botEntity = getBotEntityFor(job);
         if (botEntity.isPresent() && botEntity.get().setJob(Optional.of(job)))
@@ -114,8 +128,7 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         markDirty();
 
         EntityType<? extends BotEntity> botEntityType = botItem.getBotType().entityType();
-        BlockPos spawnLocation = getPos().up();
-        BotEntity newBotEntity = botEntityType.spawn(serverWorld, spawnLocation, SpawnReason.MOB_SUMMONED);
+        BotEntity newBotEntity = BotEntity.spawn(botEntityType, (ServerWorld)getWorld(), getPos().up(), teamUuid.get());
         newBotEntity.setJob(Optional.of(job));
 
         return Optional.of(newBotEntity);
@@ -144,12 +157,17 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
     protected void readData(ReadView view) {
         super.readData(view);
         Inventories.readData(view, itemStacks);
+        teamUuid = view.read(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC);
     }
 
     @Override
     protected void writeData(WriteView view) {
         super.writeData(view);
         Inventories.writeData(view, itemStacks);
+        if (teamUuid.isEmpty())
+            return;
+
+        view.put(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC, teamUuid.get());
     }
 
     @Override
