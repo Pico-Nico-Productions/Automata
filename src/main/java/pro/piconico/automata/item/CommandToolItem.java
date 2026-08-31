@@ -3,6 +3,8 @@ package pro.piconico.automata.item;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import net.fabricmc.fabric.api.event.Event;
+import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -24,6 +26,17 @@ import pro.piconico.automata.bot.BotDispatcher;
 import pro.piconico.automata.bot.team.BotTeam;
 
 public class CommandToolItem extends Item {
+    @FunctionalInterface
+    public interface ChangeTeam {
+        void onChanged(ServerPlayerEntity serverPlayer, Optional<UUID> oldTeamUuid);
+    }
+
+    public static final Event<ChangeTeam> TEAM_CHANGED = EventFactory.createArrayBacked(ChangeTeam.class, callbacks -> (serverPlayer, oldTeamUuid) -> {
+        for (ChangeTeam callback : callbacks) {
+            callback.onChanged(serverPlayer, oldTeamUuid);
+        }
+    });
+
     public CommandToolItem(Settings settings) {
         super(settings.maxCount(1));
     }
@@ -39,7 +52,12 @@ public class CommandToolItem extends Item {
         if (!(player instanceof ServerPlayerEntity serverPlayer) || BotSyncManager.isSubscribed(serverPlayer))
             return;
 
-        BotSyncManager.subscribe(serverPlayer);
+        Optional<UUID> teamUuid = getCommandToolComponent(stack).teamUuid();
+
+        if (teamUuid.isEmpty())
+            return;
+
+        BotSyncManager.subscribe(serverPlayer, teamUuid.get());
     }
 
     public static void onHoldEnded(PlayerEntity player, Hand hand, ItemStack stack) {
@@ -61,6 +79,7 @@ public class CommandToolItem extends Item {
             return ActionResult.SUCCESS;
 
         CommandToolComponent commandToolComponent = getCommandToolComponent(stack);
+
         List<BotTeam> sortedTeams = BotTeamPersistentState.getTeamMap().values().stream().toList();
         Optional<Integer> newTeamIndex;
         if (commandToolComponent.teamUuid().isEmpty()) {
@@ -73,8 +92,21 @@ public class CommandToolItem extends Item {
             newTeamIndex = currentTeamIndex.map(index -> index + 1 < sortedTeams.size() ? index + 1 : null);
         }
         Optional<BotTeam> newTeam = newTeamIndex.map(index -> sortedTeams.get(index));
-        stack.set(AutomataComponents.COMMAND_TOOL, commandToolComponent.of(newTeam.map(team -> team.UUID)));
+        Optional<UUID> newTeamUuid = newTeam.map(team -> team.UUID);
+        stack.set(AutomataComponents.COMMAND_TOOL, commandToolComponent.of(newTeamUuid));
         player.sendMessage(Text.translatable(AutomataTexts.TEAM_SELECTED, newTeam.map(team -> team.getName()).orElse(BotTeam.EMPTY_BOT_TEAM_STRING)), true);
+
+        if (newTeamUuid.equals(commandToolComponent.teamUuid()))
+            return ActionResult.SUCCESS;
+
+        ServerPlayerEntity serverPlayer = (ServerPlayerEntity)player;
+        if (newTeamUuid.isPresent()) {
+            BotSyncManager.subscribe(serverPlayer, newTeamUuid.get());
+        }
+        else {
+            BotSyncManager.unsubscribe(serverPlayer);
+        }
+        TEAM_CHANGED.invoker().onChanged(serverPlayer, newTeamUuid);
 
         return ActionResult.SUCCESS;
     }

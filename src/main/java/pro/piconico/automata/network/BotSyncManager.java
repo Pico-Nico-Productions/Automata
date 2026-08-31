@@ -18,15 +18,15 @@ import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 import pro.piconico.automata.world.BotJobPersistentState;
 
 public class BotSyncManager {
-    private record SyncState(BotNetworkMap<ServerBotNetwork> networkMap, BotJobAssignmentMap jobAssignmentMap, ServerWorld serverWorld) {
-        private static SyncState getCurrent(ServerPlayerEntity serverPlayer) {
+    private record SyncState(BotNetworkMap<ServerBotNetwork> networkMap, BotJobAssignmentMap jobAssignmentMap, UUID teamUuid, ServerWorld serverWorld) {
+        private static SyncState getCurrent(ServerPlayerEntity serverPlayer, UUID teamUuid) {
             ServerWorld serverWorld = serverPlayer.getEntityWorld();
             ChunkBounds renderBounds = ChunkBounds.of(serverPlayer.getChunkPos(), serverPlayer.getViewDistance(), serverWorld);
             // TODO: Make BotJobAssignment and BotNetwork implement Cloneable so a unique snapshot can be created and BotNetwork.dirty is obsolete
-            BotNetworkMap<ServerBotNetwork> currentNetworkMap = new BotNetworkMap<>(BotNetworkManager.getNetworks(renderBounds, serverWorld));
-            BotJobAssignmentMap currentJobMap = new BotJobAssignmentMap(BotJobPersistentState.getJobs(renderBounds, serverWorld));
+            BotNetworkMap<ServerBotNetwork> currentNetworkMap = new BotNetworkMap<>(BotNetworkManager.getNetworks(renderBounds, teamUuid, serverWorld));
+            BotJobAssignmentMap currentJobMap = new BotJobAssignmentMap(BotJobPersistentState.getJobs(teamUuid, renderBounds, serverWorld));
 
-            return new SyncState(currentNetworkMap, currentJobMap, serverWorld);
+            return new SyncState(currentNetworkMap, currentJobMap, teamUuid, serverWorld);
         }
 
         private BotSyncS2CPacket calculateDelta(SyncState newState) {
@@ -53,11 +53,11 @@ public class BotSyncManager {
         return subscribers.containsKey(serverPlayer.getUuid());
     }
 
-    public static void subscribe(ServerPlayerEntity serverPlayer) {
-        SyncState currentState = SyncState.getCurrent(serverPlayer);
+    public static void subscribe(ServerPlayerEntity serverPlayer, UUID teamUuid) {
+        SyncState currentState = SyncState.getCurrent(serverPlayer, teamUuid);
         subscribers.put(serverPlayer.getUuid(), currentState);
 
-        ServerPlayNetworking.send(serverPlayer, new BotSyncS2CPacket(currentState.networkMap, currentState.jobAssignmentMap));
+        ServerPlayNetworking.send(serverPlayer, new BotSyncS2CPacket(true, currentState.networkMap, currentState.jobAssignmentMap));
     }
 
     public static void unsubscribe(ServerPlayerEntity serverPlayer) {
@@ -71,7 +71,7 @@ public class BotSyncManager {
             return;
 
         SyncState oldState = subscribers.get(serverPlayer.getUuid());
-        SyncState currentState = SyncState.getCurrent(serverPlayer);
+        SyncState currentState = SyncState.getCurrent(serverPlayer, oldState.teamUuid);
         if (oldState.equals(currentState))
             return;
 
@@ -80,11 +80,15 @@ public class BotSyncManager {
         ServerPlayNetworking.send(serverPlayer, syncPacket);
     }
 
-    private static void syncToSubscribers(ServerWorld serverWorld) {
+    private static void syncToSubscribers(UUID teamUuid, ServerWorld serverWorld) {
         Iterator<UUID> subscriberIterator = subscribers.keySet().iterator();
         while (subscriberIterator.hasNext()) {
             UUID subscriberUuid = subscriberIterator.next();
+            if (!subscribers.get(subscriberUuid).teamUuid.equals(teamUuid))
+                continue;
+
             ServerPlayerEntity serverPlayer = serverWorld.getServer().getPlayerManager().getPlayer(subscriberUuid);
+            
             if (serverPlayer == null) {
                 subscriberIterator.remove();
                 continue;
@@ -102,7 +106,7 @@ public class BotSyncManager {
     public static void initialize() {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> unsubscribe(handler.getPlayer()));
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((serverPlayer, oldServerWorld, newServerWorld) -> syncTo(serverPlayer));
-        BotNetworkManager.NETWORKS_MUTATED.register((serverWorld, mutation) -> syncToSubscribers(serverWorld));
-        BotJobPersistentState.JOBS_MUTATED.register((serverWorld, mutation) -> syncToSubscribers(serverWorld));
+        BotNetworkManager.NETWORKS_MUTATED.register((teamUuid, serverWorld, mutation) -> syncToSubscribers(teamUuid, serverWorld));
+        BotJobPersistentState.JOBS_MUTATED.register((teamUuid, serverWorld, mutation) -> syncToSubscribers(teamUuid, serverWorld));
     }
 }

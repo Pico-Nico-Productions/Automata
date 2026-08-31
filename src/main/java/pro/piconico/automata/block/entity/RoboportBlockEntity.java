@@ -53,15 +53,20 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
     public static final int BOT_SLOT_COUNT = 1;
 
     @FunctionalInterface
+    public interface ChangeTeam {
+        void onChanged(RoboportBlockEntity roboport, Optional<UUID> oldTeamUuid);
+    }
+
+    public static final Event<ChangeTeam> TEAM_CHANGED = EventFactory.createArrayBacked(ChangeTeam.class, callbacks -> (roboport, oldTeamUuid) -> {
+        for (ChangeTeam callback : callbacks) {
+            callback.onChanged(roboport, oldTeamUuid);
+        }
+    });
+
+    @FunctionalInterface
     public interface UpdateRoboport {
         void onUpdated(RoboportBlockEntity roboport);
     }
-
-    public static final Event<UpdateRoboport> TEAM_CHANGED = EventFactory.createArrayBacked(UpdateRoboport.class, callbacks -> (roboport) -> {
-        for (UpdateRoboport callback : callbacks) {
-            callback.onUpdated(roboport);
-        }
-    });
 
     public static final Event<UpdateRoboport> BOT_ADDED = EventFactory.createArrayBacked(UpdateRoboport.class, callbacks -> (roboport) -> {
         for (UpdateRoboport callback : callbacks) {
@@ -75,7 +80,7 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
     public RoboportBlockEntity(BlockPos pos, BlockState state) {
         super(AutomataEntities.ROBOPORT, pos, state);
         // TODO: Replace with team select screen
-        teamUuid = Optional.of(BotTeamPersistentState.getTeamMap().firstEntry().getKey());
+        teamUuid = Optional.of(BotTeamPersistentState.getTeamMap().lastEntry().getKey());
     }
 
     private Optional<BotEntity> getBotEntityFor(BotJob job) {
@@ -107,9 +112,17 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         return teamUuid.isPresent() && (getBotEntityFor(job).isPresent() || getBotSlotFor(job).isPresent());
     }
 
+    public Optional<UUID> getTeam() {
+        return teamUuid;
+    }
+
     public void setTeam(Optional<UUID> teamUuid) {
+        if (this.teamUuid.equals(teamUuid))
+            return;
+
+        Optional<UUID> oldTeamUuid = this.teamUuid;
         this.teamUuid = teamUuid;
-        TEAM_CHANGED.invoker().onUpdated(this);
+        TEAM_CHANGED.invoker().onChanged(this, oldTeamUuid);
     }
 
     public Optional<BotEntity> assignJob(BotJob job) {
@@ -250,7 +263,7 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
                 .getInSquare(entry -> entry.matchesKey(AutomataPointOfInterestTypes.ROBOPORT), pos, ChunkUtils.CHUNK_SIZE * chunkRange,
                         PointOfInterestStorage.OccupationStatus.ANY)
                 .map(PointOfInterest::getPos)
-                .filter(roboportPos -> serverWorld.getBlockEntity(roboportPos) instanceof RoboportBlockEntity roboport && predicate.test(roboport))
+                .filter(roboportPos -> serverWorld.getBlockEntity(roboportPos, AutomataEntities.ROBOPORT).filter(roboport -> predicate.test(roboport)).isPresent())
                 .min(Comparator.comparingDouble(roboport -> pos.getSquaredDistance(roboport)));
 
         if (closestRoboportPos.isEmpty())

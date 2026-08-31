@@ -17,6 +17,7 @@ import net.minecraft.util.math.BlockPos;
 import pro.piconico.automata.registry.AutomataRegistries;
 import pro.piconico.automata.util.MapUtils;
 
+// TODO: Denest team UUID and move it to BotJobPersistentState because this map is meant to represent a single world single team view
 public class BotJobAssignmentMap extends HashMap<UUID, Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>>> {
     public static final Codec<BotJobAssignmentMap> CODEC = BotJobAssignment.CODEC.listOf().xmap(BotJobAssignmentMap::new, BotJobAssignmentMap::flatten);
     public static final PacketCodec<ByteBuf, BotJobAssignmentMap> PACKET_CODEC = PacketCodec.tuple(

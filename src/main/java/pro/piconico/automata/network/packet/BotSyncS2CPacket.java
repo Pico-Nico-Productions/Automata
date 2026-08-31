@@ -17,10 +17,6 @@ public record BotSyncS2CPacket(boolean clear, BotNetworkMap<?> deltaNetworkMap, 
             BotSyncS2CPacket::new);
     public static final BotSyncS2CPacket CLEAR = new BotSyncS2CPacket(true, new BotNetworkMap<>(), new BotJobAssignmentMap());
 
-    public BotSyncS2CPacket(BotNetworkMap<?> deltaNetworkMap, BotJobAssignmentMap deltaJobAssignmentMap) {
-        this(false, deltaNetworkMap, deltaJobAssignmentMap);
-    }
-
     @Override
     public Id<? extends CustomPayload> getId() {
         return ID;

@@ -4,19 +4,22 @@ import java.util.LinkedHashSet;
 import java.util.SequencedSet;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.Hand;
 
 public class LivingEntityUtils {
-    public static SequencedSet<Hand> getHandsHolding(LivingEntity livingEntity, Item item) {
-        SequencedSet<Hand> hands = new LinkedHashSet<>(Hand.values().length);
+    public static SequencedSet<ItemStack> getHeldStacks(LivingEntity livingEntity, Item item) {
+        SequencedSet<ItemStack> stacks = new LinkedHashSet<>(Hand.values().length);
 
         for (Hand hand : Hand.values()) {
-            if (!livingEntity.getStackInHand(hand).isOf(item))
+            ItemStack stack = livingEntity.getStackInHand(hand);
+
+            if (!stack.isOf(item))
                 continue;
             
-            hands.add(hand);
+            stacks.add(stack);
         }
 
-        return hands;
+        return stacks;
     }
 }

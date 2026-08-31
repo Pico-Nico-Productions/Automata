@@ -8,9 +8,7 @@ import java.util.UUID;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
@@ -32,14 +30,12 @@ public class CommandToolRenderer {
     private static final int SELECTION2_COLOR = 0xFF0000FF; // Blue
 
     private static Optional<CommandToolComponent> getCommandToolComponent() {
-        PlayerEntity player = MinecraftClient.getInstance().player;
-        SequencedSet<Hand> hands = LivingEntityUtils.getHandsHolding(player, AutomataItems.COMMAND_TOOL);
+        SequencedSet<ItemStack> stacks = LivingEntityUtils.getHeldStacks(MinecraftClient.getInstance().player, AutomataItems.COMMAND_TOOL);
 
-        if (hands.isEmpty())
+        if (stacks.isEmpty())
             return Optional.empty();
 
-        ItemStack stack = player.getStackInHand(hands.getFirst());
-        return Optional.of(stack.getOrDefault(AutomataComponents.COMMAND_TOOL, CommandToolComponent.EMPTY));
+        return Optional.of(stacks.getFirst().getOrDefault(AutomataComponents.COMMAND_TOOL, CommandToolComponent.EMPTY));
     }
 
     private static void renderNetworks(WorldRenderContext context) {
