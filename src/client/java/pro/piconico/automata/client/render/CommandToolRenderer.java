@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.SequencedSet;
-import java.util.UUID;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
@@ -45,17 +44,7 @@ public class CommandToolRenderer {
     }
 
     private static void renderDeconstructionJobs(WorldRenderContext context) {
-        Optional<CommandToolComponent> commandToolComponent = getCommandToolComponent();
-
-        if (commandToolComponent.isEmpty() || commandToolComponent.get().teamUuid().isEmpty())
-            return;
-
-        UUID teamUuid = commandToolComponent.get().teamUuid().get();
-
-        if (!BotCache.jobAssignmentMap.containsKey(teamUuid))
-            return;
-
-        for (Entry<BlockPos, Map<BotJobType<?>, BotJobAssignment>> entry : BotCache.jobAssignmentMap.get(teamUuid).entrySet()) {
+        for (Entry<BlockPos, Map<BotJobType<?>, BotJobAssignment>> entry : BotCache.jobAssignmentMap.entrySet()) {
             if (!entry.getValue().containsKey(AutomataBotJobs.DECONSTRUCTION_JOB))
                 continue;
 

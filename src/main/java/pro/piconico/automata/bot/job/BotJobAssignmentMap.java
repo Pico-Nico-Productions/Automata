@@ -5,26 +5,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
-import net.minecraft.util.Uuids;
 import net.minecraft.util.math.BlockPos;
 import pro.piconico.automata.registry.AutomataRegistries;
 import pro.piconico.automata.util.MapUtils;
 
-// TODO: Denest team UUID and move it to BotJobPersistentState because this map is meant to represent a single world single team view
-public class BotJobAssignmentMap extends HashMap<UUID, Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>>> {
+public class BotJobAssignmentMap extends HashMap<BlockPos, Map<BotJobType<?>, BotJobAssignment>> {
     public static final Codec<BotJobAssignmentMap> CODEC = BotJobAssignment.CODEC.listOf().xmap(BotJobAssignmentMap::new, BotJobAssignmentMap::flatten);
     public static final PacketCodec<ByteBuf, BotJobAssignmentMap> PACKET_CODEC = PacketCodec.tuple(
-            PacketCodecs.map(HashMap::new, Uuids.PACKET_CODEC,
-                    PacketCodecs.optional(PacketCodecs.map(HashMap::new, BlockPos.PACKET_CODEC,
-                            PacketCodecs.optional(PacketCodecs.map(HashMap::new, PacketCodecs.codec(AutomataRegistries.BOT_JOB_TYPE.getCodec()),
-                                    PacketCodecs.optional(PacketCodecs.codec(BotJobAssignment.CODEC))))))), //
+            PacketCodecs.map(HashMap::new, BlockPos.PACKET_CODEC,
+                    PacketCodecs.optional(PacketCodecs.map(HashMap::new, PacketCodecs.codec(AutomataRegistries.BOT_JOB_TYPE.getCodec()),
+                            PacketCodecs.optional(PacketCodecs.codec(BotJobAssignment.CODEC))))), //
             BotJobAssignmentMap::toOptionalMap, //
             BotJobAssignmentMap::fromOptionalMap);
 
@@ -36,8 +32,7 @@ public class BotJobAssignmentMap extends HashMap<UUID, Map<BlockPos, Map<BotJobT
         super();
 
         for (BotJobAssignment jobAssignment : jobAssignments) {
-            Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> blockMap = computeIfAbsent(jobAssignment.TEAM_UUID, uuid -> new HashMap<>());
-            Map<BotJobType<?>, BotJobAssignment> typeMap = blockMap.computeIfAbsent(jobAssignment.JOB.pos(), pos -> new HashMap<>());
+            Map<BotJobType<?>, BotJobAssignment> typeMap = computeIfAbsent(jobAssignment.JOB.pos(), pos -> new HashMap<>());
             typeMap.put(jobAssignment.JOB.getType(), jobAssignment);
         }
     }
@@ -46,35 +41,24 @@ public class BotJobAssignmentMap extends HashMap<UUID, Map<BlockPos, Map<BotJobT
         super(original);
     }
 
-    private static List<BotJobAssignment> flatten(BotJobAssignmentMap jobAssignmentMap) {
-        return jobAssignmentMap.values().stream().flatMap(blockMap -> blockMap.values().stream()).flatMap(typeMap -> typeMap.values().stream()).toList();
+    public static List<BotJobAssignment> flatten(BotJobAssignmentMap jobAssignmentMap) {
+        return jobAssignmentMap.values().stream().flatMap(typeMap -> typeMap.values().stream()).toList();
     }
 
-    private static Map<UUID, Optional<Map<BlockPos, Optional<Map<BotJobType<?>, Optional<BotJobAssignment>>>>>> toOptionalMap(
-            BotJobAssignmentMap jobAssignmentMap) {
-        Function<Map<BotJobType<?>, BotJobAssignment>, Map<BotJobType<?>, Optional<BotJobAssignment>>> wrapTypeLayer = typeMap -> MapUtils
+    private static Map<BlockPos, Optional<Map<BotJobType<?>, Optional<BotJobAssignment>>>> toOptionalMap(BotJobAssignmentMap jobAssignmentMap) {
+        Function<Map<BotJobType<?>, BotJobAssignment>, Map<BotJobType<?>, Optional<BotJobAssignment>>> wrapJobAssignment = typeMap -> MapUtils
                 .wrapValuesInOptional(typeMap, Function.identity());
 
-        Function<Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>>, Map<BlockPos, Optional<Map<BotJobType<?>, Optional<BotJobAssignment>>>>> wrapBlockLayer = blockMap -> MapUtils
-                .wrapValuesInOptional(blockMap, wrapTypeLayer);
-
-        return MapUtils.wrapValuesInOptional(jobAssignmentMap, wrapBlockLayer);
+        return MapUtils.wrapValuesInOptional(jobAssignmentMap, wrapJobAssignment);
     }
 
-    private static BotJobAssignmentMap fromOptionalMap(
-            Map<UUID, Optional<Map<BlockPos, Optional<Map<BotJobType<?>, Optional<BotJobAssignment>>>>>> optionalMap) {
-        Function<Map<BotJobType<?>, Optional<BotJobAssignment>>, Map<BotJobType<?>, BotJobAssignment>> unwrapTypeLayer = typeMap -> MapUtils
+    private static BotJobAssignmentMap fromOptionalMap(Map<BlockPos, Optional<Map<BotJobType<?>, Optional<BotJobAssignment>>>> optionalMap) {
+        Function<Map<BotJobType<?>, Optional<BotJobAssignment>>, Map<BotJobType<?>, BotJobAssignment>> unwrapJobAssignment = typeMap -> MapUtils
                 .unwrapOptionalValues(typeMap, Function.identity());
 
-        Function<Map<BlockPos, Optional<Map<BotJobType<?>, Optional<BotJobAssignment>>>>, Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>>> unwrapBlockLayer = blockMap -> MapUtils
-                .unwrapOptionalValues(blockMap, unwrapTypeLayer);
-
-        Map<UUID, Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>>> map = MapUtils.unwrapOptionalValues(optionalMap, unwrapBlockLayer);
+        Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> map = MapUtils.unwrapOptionalValues(optionalMap, unwrapJobAssignment);
         BotJobAssignmentMap jobAssignmentMap = new BotJobAssignmentMap();
-
-        if (map != null) {
-            jobAssignmentMap.putAll(map);
-        }
+        jobAssignmentMap.putAll(map);
 
         return jobAssignmentMap;
     }
@@ -83,10 +67,7 @@ public class BotJobAssignmentMap extends HashMap<UUID, Map<BlockPos, Map<BotJobT
         BiFunction<Map<BotJobType<?>, BotJobAssignment>, Map<BotJobType<?>, BotJobAssignment>, Map<BotJobType<?>, BotJobAssignment>> deltaTypeMap = (oldType,
                 newType) -> MapUtils.computeMapDelta(oldType, newType, (oldVal, newVal) -> Objects.equals(oldVal, newVal) ? null : newVal);
 
-        BiFunction<Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>>, Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>>, Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>>> deltaBlockMap = (
-                oldBlock, newBlock) -> MapUtils.computeMapDelta(oldBlock, newBlock, deltaTypeMap);
-
-        Map<UUID, Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>>> deltaMap = MapUtils.computeMapDelta(this, newMap, deltaBlockMap);
+        Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> deltaMap = MapUtils.computeMapDelta(this, newMap, deltaTypeMap);
         BotJobAssignmentMap jobAssignmentMap = new BotJobAssignmentMap();
 
         if (deltaMap != null) {

@@ -2,7 +2,6 @@ package pro.piconico.automata.client.network;
 
 import java.util.Map;
 import java.util.function.BiConsumer;
-import net.minecraft.util.math.BlockPos;
 import pro.piconico.automata.bot.job.BotJobAssignment;
 import pro.piconico.automata.bot.job.BotJobAssignmentMap;
 import pro.piconico.automata.bot.job.BotJobType;
@@ -23,10 +22,7 @@ public class BotCache {
         BiConsumer<Map<BotJobType<?>, BotJobAssignment>, Map<BotJobType<?>, BotJobAssignment>> applyTypeLayer = (targetTypeMap, deltaTypeMap) -> MapUtils
                 .applyMapDelta(targetTypeMap, deltaTypeMap, null);
 
-        BiConsumer<Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>>, Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>>> applyBlockLayer = (targetBlockMap,
-                deltaBlockMap) -> MapUtils.applyMapDelta(targetBlockMap, deltaBlockMap, applyTypeLayer);
-
-        MapUtils.applyMapDelta(jobAssignmentMap, deltaMap, applyBlockLayer);
+        MapUtils.applyMapDelta(jobAssignmentMap, deltaMap, applyTypeLayer);
     }
 
     public static void clear() {
