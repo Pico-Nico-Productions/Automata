@@ -53,12 +53,12 @@ public class BotJobAssignmentMap extends HashMap<UUID, Map<BlockPos, Map<BotJobT
     private static Map<UUID, Optional<Map<BlockPos, Optional<Map<BotJobType<?>, Optional<BotJobAssignment>>>>>> toOptionalMap(
             BotJobAssignmentMap jobAssignmentMap) {
         Function<Map<BotJobType<?>, BotJobAssignment>, Map<BotJobType<?>, Optional<BotJobAssignment>>> wrapTypeLayer = typeMap -> MapUtils
-                .wrapValuesToOptional(typeMap, Function.identity());
+                .wrapValuesInOptional(typeMap, Function.identity());
 
         Function<Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>>, Map<BlockPos, Optional<Map<BotJobType<?>, Optional<BotJobAssignment>>>>> wrapBlockLayer = blockMap -> MapUtils
-                .wrapValuesToOptional(blockMap, wrapTypeLayer);
+                .wrapValuesInOptional(blockMap, wrapTypeLayer);
 
-        return MapUtils.wrapValuesToOptional(jobAssignmentMap, wrapBlockLayer);
+        return MapUtils.wrapValuesInOptional(jobAssignmentMap, wrapBlockLayer);
     }
 
     private static BotJobAssignmentMap fromOptionalMap(

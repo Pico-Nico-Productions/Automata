@@ -24,7 +24,7 @@ public abstract class BotEntity extends BeeEntity {
     private static final String TEAM_UUID_KEY = "team_uuid";
     private static final String JOB_KEY = "job";
 
-    public static final double SPEED = 0.5;
+    public static final double SPEED = 1;
     public static final int INTERACT_DISTANCE = 1;
 
     @FunctionalInterface
@@ -39,6 +39,7 @@ public abstract class BotEntity extends BeeEntity {
     });
 
     private UUID teamUuid;
+    // TODO: Try replacing job with persistent state request so there's only 1 source of truth
     private Optional<BotJob> job = Optional.empty();
     private Optional<RoboportBlockEntity> roboport = Optional.empty();
 

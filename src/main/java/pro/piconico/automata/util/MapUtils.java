@@ -9,7 +9,73 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class MapUtils {
-    public static <KeyT, OptionalValueT, ValueT> Map<KeyT, Optional<ValueT>> wrapValuesToOptional(Map<KeyT, OptionalValueT> sourceMap,
+    // TODO: Refactor nested maps with this
+    @SuppressWarnings("unchecked")
+    public static <ValueT> Optional<ValueT> getNested(Map<?, ?> map, Object... keys) {
+        if (map == null || keys == null || keys.length == 0) {
+            throw new IllegalArgumentException();
+        }
+
+        Object current = map;
+        for (int i = 0; i < keys.length; i++) {
+            if (!(current instanceof Map)) {
+                throw new IllegalArgumentException();
+            }
+            Map<?, ?> currentMap = (Map<?, ?>)current;
+            Object key = keys[i];
+
+            if (!currentMap.containsKey(key)) {
+                return Optional.empty();
+            }
+            current = currentMap.get(key);
+        }
+
+        return Optional.ofNullable((ValueT)current);
+    }
+
+    // TODO: Refactor nested maps with this
+    @SuppressWarnings("unchecked")
+    public static <ValueT> Optional<ValueT> removeNested(Map<?, ?> map, Object... keys) {
+        if (map == null || keys == null || keys.length == 0) {
+            throw new IllegalArgumentException();
+        }
+
+        Map<?, ?>[] maps = new Map[keys.length];
+        
+        Object current = map;
+        for (int i = 0; i < keys.length; i++) {
+            if (!(current instanceof Map)) {
+                throw new IllegalArgumentException();
+            }
+            Map<?, ?> currentMap = (Map<?, ?>)current;
+            Object key = keys[i];
+
+            if (!currentMap.containsKey(key)) {
+                return Optional.empty();
+            }
+
+            maps[i] = currentMap;
+            current = currentMap.get(key);
+        }
+
+        int lastIndex = keys.length - 1;
+        Map<Object, Object> deepestMap = (Map<Object, Object>)maps[lastIndex];
+        Object targetValue = deepestMap.remove(keys[lastIndex]);
+
+        for (int i = lastIndex; i > 0; i--) {
+            if (maps[i].isEmpty()) {
+                Map<Object, Object> parentMap = (Map<Object, Object>)maps[i - 1];
+                parentMap.remove(keys[i - 1]);
+            }
+            else {
+                break;
+            }
+        }
+
+        return Optional.ofNullable((ValueT)targetValue);
+    }
+
+    public static <KeyT, OptionalValueT, ValueT> Map<KeyT, Optional<ValueT>> wrapValuesInOptional(Map<KeyT, OptionalValueT> sourceMap,
             Function<OptionalValueT, ValueT> innerTransformer) {
         if (sourceMap == null)
             return null;
