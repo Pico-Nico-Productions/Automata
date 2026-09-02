@@ -248,23 +248,6 @@ public class BotNetworkManager {
     }
 
     //#region Network Fetching
-    public static Optional<ServerBotNetwork> getNetwork(ChunkPos chunkPos, UUID teamUuid, ServerWorld serverWorld) {
-        if (!NETWORK_MAP_CACHE.containsKey(serverWorld))
-            return Optional.empty();
-
-        Map<UUID, BotNetworkMap<ServerBotNetwork>> teamMap = NETWORK_MAP_CACHE.get(serverWorld);
-
-        if (!teamMap.containsKey(teamUuid))
-            return Optional.empty();
-
-        BotNetworkMap<ServerBotNetwork> networkMap = teamMap.get(teamUuid);
-
-        if (!networkMap.containsKey(chunkPos))
-            return Optional.empty();
-
-        return Optional.of(networkMap.get(chunkPos));
-    }
-
     private static Set<ServerBotNetwork> fetchNetworks(Iterable<ChunkPos> chunks,
             TriFunction<ChunkPos, UUID, ServerWorld, Optional<ServerBotNetwork>> fetchNetwork, UUID teamUuid, ServerWorld serverWorld) {
         Set<ServerBotNetwork> networks = new HashSet<>();
@@ -283,6 +266,10 @@ public class BotNetworkManager {
         }
 
         return networks;
+    }
+
+    public static Optional<ServerBotNetwork> getNetwork(ChunkPos chunkPos, UUID teamUuid, ServerWorld serverWorld) {
+        return MapUtils.getNested(NETWORK_MAP_CACHE, serverWorld, teamUuid, chunkPos);
     }
 
     public static Set<ServerBotNetwork> getNetworks(ChunkBounds chunkBounds, UUID teamUuid, ServerWorld serverWorld) {

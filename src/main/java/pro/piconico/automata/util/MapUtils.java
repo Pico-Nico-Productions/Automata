@@ -9,7 +9,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class MapUtils {
-    // TODO: Refactor nested maps with this
     @SuppressWarnings("unchecked")
     public static <ValueT> Optional<ValueT> getNested(Map<?, ?> map, Object... keys) {
         if (map == null || keys == null || keys.length == 0) {
@@ -33,7 +32,6 @@ public class MapUtils {
         return Optional.ofNullable((ValueT)current);
     }
 
-    // TODO: Refactor nested maps with this
     @SuppressWarnings("unchecked")
     public static <ValueT> Optional<ValueT> removeNested(Map<?, ?> map, Object... keys) {
         if (map == null || keys == null || keys.length == 0) {

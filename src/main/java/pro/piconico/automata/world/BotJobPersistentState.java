@@ -25,6 +25,7 @@ import pro.piconico.automata.bot.job.BotJobType;
 import pro.piconico.automata.bot.network.BotNetworkManager;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.registry.AutomataPersistentStates;
+import pro.piconico.automata.util.MapUtils;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
 public class BotJobPersistentState extends PersistentState {
@@ -73,20 +74,7 @@ public class BotJobPersistentState extends PersistentState {
     public static Optional<BotJobAssignment> getJob(UUID teamUuid, BlockPos pos, BotJobType<?> jobType, ServerWorld serverWorld) {
         BotJobPersistentState jobState = getJobState(serverWorld);
 
-        if (!jobState.teamJobAssignmentMap.containsKey(teamUuid))
-            return Optional.empty();
-
-        Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> blockMap = jobState.teamJobAssignmentMap.get(teamUuid);
-
-        if (!blockMap.containsKey(pos))
-            return Optional.empty();
-
-        Map<BotJobType<?>, BotJobAssignment> typeMap = blockMap.get(pos);
-
-        if (!typeMap.containsKey(jobType))
-            return Optional.empty();
-
-        return Optional.of(typeMap.get(jobType));
+        return MapUtils.getNested(jobState.teamJobAssignmentMap, teamUuid, pos, jobType);
     }
 
     public static Set<BotJobAssignment> getJobs(UUID teamUuid, ChunkBounds chunkBounds, ServerWorld serverWorld) {
@@ -231,20 +219,12 @@ public class BotJobPersistentState extends PersistentState {
     //#region Job Removal
     private static boolean removeJob(UUID teamUuid, BlockPos pos, BotJobType<?> type, ServerWorld serverWorld, boolean notify) {
         BotJobPersistentState jobState = getJobState(serverWorld);
-
-        if (getJob(teamUuid, pos, type, serverWorld).isEmpty())
+        Optional<BotJobAssignment> jobAssignment = MapUtils.removeNested(jobState.teamJobAssignmentMap, teamUuid, pos, type);
+        
+        if (jobAssignment.isEmpty())
             return false;
 
-        Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> blockMap = jobState.teamJobAssignmentMap.get(teamUuid);
-        Map<BotJobType<?>, BotJobAssignment> typeMap = blockMap.get(pos);
-        BotJobAssignment jobAssignment = typeMap.remove(type);
-        if (typeMap.isEmpty()) {
-            blockMap.remove(pos);
-            if (blockMap.isEmpty()) {
-                jobState.teamJobAssignmentMap.remove(teamUuid);
-            }
-        }
-        unassignJob(serverWorld, jobAssignment, false);
+        unassignJob(serverWorld, jobAssignment.get(), false);
 
         if (notify) {
             jobState.markDirty();
