@@ -43,7 +43,8 @@ public class BotJobPersistentState extends PersistentState {
         }
     });
 
-    public static final Codec<BotJobPersistentState> CODEC = BotJobAssignment.CODEC.listOf().xmap(BotJobPersistentState::new, BotJobPersistentState::flatten).fieldOf("job_assignment_map").codec();
+    public static final Codec<BotJobPersistentState> CODEC = BotJobAssignment.CODEC.listOf().xmap(BotJobPersistentState::new, BotJobPersistentState::flatten)
+            .fieldOf("job_assignment_map").codec();
 
     private final Map<UUID, BotJobAssignmentMap> teamJobAssignmentMap;
 
@@ -55,7 +56,7 @@ public class BotJobPersistentState extends PersistentState {
         this();
         for (BotJobAssignment jobAssignment : jobAssignments) {
             BotJobAssignmentMap jobAssignmentMap = teamJobAssignmentMap.computeIfAbsent(jobAssignment.TEAM_UUID, uuid -> new BotJobAssignmentMap());
-            Map<BotJobType<?>,BotJobAssignment> typeMap = jobAssignmentMap.computeIfAbsent(jobAssignment.JOB.pos(), pos -> new HashMap<>());
+            Map<BotJobType<?>, BotJobAssignment> typeMap = jobAssignmentMap.computeIfAbsent(jobAssignment.JOB.pos(), pos -> new HashMap<>());
             typeMap.put(jobAssignment.JOB.getType(), jobAssignment);
         }
     }
@@ -108,7 +109,7 @@ public class BotJobPersistentState extends PersistentState {
     //#endregion
 
     //#region Job Assignment
-    private static boolean assignJob(BotJobAssignment jobAssignment, ServerWorld serverWorld, boolean notify) {
+    private static boolean assignJob(ServerWorld serverWorld, BotJobAssignment jobAssignment, boolean notify) {
         Optional<BotEntity> botEntity = BotNetworkManager.assignJob(jobAssignment.JOB, jobAssignment.TEAM_UUID, serverWorld);
 
         if (botEntity.isEmpty())
@@ -124,31 +125,32 @@ public class BotJobPersistentState extends PersistentState {
         return true;
     }
 
-    private static void assignJobs(ServerWorld serverWorld) {
+    private static void assignJobs(ServerWorld serverWorld, UUID teamUuid) {
         BotJobPersistentState jobState = getJobState(serverWorld);
-        Set<UUID> assignedTeamUuids = new HashSet<>();
+        BotJobAssignmentMap teamMap = jobState.teamJobAssignmentMap.get(teamUuid);
+        
+        if (teamMap == null)
+            return;
 
-        for (Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> blockMap : jobState.teamJobAssignmentMap.values()) {
-            for (Map<BotJobType<?>, BotJobAssignment> typeMap : blockMap.values()) {
-                for (BotJobAssignment jobAssignment : typeMap.values()) {
-                    if (jobAssignment.isAssigned() || !assignJob(jobAssignment, serverWorld, false))
-                        continue;
+        boolean assigned = false;
 
-                    assignedTeamUuids.add(jobAssignment.TEAM_UUID);
-                }
+        for (Map<BotJobType<?>, BotJobAssignment> typeMap : teamMap.values()) {
+            for (BotJobAssignment jobAssignment : typeMap.values()) {
+                if (jobAssignment.isAssigned() || !assignJob(serverWorld, jobAssignment, false))
+                    continue;
+
+                assigned = true;
             }
         }
 
-        if (!assignedTeamUuids.isEmpty())
+        if (!assigned)
             return;
 
         jobState.markDirty();
-        for (UUID teamUuid : assignedTeamUuids) {
-            JOBS_MUTATED.invoker().onMutate(teamUuid, serverWorld, Mutation.ASSIGN);
-        }
+        JOBS_MUTATED.invoker().onMutate(teamUuid, serverWorld, Mutation.ASSIGN);
     }
 
-    private static void unassignJob(BotJobAssignment jobAssignment, ServerWorld serverWorld, boolean notify) {
+    private static void unassignJob(ServerWorld serverWorld, BotJobAssignment jobAssignment, boolean notify) {
         UUID assignedBot = jobAssignment.getAssignedBot().get();
         jobAssignment.setAssignedBot(Optional.empty());
 
@@ -166,31 +168,32 @@ public class BotJobPersistentState extends PersistentState {
         botEntity.endJob(false);
     }
 
-    private static void unassignJobs(ServerWorld serverWorld) {
+    private static void unassignJobs(ServerWorld serverWorld, UUID teamUuid) {
         BotJobPersistentState jobState = getJobState(serverWorld);
-        Set<UUID> unassignedTeamUuids = new HashSet<>();
+        BotJobAssignmentMap teamMap = jobState.teamJobAssignmentMap.get(teamUuid);
+        
+        if (teamMap == null)
+            return;
 
-        for (Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> blockMap : jobState.teamJobAssignmentMap.values()) {
-            for (Map<BotJobType<?>, BotJobAssignment> typeMap : blockMap.values()) {
-                for (BotJobAssignment jobAssignment : typeMap.values()) {
-                    if (!jobAssignment.isAssigned()
-                            || BotNetworkManager.getNetwork(new ChunkPos(jobAssignment.JOB.pos()), jobAssignment.TEAM_UUID, serverWorld).isPresent())
-                        continue;
+        boolean unassigned = false;
 
-                    unassignJob(jobAssignment, serverWorld, false);
+        for (Map<BotJobType<?>, BotJobAssignment> typeMap : teamMap.values()) {
+            for (BotJobAssignment jobAssignment : typeMap.values()) {
+                if (!jobAssignment.isAssigned()
+                        || BotNetworkManager.getNetwork(new ChunkPos(jobAssignment.JOB.pos()), jobAssignment.TEAM_UUID, serverWorld).isPresent())
+                    continue;
 
-                    unassignedTeamUuids.add(jobAssignment.TEAM_UUID);
-                }
+                unassignJob(serverWorld, jobAssignment, false);
+
+                unassigned = true;
             }
         }
 
-        if (!unassignedTeamUuids.isEmpty())
+        if (!unassigned)
             return;
 
         jobState.markDirty();
-        for (UUID teamUuid : unassignedTeamUuids) {
-            JOBS_MUTATED.invoker().onMutate(teamUuid, serverWorld, Mutation.UNASSIGN);
-        }
+        JOBS_MUTATED.invoker().onMutate(teamUuid, serverWorld, Mutation.UNASSIGN);
     }
     //#endregion
 
@@ -199,7 +202,8 @@ public class BotJobPersistentState extends PersistentState {
         BotJobPersistentState jobState = getJobState(serverWorld);
         Set<BlockPos> addedPositions = new HashSet<>();
 
-        Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> blockMap = jobState.teamJobAssignmentMap.computeIfAbsent(teamUuid, uuid -> new BotJobAssignmentMap());
+        Map<BlockPos, Map<BotJobType<?>, BotJobAssignment>> blockMap = jobState.teamJobAssignmentMap.computeIfAbsent(teamUuid,
+                uuid -> new BotJobAssignmentMap());
         for (BotJob job : jobs) {
             Map<BotJobType<?>, BotJobAssignment> typeMap = blockMap.computeIfAbsent(job.pos(), pos -> new HashMap<>());
             BotJobType<?> type = job.getType();
@@ -218,7 +222,7 @@ public class BotJobPersistentState extends PersistentState {
         jobState.markDirty();
         JOBS_MUTATED.invoker().onMutate(teamUuid, serverWorld, Mutation.ADD);
 
-        assignJobs(serverWorld);
+        assignJobs(serverWorld, teamUuid);
 
         return addedPositions.size();
     }
@@ -240,7 +244,7 @@ public class BotJobPersistentState extends PersistentState {
                 jobState.teamJobAssignmentMap.remove(teamUuid);
             }
         }
-        unassignJob(jobAssignment, serverWorld, false);
+        unassignJob(serverWorld, jobAssignment, false);
 
         if (notify) {
             jobState.markDirty();
@@ -252,7 +256,7 @@ public class BotJobPersistentState extends PersistentState {
 
     public static int removeJobs(ServerWorld serverWorld) {
         BotJobPersistentState jobState = getJobState(serverWorld);
-        
+
         if (jobState.teamJobAssignmentMap.isEmpty())
             return 0;
 
@@ -272,19 +276,19 @@ public class BotJobPersistentState extends PersistentState {
     private static void onNetworksMutated(UUID teamUuid, ServerWorld serverWorld, BotNetworkManager.Mutation mutation) {
         switch (mutation) {
         case BotNetworkManager.Mutation.ADD:
-            assignJobs(serverWorld);
+            assignJobs(serverWorld, teamUuid);
             break;
         case BotNetworkManager.Mutation.REMOVE:
-            unassignJobs(serverWorld);
+            unassignJobs(serverWorld, teamUuid);
             break;
         }
     }
 
     private static void onBotAdded(RoboportBlockEntity roboport) {
-        if (!(roboport.getWorld() instanceof ServerWorld serverWorld))
+        if (!(roboport.getWorld() instanceof ServerWorld serverWorld) || roboport.getTeam().isEmpty())
             return;
 
-        assignJobs(serverWorld);
+        assignJobs(serverWorld, roboport.getTeam().get());
     }
 
     private static void onJobEnded(BotEntity botEntity, BotJob job, boolean completed) {
@@ -299,8 +303,8 @@ public class BotJobPersistentState extends PersistentState {
             removeJob(botEntity.getTeamUuid(), job.pos(), job.getType(), serverWorld, true);
         }
         else {
-            if (!assignJob(jobAssignment.get(), serverWorld, true)) {
-                unassignJob(jobAssignment.get(), serverWorld, true);
+            if (!assignJob(serverWorld, jobAssignment.get(), true) && jobAssignment.get().isAssigned()) {
+                unassignJob(serverWorld, jobAssignment.get(), true);
             }
         }
     }

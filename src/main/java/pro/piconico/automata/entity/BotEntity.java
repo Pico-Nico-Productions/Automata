@@ -39,7 +39,6 @@ public abstract class BotEntity extends BeeEntity {
     });
 
     private UUID teamUuid;
-    // TODO: Try replacing job with persistent state request so there's only 1 source of truth
     private Optional<BotJob> job = Optional.empty();
     private Optional<RoboportBlockEntity> roboport = Optional.empty();
 
@@ -63,11 +62,6 @@ public abstract class BotEntity extends BeeEntity {
 
     public boolean canDoJob(BotJob job) {
         return getBotType().supportedJobTypes().contains(job.getType());
-    }
-
-    private void assertStateIsLegal() {
-        if (teamUuid == null)
-            throw new IllegalStateException("Bot has no team. Was this spawned without the static factory method?");
     }
 
     public void endJob(boolean completed) {
@@ -137,8 +131,6 @@ public abstract class BotEntity extends BeeEntity {
 
         if (!(getEntityWorld() instanceof ServerWorld serverWorld))
             return;
-
-        assertStateIsLegal();
 
         if (!doJob(serverWorld))
             return;
