@@ -1,7 +1,6 @@
 package pro.piconico.automata.registry;
 
 import java.util.function.Function;
-import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.item.Item;
 import net.minecraft.item.Item.Settings;
@@ -10,7 +9,6 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
-import pro.piconico.automata.event.HoldItemCallback;
 import pro.piconico.automata.item.CommandToolItem;
 import pro.piconico.automata.item.ConstructionBotItem;
 
@@ -27,9 +25,7 @@ public class AutomataItems {
     }
 
     public static void initialize() {
-        HoldItemCallback.HOLD_STARTED.register(CommandToolItem::onHoldStarted);
-        HoldItemCallback.HOLD_ENDED.register(CommandToolItem::onHoldEnded);
-        AttackBlockCallback.EVENT.register(CommandToolItem::onAttackBlock);
+        CommandToolItem.initialize();
         
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.add(COMMAND_TOOL));
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.add(CONSTRUCTION_BOT));

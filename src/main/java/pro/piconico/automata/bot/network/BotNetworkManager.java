@@ -21,15 +21,19 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.Entity;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ChunkTicketType;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.poi.PointOfInterestType;
+import pro.piconico.automata.Automata;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.bot.job.BotJob;
+import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.event.PointOfInterestCallback;
 import pro.piconico.automata.registry.AutomataEntities;
@@ -176,13 +180,14 @@ public class BotNetworkManager {
 
         private Optional<BotEntity> assignJob(BotJob job) {
             Stream<BlockPos> capableRoboports = roboportMap.values().stream().flatMap(roboportsInChunk -> roboportsInChunk.stream())
-                    .filter(roboportPos -> serverWorld.getBlockEntity(roboportPos) instanceof RoboportBlockEntity roboport && roboport.canAssignJob(job));
+                    .filter(roboportPos -> serverWorld.getBlockEntity(roboportPos, AutomataEntities.ROBOPORT).map(roboport -> roboport.canAssignJob(job))
+                            .orElse(false));
             Optional<BlockPos> closestCapableRoboport = capableRoboports.min(Comparator.comparingInt(pos -> pos.getChebyshevDistance(job.pos())));
 
             if (closestCapableRoboport.isEmpty())
                 return Optional.empty();
 
-            return ((RoboportBlockEntity)serverWorld.getBlockEntity(closestCapableRoboport.get())).assignJob(job);
+            return (serverWorld.getBlockEntity(closestCapableRoboport.get(), AutomataEntities.ROBOPORT).get()).assignJob(job);
         }
     }
 
@@ -214,7 +219,7 @@ public class BotNetworkManager {
 
             requested.add(chunkPos);
             for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
-                if (!(blockEntity instanceof RoboportBlockEntity roboport) || roboport.getTeam().filter(teamUuid::equals).isEmpty())
+                if (!(blockEntity instanceof RoboportBlockEntity roboport) || roboport.getTeamUuid().filter(teamUuid::equals).isEmpty())
                     continue;
 
                 added |= roboports.add(roboport.getPos());
@@ -439,10 +444,10 @@ public class BotNetworkManager {
             return;
 
         Optional<RoboportBlockEntity> roboport = serverWorld.getBlockEntity(pos, AutomataEntities.ROBOPORT);
-        if (roboport.isEmpty() || roboport.get().getTeam().isEmpty())
+        if (roboport.isEmpty() || roboport.get().getTeamUuid().isEmpty())
             return;
 
-        addRoboport(pos, roboport.get().getTeam().get(), serverWorld);
+        addRoboport(pos, roboport.get().getTeamUuid().get(), serverWorld);
     }
 
     private static void onPointOfInterestRemoved(BlockPos pos, RegistryEntry<PointOfInterestType> type, ServerWorld serverWorld) {
@@ -467,6 +472,41 @@ public class BotNetworkManager {
         removeRoboport(pos, removedTeamUuid, serverWorld);
     }
 
+    private static void onTeamsMutated(MinecraftServer server, BotTeam team, BotTeamPersistentState.Mutation mutation) {
+        if (mutation != BotTeamPersistentState.Mutation.REMOVE)
+            return;
+
+        for (ServerWorld serverWorld : Set.copyOf(NETWORK_MAP_CACHE.keySet())) {
+            Optional<BotNetworkMap<ServerBotNetwork>> networkMap = MapUtils.removeNested(NETWORK_MAP_CACHE, serverWorld, team.UUID);
+
+            if (networkMap.isEmpty())
+                return;
+
+            for (ServerBotNetwork serverNetwork : networkMap.get().values()) {
+                serverNetwork.getRoboports().forEach(pos -> {
+                    Optional<RoboportBlockEntity> roboport = serverWorld.getBlockEntity(pos, AutomataEntities.ROBOPORT);
+
+                    if (roboport.isEmpty()) {
+                        Automata.logError(BotNetworkManager.class.getSimpleName() + " had an invalid roboport " + BlockPos.class.getSimpleName(),
+                                IllegalStateException::new);
+                        return;
+                    }
+
+                    roboport.get().setTeam(Optional.empty());
+                });
+            }
+
+            for (Entity entity : serverWorld.iterateEntities()) {
+                if (!(entity instanceof BotEntity botEntity) || botEntity.getTeamUuid().filter(uuid -> uuid.equals(team.UUID)).isEmpty())
+                    continue;
+
+                botEntity.setTeamUuid(Optional.empty());
+            }
+
+            NETWORKS_MUTATED.invoker().onMutate(team.UUID, serverWorld, Mutation.REMOVE);
+        }
+    }
+
     private static void onRoboportTeamChanged(RoboportBlockEntity roboport, Optional<UUID> oldTeamUuid) {
         if (!(roboport.getWorld() instanceof ServerWorld serverWorld))
             return;
@@ -474,8 +514,8 @@ public class BotNetworkManager {
         if (oldTeamUuid.isPresent()) {
             removeRoboport(roboport.getPos(), oldTeamUuid.get(), serverWorld);
         }
-        if (roboport.getTeam().isPresent()) {
-            addRoboport(roboport.getPos(), roboport.getTeam().get(), serverWorld);
+        if (roboport.getTeamUuid().isPresent()) {
+            addRoboport(roboport.getPos(), roboport.getTeamUuid().get(), serverWorld);
         }
     }
     //#endregion
@@ -486,6 +526,7 @@ public class BotNetworkManager {
         ServerTickEvents.END_WORLD_TICK.register(BotNetworkManager::onEndWorldTick);
         PointOfInterestCallback.ADDED.register(BotNetworkManager::onPointOfInterestAdded);
         PointOfInterestCallback.REMOVED.register(BotNetworkManager::onPointOfInterestRemoved);
+        BotTeamPersistentState.TEAMS_MUTATED.register(BotNetworkManager::onTeamsMutated);
         RoboportBlockEntity.TEAM_CHANGED.register(BotNetworkManager::onRoboportTeamChanged);
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             NETWORK_MAP_CACHE.clear();

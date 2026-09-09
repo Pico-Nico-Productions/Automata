@@ -11,6 +11,7 @@ import net.minecraft.util.Uuids;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 
+// TODO: Refactor teamUuid into its own component
 public record CommandToolComponent(Optional<BlockPos> selection1, Optional<BlockPos> selection2, Optional<UUID> teamUuid) {
     public static final Codec<CommandToolComponent> CODEC = RecordCodecBuilder
             .create(instance -> instance

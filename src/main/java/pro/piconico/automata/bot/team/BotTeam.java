@@ -23,7 +23,7 @@ public class BotTeam {
             .group(Uuids.INT_STREAM_CODEC.fieldOf("uuid").forGetter(team -> team.UUID), Codec.STRING.fieldOf("name").forGetter(BotTeam::getName))
             .apply(instance, BotTeam::new));
 
-    public static final String EMPTY_BOT_TEAM_STRING = " ";
+    public static final String EMPTY_UUID = " ";
 
     private String name;
 

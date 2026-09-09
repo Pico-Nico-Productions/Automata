@@ -2,9 +2,11 @@ package pro.piconico.automata.item;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.SequencedMap;
 import java.util.UUID;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
+import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -17,12 +19,14 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import pro.piconico.automata.component.CommandToolComponent;
+import pro.piconico.automata.entity.LivingEntityUtils;
+import pro.piconico.automata.event.HoldItemCallback;
 import pro.piconico.automata.network.BotSyncManager;
 import pro.piconico.automata.registry.AutomataComponents;
 import pro.piconico.automata.registry.AutomataItems;
 import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.world.BotTeamPersistentState;
-import pro.piconico.automata.bot.BotDispatcher;
+import pro.piconico.automata.bot.job.BotJobDispatcher;
 import pro.piconico.automata.bot.team.BotTeam;
 
 public class CommandToolItem extends Item {
@@ -45,32 +49,52 @@ public class CommandToolItem extends Item {
         return stack.getOrDefault(AutomataComponents.COMMAND_TOOL, CommandToolComponent.EMPTY);
     }
 
-    public static void onHoldStarted(PlayerEntity player, Hand hand, ItemStack stack) {
-        if (!(stack.isOf(AutomataItems.COMMAND_TOOL)))
+    //#region Bot Sync Subscription
+    private static void updateSubscription(ServerPlayerEntity serverPlayer, Optional<UUID> teamUuid) {
+        if (teamUuid.isEmpty()) {
+            BotSyncManager.unsubscribe(serverPlayer);
             return;
-
-        if (!(player instanceof ServerPlayerEntity serverPlayer) || BotSyncManager.isSubscribed(serverPlayer))
-            return;
-
-        Optional<UUID> teamUuid = getCommandToolComponent(stack).teamUuid();
-
-        if (teamUuid.isEmpty())
-            return;
+        }
 
         BotSyncManager.subscribe(serverPlayer, teamUuid.get());
     }
 
-    public static void onHoldEnded(PlayerEntity player, Hand hand, ItemStack stack) {
-        if (!(stack.isOf(AutomataItems.COMMAND_TOOL)))
-            return;
-
-        if (player.getMainHandStack().isOf(AutomataItems.COMMAND_TOOL) || player.getOffHandStack().isOf(AutomataItems.COMMAND_TOOL))
+    private static void onHoldStarted(PlayerEntity player, Hand hand, ItemStack stack) {
+        if (!stack.isOf(AutomataItems.COMMAND_TOOL))
             return;
 
         if (!(player instanceof ServerPlayerEntity serverPlayer))
             return;
 
-        BotSyncManager.unsubscribe(serverPlayer);
+        updateSubscription(serverPlayer, getCommandToolComponent(stack).teamUuid());
+    }
+
+    private static void onHoldEnded(PlayerEntity player, Hand hand, ItemStack stack) {
+        if (!stack.isOf(AutomataItems.COMMAND_TOOL))
+            return;
+
+        if (!(player instanceof ServerPlayerEntity serverPlayer))
+            return;
+
+        SequencedMap<Hand, ItemStack> heldStacks = LivingEntityUtils.getHeldStacks(player, AutomataItems.COMMAND_TOOL);
+        Optional<UUID> teamUuid = heldStacks.values().stream().map(heldStack -> getCommandToolComponent(heldStack).teamUuid().orElse(null))
+                .filter(uuid -> uuid != null).findFirst();
+        updateSubscription(serverPlayer, teamUuid);
+    }
+    //#endregion
+
+    private static boolean setTeam(ServerPlayerEntity serverPlayer, ItemStack stack, Optional<UUID> teamUuid) {
+        CommandToolComponent commandToolComponent = getCommandToolComponent(stack);
+
+        if (commandToolComponent.teamUuid().equals(teamUuid))
+            return false;
+
+        stack.set(AutomataComponents.COMMAND_TOOL, commandToolComponent.of(teamUuid));
+
+        updateSubscription(serverPlayer, teamUuid);
+        TEAM_CHANGED.invoker().onChanged(serverPlayer, teamUuid);
+
+        return true;
     }
 
     // TODO: Replace with team select screen
@@ -78,35 +102,20 @@ public class CommandToolItem extends Item {
         if (player.getEntityWorld().isClient())
             return ActionResult.SUCCESS;
 
-        CommandToolComponent commandToolComponent = getCommandToolComponent(stack);
-
+        Optional<UUID> teamUuid = getCommandToolComponent(stack).teamUuid();
         List<BotTeam> sortedTeams = BotTeamPersistentState.getTeamMap().values().stream().toList();
         Optional<Integer> newTeamIndex;
-        if (commandToolComponent.teamUuid().isEmpty()) {
+        if (teamUuid.isEmpty()) {
             newTeamIndex = Optional.ofNullable(sortedTeams.isEmpty() ? null : 0);
         }
         else {
-            UUID currentTeamUuid = commandToolComponent.teamUuid().get();
-            Optional<Integer> currentTeamIndex = sortedTeams.stream().filter(team -> team.UUID.equals(currentTeamUuid)).findAny()
+            Optional<Integer> teamIndex = sortedTeams.stream().filter(team -> team.UUID.equals(teamUuid.get())).findAny()
                     .map(team -> sortedTeams.indexOf(team));
-            newTeamIndex = currentTeamIndex.map(index -> index + 1 < sortedTeams.size() ? index + 1 : null);
+            newTeamIndex = teamIndex.map(index -> index + 1 < sortedTeams.size() ? index + 1 : null);
         }
         Optional<BotTeam> newTeam = newTeamIndex.map(index -> sortedTeams.get(index));
-        Optional<UUID> newTeamUuid = newTeam.map(team -> team.UUID);
-        stack.set(AutomataComponents.COMMAND_TOOL, commandToolComponent.of(newTeamUuid));
-        player.sendMessage(Text.translatable(AutomataTexts.TEAM_SELECTED, newTeam.map(team -> team.getName()).orElse(BotTeam.EMPTY_BOT_TEAM_STRING)), true);
-
-        if (newTeamUuid.equals(commandToolComponent.teamUuid()))
-            return ActionResult.SUCCESS;
-
-        ServerPlayerEntity serverPlayer = (ServerPlayerEntity)player;
-        if (newTeamUuid.isPresent()) {
-            BotSyncManager.subscribe(serverPlayer, newTeamUuid.get());
-        }
-        else {
-            BotSyncManager.unsubscribe(serverPlayer);
-        }
-        TEAM_CHANGED.invoker().onChanged(serverPlayer, newTeamUuid);
+        setTeam((ServerPlayerEntity)player, stack, newTeam.map(team -> team.UUID));
+        player.sendMessage(Text.translatable(AutomataTexts.TEAM_SELECTED, newTeam.map(team -> team.getName()).orElse(BotTeam.EMPTY_UUID)), true);
 
         return ActionResult.SUCCESS;
     }
@@ -122,7 +131,40 @@ public class CommandToolItem extends Item {
         return ActionResult.SUCCESS;
     }
 
-    public static ActionResult onAttackBlock(PlayerEntity player, World world, Hand hand, BlockPos blockPos, Direction direction) {
+    private static ActionResult dispatchCommand(PlayerEntity player, ItemStack commandToolStack) {
+        CommandToolComponent commandToolComponent = getCommandToolComponent(commandToolStack);
+
+        if (!(player instanceof ServerPlayerEntity serverPlayer)) {
+            return commandToolComponent.teamUuid().isPresent() || commandToolComponent.hasSelection() ? ActionResult.SUCCESS : ActionResult.FAIL;
+        }
+
+        Optional<BotTeam> team = BotTeamPersistentState.getTeam(commandToolComponent.teamUuid().get());
+
+        if (commandToolComponent.teamUuid().isEmpty() || team.isEmpty()) {
+            if (team.isEmpty()) {
+                commandToolStack.set(AutomataComponents.COMMAND_TOOL, commandToolComponent.of(Optional.empty()));
+            }
+            player.sendMessage(Text.translatable(AutomataTexts.TEAM_MISSING, BotTeam.EMPTY_UUID), true);
+
+            return ActionResult.FAIL;
+        }
+
+        if (!commandToolComponent.hasSelection()) {
+            player.sendMessage(Text.translatable(AutomataTexts.DECONSTRUCTION_FAILED), true);
+
+            return ActionResult.FAIL;
+        }
+
+        BlockPos selection1 = commandToolComponent.selection1().get();
+        BlockPos selection2 = commandToolComponent.selection2().get();
+        Optional<Integer> jobCount = BotJobDispatcher.markForDeconstruction(serverPlayer.getEntityWorld(), team.get().UUID, selection1, selection2);
+
+        player.sendMessage(Text.translatable(AutomataTexts.JOBS_ADDED, jobCount.get()), true);
+
+        return ActionResult.SUCCESS_SERVER;
+    }
+
+    private static ActionResult onAttackBlock(PlayerEntity player, World world, Hand hand, BlockPos blockPos, Direction direction) {
         ItemStack stack = player.getStackInHand(hand);
 
         if (!(stack.isOf(AutomataItems.COMMAND_TOOL)))
@@ -137,7 +179,7 @@ public class CommandToolItem extends Item {
         ItemStack stack = context.getStack();
 
         if (player.isSneaking())
-            return BotDispatcher.markForDeconstruction(player, getCommandToolComponent(stack));
+            return dispatchCommand(player, stack);
 
         return select(player, stack, context.getBlockPos(), true);
     }
@@ -149,6 +191,12 @@ public class CommandToolItem extends Item {
         if (!player.isSneaking())
             return cycleTeam(player, stack);
 
-        return BotDispatcher.markForDeconstruction(player, getCommandToolComponent(stack));
+        return dispatchCommand(player, stack);
+    }
+
+    public static void initialize() {
+        HoldItemCallback.HOLD_STARTED.register(CommandToolItem::onHoldStarted);
+        HoldItemCallback.HOLD_ENDED.register(CommandToolItem::onHoldEnded);
+        AttackBlockCallback.EVENT.register(CommandToolItem::onAttackBlock);
     }
 }

@@ -13,6 +13,7 @@ import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
@@ -83,6 +84,19 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         teamUuid = Optional.of(BotTeamPersistentState.getTeamMap().lastEntry().getKey());
     }
 
+    public Optional<UUID> getTeamUuid() {
+        return teamUuid;
+    }
+
+    public void setTeam(Optional<UUID> teamUuid) {
+        if (this.teamUuid.equals(teamUuid))
+            return;
+
+        Optional<UUID> oldTeamUuid = this.teamUuid;
+        this.teamUuid = teamUuid;
+        TEAM_CHANGED.invoker().onChanged(this, oldTeamUuid);
+    }
+
     private Optional<BotEntity> getBotEntityFor(BotJob job) {
         Optional<Set<BotType>> capableBotTypes = AutomataBots.getBotTypesFor(job);
         if (capableBotTypes.isEmpty())
@@ -90,7 +104,7 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
 
         Box searchBox = ChunkBounds.of(new ChunkPos(getPos()), CHUNK_RANGE, world).toBox();
         List<BotEntity> capableBots = world.getEntitiesByType(TypeFilter.instanceOf(BotEntity.class), searchBox,
-                botEntity -> botEntity.isAlive() && botEntity.getTeamUuid().equals(teamUuid.get()) && !botEntity.hasJob() && botEntity.canDoJob(job));
+                botEntity -> botEntity.isAlive() && botEntity.getTeamUuid().equals(teamUuid) && botEntity.getJob().isEmpty() && botEntity.canDoJob(job));
         return capableBots.isEmpty() ? Optional.empty() : Optional.of(capableBots.getFirst());
     }
 
@@ -112,25 +126,12 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         return teamUuid.isPresent() && (getBotEntityFor(job).isPresent() || getBotSlotFor(job).isPresent());
     }
 
-    public Optional<UUID> getTeam() {
-        return teamUuid;
-    }
-
-    public void setTeam(Optional<UUID> teamUuid) {
-        if (this.teamUuid.equals(teamUuid))
-            return;
-
-        Optional<UUID> oldTeamUuid = this.teamUuid;
-        this.teamUuid = teamUuid;
-        TEAM_CHANGED.invoker().onChanged(this, oldTeamUuid);
-    }
-
     public Optional<BotEntity> assignJob(BotJob job) {
         if (teamUuid.isEmpty())
             return Optional.empty();
 
         Optional<BotEntity> botEntity = getBotEntityFor(job);
-        if (botEntity.isPresent() && botEntity.get().setJob(Optional.of(job)))
+        if (botEntity.isPresent() && botEntity.get().setJob(job))
             return botEntity;
 
         Optional<Integer> botSlot = getBotSlotFor(job);
@@ -141,8 +142,9 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         markDirty();
 
         EntityType<? extends BotEntity> botEntityType = botItem.getBotType().entityType();
-        BotEntity newBotEntity = BotEntity.spawn(botEntityType, (ServerWorld)getWorld(), getPos().up(), teamUuid.get());
-        newBotEntity.setJob(Optional.of(job));
+        BotEntity newBotEntity = botEntityType.spawn((ServerWorld)getWorld(), getPos().up(), SpawnReason.MOB_SUMMONED);
+        newBotEntity.setTeamUuid(teamUuid);
+        newBotEntity.setJob(job);
 
         return Optional.of(newBotEntity);
     }
@@ -170,17 +172,14 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
     protected void readData(ReadView view) {
         super.readData(view);
         Inventories.readData(view, itemStacks);
-        teamUuid = view.read(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC);
+        teamUuid = view.read(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC).filter(uuid -> BotTeamPersistentState.getTeam(uuid).isPresent());
     }
 
     @Override
     protected void writeData(WriteView view) {
         super.writeData(view);
         Inventories.writeData(view, itemStacks);
-        if (teamUuid.isEmpty())
-            return;
-
-        view.put(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC, teamUuid.get());
+        teamUuid.ifPresent(uuid -> view.put(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC, uuid));
     }
 
     @Override
@@ -262,13 +261,13 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         Optional<BlockPos> closestRoboportPos = serverWorld.getPointOfInterestStorage()
                 .getInSquare(entry -> entry.matchesKey(AutomataPointOfInterestTypes.ROBOPORT), pos, ChunkUtils.CHUNK_SIZE * chunkRange,
                         PointOfInterestStorage.OccupationStatus.ANY)
-                .map(PointOfInterest::getPos)
-                .filter(roboportPos -> serverWorld.getBlockEntity(roboportPos, AutomataEntities.ROBOPORT).filter(roboport -> predicate.test(roboport)).isPresent())
+                .map(PointOfInterest::getPos).filter(roboportPos -> serverWorld.getBlockEntity(roboportPos, AutomataEntities.ROBOPORT)
+                        .filter(roboport -> predicate.test(roboport)).isPresent())
                 .min(Comparator.comparingDouble(roboport -> pos.getSquaredDistance(roboport)));
 
         if (closestRoboportPos.isEmpty())
             return Optional.empty();
 
-        return Optional.of((RoboportBlockEntity)serverWorld.getBlockEntity(closestRoboportPos.get()));
+        return serverWorld.getBlockEntity(closestRoboportPos.get(), AutomataEntities.ROBOPORT);
     }
 }

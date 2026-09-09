@@ -36,7 +36,7 @@ public class AutomataEntities {
         RegistryKey<BlockEntityType<?>> blockEntityKey = AutomataRegistry.toRegistryKey(RegistryKeys.BLOCK_ENTITY_TYPE, name);
         BlockEntityType<T> blockEntity = FabricBlockEntityTypeBuilder.create(blockEntityFactory, block).build();
         Registry.register(Registries.BLOCK_ENTITY_TYPE, blockEntityKey, blockEntity);
-        
+
         return blockEntity;
     }
 

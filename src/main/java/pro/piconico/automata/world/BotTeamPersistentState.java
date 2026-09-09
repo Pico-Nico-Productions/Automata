@@ -19,12 +19,12 @@ public class BotTeamPersistentState extends PersistentState {
 
     @FunctionalInterface
     public interface Mutate {
-        void onMutate(Mutation mutation);
+        void onMutate(MinecraftServer server, BotTeam team, Mutation mutation);
     }
 
-    public static final Event<Mutate> TEAMS_MUTATED = EventFactory.createArrayBacked(Mutate.class, callbacks -> (mutation) -> {
+    public static final Event<Mutate> TEAMS_MUTATED = EventFactory.createArrayBacked(Mutate.class, callbacks -> (server, team, mutation) -> {
         for (Mutate callback : callbacks) {
-            callback.onMutate(mutation);
+            callback.onMutate(server, team, mutation);
         }
     });
 
@@ -69,7 +69,7 @@ public class BotTeamPersistentState extends PersistentState {
 
         teamState.teamMap.put(team.UUID, team);
         teamState.markDirty();
-        TEAMS_MUTATED.invoker().onMutate(Mutation.ADD);
+        TEAMS_MUTATED.invoker().onMutate(server, team, Mutation.ADD);
 
         return Optional.of(team);
     }
@@ -83,14 +83,14 @@ public class BotTeamPersistentState extends PersistentState {
         BotTeam team = teamState.teamMap.remove(teamUuid);
 
         teamState.markDirty();
-        TEAMS_MUTATED.invoker().onMutate(Mutation.REMOVE);
+        TEAMS_MUTATED.invoker().onMutate(server, team, Mutation.REMOVE);
 
         return Optional.of(team);
     }
 
     private static void onBotTeamMutated(BotTeam team) {
         getTeamState().markDirty();
-        TEAMS_MUTATED.invoker().onMutate(Mutation.MODIFY);
+        TEAMS_MUTATED.invoker().onMutate(server, team, Mutation.MODIFY);
     }
 
     public static void initialize() {

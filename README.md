@@ -2,6 +2,8 @@
 
 ## Overview
 
+[/Automata Workflow.bat](/Automata%20Workflow.bat) opens the relevant programs for development
+
 ### Running The Mod
 
 1. Clone repo

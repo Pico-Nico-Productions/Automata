@@ -8,6 +8,7 @@ import net.minecraft.text.Text;
 import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.world.BotJobPersistentState;
 
+// TODO: Refactor this to be job command with clear as an argument
 public class ClearCommand {
     private static final String NAME = "clear";
 

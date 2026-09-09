@@ -3,11 +3,12 @@ package pro.piconico.automata.client.render;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.SequencedSet;
+import java.util.SequencedMap;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
@@ -24,17 +25,17 @@ import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 public class CommandToolRenderer {
     private static final int NETWORK_ARGB = 0x60FFFF00; // Yellow
     private static final int DECONSTRUCTION_BOX_ARGB = 0xFFFF0000; // Red
-    private static final int SELECTION_BOX_COLOR = 0xFF00FFFF; // Cyan
-    private static final int SELECTION1_COLOR = 0xFF00FF00; // Green
-    private static final int SELECTION2_COLOR = 0xFF0000FF; // Blue
+    private static final int SELECTION_BOX_ARGB = 0xFF00FFFF; // Cyan
+    private static final int SELECTION1_ARGB = 0xFF00FF00; // Green
+    private static final int SELECTION2_ARGB = 0xFF0000FF; // Blue
 
     private static Optional<CommandToolComponent> getCommandToolComponent() {
-        SequencedSet<ItemStack> stacks = LivingEntityUtils.getHeldStacks(MinecraftClient.getInstance().player, AutomataItems.COMMAND_TOOL);
+        SequencedMap<Hand, ItemStack> stacks = LivingEntityUtils.getHeldStacks(MinecraftClient.getInstance().player, AutomataItems.COMMAND_TOOL);
 
         if (stacks.isEmpty())
             return Optional.empty();
 
-        return Optional.of(stacks.getFirst().getOrDefault(AutomataComponents.COMMAND_TOOL, CommandToolComponent.EMPTY));
+        return Optional.of(stacks.firstEntry().getValue().getOrDefault(AutomataComponents.COMMAND_TOOL, CommandToolComponent.EMPTY));
     }
 
     private static void renderNetworks(WorldRenderContext context) {
@@ -58,9 +59,9 @@ public class CommandToolRenderer {
         if (commandToolComponent.isEmpty() || !commandToolComponent.get().hasSelection())
             return;
 
-        RenderUtils.drawBoxOutline(context, commandToolComponent.get().getSelectionBox().get(), SELECTION_BOX_COLOR);
-        RenderUtils.drawBoxOutline(context, new Box(commandToolComponent.get().selection1().get()), SELECTION1_COLOR);
-        RenderUtils.drawBoxOutline(context, new Box(commandToolComponent.get().selection2().get()), SELECTION2_COLOR);
+        RenderUtils.drawBoxOutline(context, commandToolComponent.get().getSelectionBox().get(), SELECTION_BOX_ARGB);
+        RenderUtils.drawBoxOutline(context, new Box(commandToolComponent.get().selection1().get()), SELECTION1_ARGB);
+        RenderUtils.drawBoxOutline(context, new Box(commandToolComponent.get().selection2().get()), SELECTION2_ARGB);
     }
 
     public static void initialize() {

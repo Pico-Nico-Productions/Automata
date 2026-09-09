@@ -5,7 +5,6 @@ import java.util.UUID;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.passive.BeeEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -18,6 +17,7 @@ import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.bot.BotType;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.inventory.InventoryUtils;
+import pro.piconico.automata.world.BotTeamPersistentState;
 
 // TODO: Extend PathAwareEntity instead and create goals
 public abstract class BotEntity extends BeeEntity {
@@ -38,7 +38,7 @@ public abstract class BotEntity extends BeeEntity {
         }
     });
 
-    private UUID teamUuid;
+    private Optional<UUID> teamUuid = Optional.empty();
     private Optional<BotJob> job = Optional.empty();
     private Optional<RoboportBlockEntity> roboport = Optional.empty();
 
@@ -48,20 +48,36 @@ public abstract class BotEntity extends BeeEntity {
 
     public abstract BotType getBotType();
 
-    public UUID getTeamUuid() {
+    public Optional<UUID> getTeamUuid() {
         return teamUuid;
+    }
+
+    public void setTeamUuid(Optional<UUID> teamUuid) {
+        if (this.teamUuid.equals(teamUuid))
+
+        endJob(false);
+
+        this.teamUuid = teamUuid;
     }
 
     public Optional<BotJob> getJob() {
         return job;
     }
 
-    public boolean hasJob() {
-        return job.isPresent();
+    public boolean canDoJob(BotJob job) {
+        return teamUuid.isPresent() && getBotType().supportedJobTypes().contains(job.getType());
     }
 
-    public boolean canDoJob(BotJob job) {
-        return getBotType().supportedJobTypes().contains(job.getType());
+    public boolean setJob(BotJob newJob) {
+        if (!canDoJob(newJob))
+            return false;
+
+        Optional<BotJob> oldJob = job;
+        job = Optional.of(newJob);
+        if (oldJob.isPresent())
+            JOB_ENDED.invoker().onEnded(this, oldJob.get(), false);
+
+        return true;
     }
 
     public void endJob(boolean completed) {
@@ -73,20 +89,8 @@ public abstract class BotEntity extends BeeEntity {
         JOB_ENDED.invoker().onEnded(this, oldJob, completed);
     }
 
-    public boolean setJob(Optional<BotJob> newJob) {
-        if (newJob.isPresent() && !canDoJob(newJob.get()))
-            return false;
-
-        Optional<BotJob> oldJob = job;
-        job = newJob;
-        if (oldJob.isPresent())
-            JOB_ENDED.invoker().onEnded(this, oldJob.get(), false);
-
-        return true;
-    }
-
     private boolean navigateTo(BlockPos pos) {
-        if (getBlockPos().getSquaredDistance(pos) > INTERACT_DISTANCE * INTERACT_DISTANCE) {
+        if (getBlockPos().getChebyshevDistance(pos) > INTERACT_DISTANCE) {
             if (pos.equals(getNavigation().getTargetPos()))
                 return false;
 
@@ -111,8 +115,12 @@ public abstract class BotEntity extends BeeEntity {
     }
 
     private boolean returnToPort(ServerWorld serverWorld) {
+        if (teamUuid.isEmpty())
+            return false;
+
         if (roboport.isEmpty() || !InventoryUtils.canAdd(roboport.get(), getBotType().item())) {
-            roboport = RoboportBlockEntity.getClosestTo(getBlockPos(), RoboportBlockEntity.CHUNK_RANGE + 1, port -> InventoryUtils.canAdd(port, getBotType().item()), serverWorld);
+            roboport = RoboportBlockEntity.getClosestTo(getBlockPos(), RoboportBlockEntity.CHUNK_RANGE + 1,
+                    port -> InventoryUtils.canAdd(port, getBotType().item()), serverWorld);
             if (roboport.isEmpty())
                 return false;
         }
@@ -149,7 +157,7 @@ public abstract class BotEntity extends BeeEntity {
     public void readData(ReadView view) {
         super.readData(view);
 
-        teamUuid = view.read(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC).get();
+        teamUuid = view.read(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC).filter(uuid -> BotTeamPersistentState.getTeam(uuid).isPresent());
         job = view.read(JOB_KEY, BotJob.CODEC);
     }
 
@@ -157,18 +165,7 @@ public abstract class BotEntity extends BeeEntity {
     public void writeData(WriteView view) {
         super.writeData(view);
 
-        view.put(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC, teamUuid);
-
-        if (job.isEmpty())
-            return;
-
-        view.put(JOB_KEY, BotJob.CODEC, job.get());
-    }
-
-    public static BotEntity spawn(EntityType<? extends BotEntity> botEntityType, ServerWorld serverWorld, BlockPos pos, UUID teamUuid) {
-        BotEntity newBotEntity = botEntityType.spawn(serverWorld, pos, SpawnReason.MOB_SUMMONED);
-        newBotEntity.teamUuid = teamUuid;
-
-        return newBotEntity;
+        teamUuid.ifPresent(uuid -> view.put(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC, uuid));
+        job.ifPresent(j -> view.put(JOB_KEY, BotJob.CODEC, j));
     }
 }

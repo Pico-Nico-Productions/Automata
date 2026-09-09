@@ -1,6 +1,6 @@
 package pro.piconico.automata.screen;
 
-import net.minecraft.block.entity.BlockEntity;
+import java.util.Optional;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
@@ -10,6 +10,7 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
+import pro.piconico.automata.registry.AutomataEntities;
 import pro.piconico.automata.registry.AutomataScreenHandlers;
 import pro.piconico.automata.screen.slot.BotSlot;
 
@@ -20,12 +21,12 @@ public class RoboportScreenHandler extends ScreenHandler {
         super(AutomataScreenHandlers.ROBOPORT, syncId);
 
         World world = playerInventory.player.getEntityWorld();
-        BlockEntity blockEntity = world.getBlockEntity(pos);
-        if (!(blockEntity instanceof RoboportBlockEntity roboport)) {
+        Optional<RoboportBlockEntity> roboport = world.getBlockEntity(pos, AutomataEntities.ROBOPORT);
+        if (roboport.isEmpty()) {
             throw new IllegalStateException("Incorrect block entity at " + pos);
         }
 
-        this.inventory = roboport;
+        this.inventory = roboport.get();
 
         // Bot slot(s)
         for (int i = 0; i < RoboportBlockEntity.BOT_SLOT_COUNT; i++) {

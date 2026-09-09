@@ -11,6 +11,7 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
+import pro.piconico.automata.registry.AutomataEntities;
 
 public class RoboportBlock extends BlockWithEntity {
     public static final MapCodec<RoboportBlock> CODEC = createCodec(RoboportBlock::new);
@@ -34,10 +35,8 @@ public class RoboportBlock extends BlockWithEntity {
         if (world.isClient())
             return ActionResult.SUCCESS;
 
-        BlockEntity blockEntity = world.getBlockEntity(pos);
-        if (blockEntity instanceof RoboportBlockEntity roboport) {
-            player.openHandledScreen(roboport);
-        }
+        RoboportBlockEntity roboport = world.getBlockEntity(pos, AutomataEntities.ROBOPORT).get();
+        player.openHandledScreen(roboport);
 
         return ActionResult.SUCCESS;
     }
