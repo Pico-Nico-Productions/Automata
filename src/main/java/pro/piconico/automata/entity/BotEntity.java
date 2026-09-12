@@ -17,12 +17,12 @@ import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.bot.BotType;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.inventory.InventoryUtils;
+import pro.piconico.automata.world.BotJobPersistentState;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
 // TODO: Extend PathAwareEntity instead and create goals
 public abstract class BotEntity extends BeeEntity {
     private static final String TEAM_UUID_KEY = "team_uuid";
-    private static final String JOB_KEY = "job";
 
     public static final double SPEED = 1;
     public static final int INTERACT_DISTANCE = 1;
@@ -39,7 +39,6 @@ public abstract class BotEntity extends BeeEntity {
     });
 
     private Optional<UUID> teamUuid = Optional.empty();
-    private Optional<BotJob> job = Optional.empty();
     private Optional<RoboportBlockEntity> roboport = Optional.empty();
 
     public BotEntity(EntityType<? extends BeeEntity> entityType, World world) {
@@ -55,38 +54,26 @@ public abstract class BotEntity extends BeeEntity {
     public void setTeamUuid(Optional<UUID> teamUuid) {
         if (this.teamUuid.equals(teamUuid))
 
-        endJob(false);
+            endJob(false);
 
         this.teamUuid = teamUuid;
     }
 
-    public Optional<BotJob> getJob() {
-        return job;
+    private Optional<BotJob> getJob() {
+        return BotJobPersistentState.getJob((ServerWorld)getEntityWorld(), uuid);
     }
 
     public boolean canDoJob(BotJob job) {
-        return teamUuid.isPresent() && getBotType().supportedJobTypes().contains(job.getType());
+        return teamUuid.isPresent() && getJob().isEmpty() && getBotType().supportedJobTypes().contains(job.getType());
     }
 
-    public boolean setJob(BotJob newJob) {
-        if (!canDoJob(newJob))
-            return false;
+    private void endJob(boolean completed) {
+        Optional<BotJob> job = getJob();
 
-        Optional<BotJob> oldJob = job;
-        job = Optional.of(newJob);
-        if (oldJob.isPresent())
-            JOB_ENDED.invoker().onEnded(this, oldJob.get(), false);
-
-        return true;
-    }
-
-    public void endJob(boolean completed) {
         if (job.isEmpty())
             return;
 
-        BotJob oldJob = job.get();
-        job = Optional.empty();
-        JOB_ENDED.invoker().onEnded(this, oldJob, completed);
+        JOB_ENDED.invoker().onEnded(this, job.get(), completed);
     }
 
     private boolean navigateTo(BlockPos pos) {
@@ -103,6 +90,8 @@ public abstract class BotEntity extends BeeEntity {
     }
 
     private boolean doJob(ServerWorld serverWorld) {
+        Optional<BotJob> job = getJob();
+
         if (job.isEmpty())
             return true;
 
@@ -158,7 +147,6 @@ public abstract class BotEntity extends BeeEntity {
         super.readData(view);
 
         teamUuid = view.read(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC).filter(uuid -> BotTeamPersistentState.getTeam(uuid).isPresent());
-        job = view.read(JOB_KEY, BotJob.CODEC);
     }
 
     @Override
@@ -166,6 +154,5 @@ public abstract class BotEntity extends BeeEntity {
         super.writeData(view);
 
         teamUuid.ifPresent(uuid -> view.put(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC, uuid));
-        job.ifPresent(j -> view.put(JOB_KEY, BotJob.CODEC, j));
     }
 }

@@ -11,13 +11,11 @@ import java.util.UUID;
 import com.mojang.serialization.Codec;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
-import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.PersistentState;
-import pro.piconico.automata.Automata;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.job.BotJobAssignment;
@@ -50,9 +48,11 @@ public class BotJobPersistentState extends PersistentState {
             .fieldOf("job_assignment_map").codec();
 
     private final Map<UUID, BotJobAssignmentMap> teamJobAssignmentMap;
+    private final Map<UUID, BotJob> jobLookup;
 
     public BotJobPersistentState() {
         teamJobAssignmentMap = new HashMap<>();
+        jobLookup = new HashMap<>();
     }
 
     private BotJobPersistentState(List<BotJobAssignment> jobAssignments) {
@@ -61,6 +61,7 @@ public class BotJobPersistentState extends PersistentState {
             BotJobAssignmentMap jobAssignmentMap = teamJobAssignmentMap.computeIfAbsent(jobAssignment.TEAM_UUID, uuid -> new BotJobAssignmentMap());
             Map<BotJobType<?>, BotJobAssignment> typeMap = jobAssignmentMap.computeIfAbsent(jobAssignment.JOB.pos(), pos -> new HashMap<>());
             typeMap.put(jobAssignment.JOB.getType(), jobAssignment);
+            jobAssignment.getAssignedBot().ifPresent(botUuid -> jobLookup.put(botUuid, jobAssignment.JOB));
         }
     }
 
@@ -73,13 +74,17 @@ public class BotJobPersistentState extends PersistentState {
     }
 
     //#region Job Querying
-    public static Optional<BotJobAssignment> getJob(UUID teamUuid, BlockPos pos, BotJobType<?> jobType, ServerWorld serverWorld) {
+    public static Optional<BotJob> getJob(ServerWorld serverWorld, UUID botUuid) {
+        return MapUtils.getNested(getJobState(serverWorld).jobLookup, botUuid);
+    }
+
+    public static Optional<BotJobAssignment> getJobAssignment(ServerWorld serverWorld, UUID teamUuid, BlockPos pos, BotJobType<?> jobType) {
         BotJobPersistentState jobState = getJobState(serverWorld);
 
         return MapUtils.getNested(jobState.teamJobAssignmentMap, teamUuid, pos, jobType);
     }
 
-    public static Set<BotJobAssignment> getJobs(UUID teamUuid, ChunkBounds chunkBounds, ServerWorld serverWorld) {
+    public static Set<BotJobAssignment> getJobAssignments(ServerWorld serverWorld, UUID teamUuid, ChunkBounds chunkBounds) {
         BotJobPersistentState jobState = getJobState(serverWorld);
 
         if (!jobState.teamJobAssignmentMap.containsKey(teamUuid))
@@ -100,15 +105,18 @@ public class BotJobPersistentState extends PersistentState {
 
     //#region Job Assignment
     private static boolean assignJob(ServerWorld serverWorld, BotJobAssignment jobAssignment, boolean notify) {
-        Optional<BotEntity> botEntity = BotNetworkManager.assignJob(jobAssignment.JOB, jobAssignment.TEAM_UUID, serverWorld);
+        Optional<BotEntity> botEntity = BotNetworkManager.getOrSpawnBotFor(serverWorld, jobAssignment.TEAM_UUID, jobAssignment.JOB);
 
         if (botEntity.isEmpty())
             return false;
 
-        jobAssignment.setAssignedBot(Optional.of(botEntity.get().getUuid()));
+        UUID botUuid = botEntity.get().getUuid();
+        jobAssignment.setAssignedBot(Optional.of(botUuid));
+        BotJobPersistentState jobState = getJobState(serverWorld);
+        jobState.jobLookup.put(botUuid, jobAssignment.JOB);
 
         if (notify) {
-            getJobState(serverWorld).markDirty();
+            jobState.markDirty();
             JOBS_MUTATED.invoker().onMutate(jobAssignment.TEAM_UUID, serverWorld, Mutation.ASSIGN);
         }
 
@@ -144,22 +152,15 @@ public class BotJobPersistentState extends PersistentState {
         if (!jobAssignment.isAssigned())
             return;
 
-        UUID assignedBot = jobAssignment.getAssignedBot().get();
+        UUID botUuid = jobAssignment.getAssignedBot().get();
         jobAssignment.setAssignedBot(Optional.empty());
+        BotJobPersistentState jobState = getJobState(serverWorld);
+        jobState.jobLookup.remove(botUuid);
 
         if (notify) {
-            getJobState(serverWorld).markDirty();
+            jobState.markDirty();
             JOBS_MUTATED.invoker().onMutate(jobAssignment.TEAM_UUID, serverWorld, Mutation.UNASSIGN);
         }
-
-        // TODO: Reverse this dependency so state only handles its internal data
-        Entity entity = serverWorld.getEntity(assignedBot);
-        if (!(entity instanceof BotEntity botEntity)) {
-            Automata.logError(BotJobAssignment.class.getSimpleName() + " assigned to an invalid " + UUID.class.getSimpleName(), IllegalStateException::new);
-            return;
-        }
-
-        botEntity.endJob(false);
     }
 
     private static void unassignJobs(ServerWorld serverWorld, UUID teamUuid) {
@@ -288,7 +289,7 @@ public class BotJobPersistentState extends PersistentState {
     }
     //#endregion
 
-    //#region Event listeners
+    //#region Event Listeners
     private static void onTeamsMutated(MinecraftServer server, BotTeam team, BotTeamPersistentState.Mutation mutation) {
         if (mutation != BotTeamPersistentState.Mutation.REMOVE)
             return;
@@ -318,7 +319,7 @@ public class BotJobPersistentState extends PersistentState {
         if (!(botEntity.getEntityWorld() instanceof ServerWorld serverWorld))
             return;
 
-        Optional<BotJobAssignment> jobAssignment = getJob(botEntity.getTeamUuid().get(), job.pos(), job.getType(), serverWorld);
+        Optional<BotJobAssignment> jobAssignment = getJobAssignment(serverWorld, botEntity.getTeamUuid().get(), job.pos(), job.getType());
         if (jobAssignment.isEmpty())
             return;
 
@@ -326,10 +327,8 @@ public class BotJobPersistentState extends PersistentState {
             removeJob(serverWorld, botEntity.getTeamUuid().get(), job.pos(), job.getType(), true);
             assignJobs(serverWorld, botEntity.getTeamUuid().get());
         }
-        else {
-            if (!assignJob(serverWorld, jobAssignment.get(), true) && jobAssignment.get().isAssigned()) {
-                unassignJob(serverWorld, jobAssignment.get(), true);
-            }
+        else if (!assignJob(serverWorld, jobAssignment.get(), true)) {
+            unassignJob(serverWorld, jobAssignment.get(), true);
         }
     }
     //#endregion

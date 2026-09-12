@@ -104,7 +104,7 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
 
         Box searchBox = ChunkBounds.of(new ChunkPos(getPos()), CHUNK_RANGE, world).toBox();
         List<BotEntity> capableBots = world.getEntitiesByType(TypeFilter.instanceOf(BotEntity.class), searchBox,
-                botEntity -> botEntity.isAlive() && botEntity.getTeamUuid().equals(teamUuid) && botEntity.getJob().isEmpty() && botEntity.canDoJob(job));
+                botEntity -> botEntity.isAlive() && botEntity.getTeamUuid().equals(teamUuid) && botEntity.canDoJob(job));
         return capableBots.isEmpty() ? Optional.empty() : Optional.of(capableBots.getFirst());
     }
 
@@ -122,16 +122,16 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         return Optional.empty();
     }
 
-    public boolean canAssignJob(BotJob job) {
+    public boolean canDoJob(BotJob job) {
         return teamUuid.isPresent() && (getBotEntityFor(job).isPresent() || getBotSlotFor(job).isPresent());
     }
 
-    public Optional<BotEntity> assignJob(BotJob job) {
+    public Optional<BotEntity> getOrSpawnBotFor(BotJob job) {
         if (teamUuid.isEmpty())
             return Optional.empty();
 
         Optional<BotEntity> botEntity = getBotEntityFor(job);
-        if (botEntity.isPresent() && botEntity.get().setJob(job))
+        if (botEntity.isPresent())
             return botEntity;
 
         Optional<Integer> botSlot = getBotSlotFor(job);
@@ -144,7 +144,6 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         EntityType<? extends BotEntity> botEntityType = botItem.getBotType().entityType();
         BotEntity newBotEntity = botEntityType.spawn((ServerWorld)getWorld(), getPos().up(), SpawnReason.MOB_SUMMONED);
         newBotEntity.setTeamUuid(teamUuid);
-        newBotEntity.setJob(job);
 
         return Optional.of(newBotEntity);
     }

@@ -178,16 +178,16 @@ public class BotNetworkManager {
             return new RemovedObjects(Optional.of(roboport), Optional.of(roboportChunk), subnetworks);
         }
 
-        private Optional<BotEntity> assignJob(BotJob job) {
-            Stream<BlockPos> capableRoboports = roboportMap.values().stream().flatMap(roboportsInChunk -> roboportsInChunk.stream())
-                    .filter(roboportPos -> serverWorld.getBlockEntity(roboportPos, AutomataEntities.ROBOPORT).map(roboport -> roboport.canAssignJob(job))
+        private Optional<BotEntity> getOrSpawnBotFor(BotJob job) {
+            Stream<BlockPos> capableRoboports = roboportMap.values().stream().flatMap(roboportsInChunk -> roboportsInChunk.stream()) //
+                    .filter(roboportPos -> serverWorld.getBlockEntity(roboportPos, AutomataEntities.ROBOPORT).map(roboport -> roboport.canDoJob(job))
                             .orElse(false));
-            Optional<BlockPos> closestCapableRoboport = capableRoboports.min(Comparator.comparingInt(pos -> pos.getChebyshevDistance(job.pos())));
+            Optional<BlockPos> closestCapableRoboport = capableRoboports.min(Comparator.comparingDouble(pos -> pos.getSquaredDistance(job.pos())));
 
             if (closestCapableRoboport.isEmpty())
                 return Optional.empty();
 
-            return (serverWorld.getBlockEntity(closestCapableRoboport.get(), AutomataEntities.ROBOPORT).get()).assignJob(job);
+            return (serverWorld.getBlockEntity(closestCapableRoboport.get(), AutomataEntities.ROBOPORT).get()).getOrSpawnBotFor(job);
         }
     }
 
@@ -385,14 +385,14 @@ public class BotNetworkManager {
         }
     }
 
-    public static Optional<BotEntity> assignJob(BotJob job, UUID teamUuid, ServerWorld serverWorld) {
+    public static Optional<BotEntity> getOrSpawnBotFor(ServerWorld serverWorld, UUID teamUuid, BotJob job) {
         ChunkPos chunkPos = new ChunkPos(job.pos());
 
         Optional<ServerBotNetwork> serverNetwork = getNetwork(chunkPos, teamUuid, serverWorld);
         if (serverNetwork.isEmpty())
             return Optional.empty();
 
-        return serverNetwork.get().assignJob(job);
+        return serverNetwork.get().getOrSpawnBotFor(job);
     }
     //#endregion
 
