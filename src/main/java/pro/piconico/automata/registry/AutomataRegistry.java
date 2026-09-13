@@ -15,6 +15,8 @@ public class AutomataRegistry {
     public static final String CONSTRUCTION_BOT = "construction_bot";
     public static final String DECONSTRUCTION_JOB = "deconstruction_job";
     public static final String ROBOPORT = "roboport";
+    public static final String SELECTION = "selection";
+    public static final String TEAM = "team";
 
     public static Identifier id(String path) {
         return Identifier.of(Automata.MOD_ID, path);

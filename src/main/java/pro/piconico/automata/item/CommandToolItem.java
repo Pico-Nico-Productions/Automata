@@ -4,8 +4,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.SequencedMap;
 import java.util.UUID;
-import net.fabricmc.fabric.api.event.Event;
-import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -18,7 +16,8 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
-import pro.piconico.automata.component.CommandToolComponent;
+import pro.piconico.automata.component.SelectionComponent;
+import pro.piconico.automata.component.TeamComponent;
 import pro.piconico.automata.entity.LivingEntityUtils;
 import pro.piconico.automata.event.HoldItemCallback;
 import pro.piconico.automata.network.BotSyncManager;
@@ -30,23 +29,14 @@ import pro.piconico.automata.bot.job.BotJobDispatcher;
 import pro.piconico.automata.bot.team.BotTeam;
 
 public class CommandToolItem extends Item {
-    @FunctionalInterface
-    public interface ChangeTeam {
-        void onChanged(ServerPlayerEntity serverPlayer, Optional<UUID> oldTeamUuid);
-    }
-
-    public static final Event<ChangeTeam> TEAM_CHANGED = EventFactory.createArrayBacked(ChangeTeam.class, callbacks -> (serverPlayer, oldTeamUuid) -> {
-        for (ChangeTeam callback : callbacks) {
-            callback.onChanged(serverPlayer, oldTeamUuid);
-        }
-    });
-
     public CommandToolItem(Settings settings) {
         super(settings.maxCount(1));
     }
 
-    private static CommandToolComponent getCommandToolComponent(ItemStack stack) {
-        return stack.getOrDefault(AutomataComponents.COMMAND_TOOL, CommandToolComponent.EMPTY);
+    //#region Team
+    private static Optional<UUID> getTeamUuid(ItemStack stack) {
+        TeamComponent teamComponent = stack.get(AutomataComponents.TEAM);
+        return Optional.ofNullable(teamComponent != null ? teamComponent.uuid() : null);
     }
 
     //#region Bot Sync Subscription
@@ -66,7 +56,7 @@ public class CommandToolItem extends Item {
         if (!(player instanceof ServerPlayerEntity serverPlayer))
             return;
 
-        updateSubscription(serverPlayer, getCommandToolComponent(stack).teamUuid());
+        updateSubscription(serverPlayer, getTeamUuid(stack));
     }
 
     private static void onHoldEnded(PlayerEntity player, Hand hand, ItemStack stack) {
@@ -77,22 +67,25 @@ public class CommandToolItem extends Item {
             return;
 
         SequencedMap<Hand, ItemStack> heldStacks = LivingEntityUtils.getHeldStacks(player, AutomataItems.COMMAND_TOOL);
-        Optional<UUID> teamUuid = heldStacks.values().stream().map(heldStack -> getCommandToolComponent(heldStack).teamUuid().orElse(null))
-                .filter(uuid -> uuid != null).findFirst();
+        Optional<UUID> teamUuid = heldStacks.values().stream().map(heldStack -> getTeamUuid(heldStack).orElse(null)).filter(uuid -> uuid != null).findFirst();
         updateSubscription(serverPlayer, teamUuid);
     }
     //#endregion
 
-    private static boolean setTeam(ServerPlayerEntity serverPlayer, ItemStack stack, Optional<UUID> teamUuid) {
-        CommandToolComponent commandToolComponent = getCommandToolComponent(stack);
+    private static boolean setTeamUuid(ServerPlayerEntity serverPlayer, ItemStack stack, Optional<UUID> teamUuid) {
+        Optional<UUID> oldTeamUuid = getTeamUuid(stack);
 
-        if (commandToolComponent.teamUuid().equals(teamUuid))
+        if (oldTeamUuid.equals(teamUuid))
             return false;
 
-        stack.set(AutomataComponents.COMMAND_TOOL, commandToolComponent.of(teamUuid));
+        if (teamUuid.isEmpty()) {
+            stack.remove(AutomataComponents.TEAM);
+        }
+        else {
+            stack.set(AutomataComponents.TEAM, new TeamComponent(teamUuid.get()));
+        }
 
         updateSubscription(serverPlayer, teamUuid);
-        TEAM_CHANGED.invoker().onChanged(serverPlayer, teamUuid);
 
         return true;
     }
@@ -102,7 +95,7 @@ public class CommandToolItem extends Item {
         if (player.getEntityWorld().isClient())
             return ActionResult.SUCCESS;
 
-        Optional<UUID> teamUuid = getCommandToolComponent(stack).teamUuid();
+        Optional<UUID> teamUuid = getTeamUuid(stack);
         List<BotTeam> sortedTeams = BotTeamPersistentState.getTeamMap().values().stream().toList();
         Optional<Integer> newTeamIndex;
         if (teamUuid.isEmpty()) {
@@ -114,51 +107,63 @@ public class CommandToolItem extends Item {
             newTeamIndex = teamIndex.map(index -> index + 1 < sortedTeams.size() ? index + 1 : null);
         }
         Optional<BotTeam> newTeam = newTeamIndex.map(index -> sortedTeams.get(index));
-        setTeam((ServerPlayerEntity)player, stack, newTeam.map(team -> team.UUID));
+        setTeamUuid((ServerPlayerEntity)player, stack, newTeam.map(team -> team.UUID));
         player.sendMessage(Text.translatable(AutomataTexts.TEAM_SELECTED, newTeam.map(team -> team.getName()).orElse(BotTeam.EMPTY_UUID)), true);
 
         return ActionResult.SUCCESS;
+    }
+    //#endregion
+
+    //#region Selection
+    private static SelectionComponent getSelectionComponent(ItemStack stack) {
+        return stack.getOrDefault(AutomataComponents.SELECTION, SelectionComponent.EMPTY);
     }
 
     private static ActionResult select(PlayerEntity player, ItemStack stack, BlockPos selection, boolean isSelection2) {
         if (player.getEntityWorld().isClient())
             return ActionResult.SUCCESS;
 
-        CommandToolComponent commandToolComponent = getCommandToolComponent(stack);
-        stack.set(AutomataComponents.COMMAND_TOOL, commandToolComponent.of(Optional.of(selection), isSelection2));
+        SelectionComponent selectionComponent = getSelectionComponent(stack);
+        stack.set(AutomataComponents.SELECTION, selectionComponent.of(Optional.of(selection), isSelection2));
         player.sendMessage(Text.translatable(AutomataTexts.BLOCK_SELECTED, isSelection2 ? 2 : 1, selection.toShortString()), true);
 
         return ActionResult.SUCCESS;
     }
+    //#endregion
 
     private static ActionResult dispatchCommand(PlayerEntity player, ItemStack commandToolStack) {
-        CommandToolComponent commandToolComponent = getCommandToolComponent(commandToolStack);
+        Optional<UUID> teamUuid = getTeamUuid(commandToolStack);
+        SelectionComponent selectionComponent = getSelectionComponent(commandToolStack);
 
         if (!(player instanceof ServerPlayerEntity serverPlayer)) {
-            return commandToolComponent.teamUuid().isPresent() || commandToolComponent.hasSelection() ? ActionResult.SUCCESS : ActionResult.FAIL;
+            return teamUuid.isPresent() && selectionComponent.hasSelection() ? ActionResult.SUCCESS : ActionResult.FAIL;
         }
 
-        Optional<BotTeam> team = BotTeamPersistentState.getTeam(commandToolComponent.teamUuid().get());
-
-        if (commandToolComponent.teamUuid().isEmpty() || team.isEmpty()) {
-            if (team.isEmpty()) {
-                commandToolStack.set(AutomataComponents.COMMAND_TOOL, commandToolComponent.of(Optional.empty()));
-            }
+        if (teamUuid.isEmpty()) {
             player.sendMessage(Text.translatable(AutomataTexts.TEAM_MISSING, BotTeam.EMPTY_UUID), true);
 
             return ActionResult.FAIL;
         }
 
-        if (!commandToolComponent.hasSelection()) {
+        Optional<BotTeam> team = BotTeamPersistentState.getTeam(teamUuid.get());
+        if (team.isEmpty()) {
+            setTeamUuid(serverPlayer, commandToolStack, Optional.empty());
+            player.sendMessage(Text.translatable(AutomataTexts.TEAM_MISSING, BotTeam.EMPTY_UUID), true);
+
+            return ActionResult.FAIL;
+        }
+
+        if (!selectionComponent.hasSelection()) {
             player.sendMessage(Text.translatable(AutomataTexts.DECONSTRUCTION_FAILED), true);
 
             return ActionResult.FAIL;
         }
 
-        BlockPos selection1 = commandToolComponent.selection1().get();
-        BlockPos selection2 = commandToolComponent.selection2().get();
-        Optional<Integer> jobCount = BotJobDispatcher.markForDeconstruction(serverPlayer.getEntityWorld(), team.get().UUID, selection1, selection2);
+        BlockPos selection1 = selectionComponent.selection1().get();
+        BlockPos selection2 = selectionComponent.selection2().get();
+        Optional<Integer> jobCount = BotJobDispatcher.markForDeconstruction(serverPlayer.getEntityWorld(), teamUuid.get(), selection1, selection2);
 
+        commandToolStack.remove(AutomataComponents.SELECTION);
         player.sendMessage(Text.translatable(AutomataTexts.JOBS_ADDED, jobCount.get()), true);
 
         return ActionResult.SUCCESS_SERVER;

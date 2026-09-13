@@ -15,7 +15,7 @@ import net.minecraft.util.math.ChunkPos;
 import pro.piconico.automata.bot.job.BotJobAssignment;
 import pro.piconico.automata.bot.job.BotJobType;
 import pro.piconico.automata.client.network.BotCache;
-import pro.piconico.automata.component.CommandToolComponent;
+import pro.piconico.automata.component.SelectionComponent;
 import pro.piconico.automata.entity.LivingEntityUtils;
 import pro.piconico.automata.registry.AutomataBotJobs;
 import pro.piconico.automata.registry.AutomataComponents;
@@ -29,13 +29,13 @@ public class CommandToolRenderer {
     private static final int SELECTION1_ARGB = 0xFF00FF00; // Green
     private static final int SELECTION2_ARGB = 0xFF0000FF; // Blue
 
-    private static Optional<CommandToolComponent> getCommandToolComponent() {
+    private static Optional<SelectionComponent> getSelectionComponent() {
         SequencedMap<Hand, ItemStack> stacks = LivingEntityUtils.getHeldStacks(MinecraftClient.getInstance().player, AutomataItems.COMMAND_TOOL);
 
         if (stacks.isEmpty())
             return Optional.empty();
 
-        return Optional.of(stacks.firstEntry().getValue().getOrDefault(AutomataComponents.COMMAND_TOOL, CommandToolComponent.EMPTY));
+        return Optional.of(stacks.firstEntry().getValue().getOrDefault(AutomataComponents.SELECTION, SelectionComponent.EMPTY));
     }
 
     private static void renderNetworks(WorldRenderContext context) {
@@ -54,14 +54,13 @@ public class CommandToolRenderer {
     }
 
     private static void renderSelectionOutline(WorldRenderContext context) {
-        Optional<CommandToolComponent> commandToolComponent = getCommandToolComponent();
+        Optional<SelectionComponent> selectionComponent = getSelectionComponent();
 
-        if (commandToolComponent.isEmpty() || !commandToolComponent.get().hasSelection())
-            return;
-
-        RenderUtils.drawBoxOutline(context, commandToolComponent.get().getSelectionBox().get(), SELECTION_BOX_ARGB);
-        RenderUtils.drawBoxOutline(context, new Box(commandToolComponent.get().selection1().get()), SELECTION1_ARGB);
-        RenderUtils.drawBoxOutline(context, new Box(commandToolComponent.get().selection2().get()), SELECTION2_ARGB);
+        selectionComponent.ifPresent(selection -> {
+            if (selection.hasSelection()) RenderUtils.drawBoxOutline(context, selection.getSelectionBox().get(), SELECTION_BOX_ARGB);
+            selection.selection1().ifPresent(selection1 -> RenderUtils.drawBoxOutline(context, new Box(selection1), SELECTION1_ARGB));
+            selection.selection2().ifPresent(selection2 -> RenderUtils.drawBoxOutline(context, new Box(selection2), SELECTION2_ARGB));
+        });
     }
 
     public static void initialize() {

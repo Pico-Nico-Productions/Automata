@@ -17,7 +17,7 @@
 - Define all strings used as **Identifier**s and **RegistryKey**s in [`/src/main/java/pro/piconico/automata/registry/AutomataRegistry.java`](/src/main/java/pro/piconico/automata/registry/AutomataRegistry.java)
 - Define all strings used as translation keys in [`/src/main/java/pro/piconico/automata/registry/AutomataTexts.java`](/src/main/java/pro/piconico/automata/registry/AutomataTexts.java)
 - Write all player facing strings in the **FabricLanguageProvider**s in [`/src/client/java/pro/piconico/automata/datagen/lang/`](/src/client/java/pro/piconico/automata/datagen/lang/)
-- Developer facing string are the exception (e.g. **Codec** field names, **Exception**/log messages, commands)
+- Developer facing strings are the exception (e.g. **Codec** field names, **Exception**/log messages, commands)
 
 
 
