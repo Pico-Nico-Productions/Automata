@@ -112,7 +112,7 @@ Call **Text**.translatable with the translation key and arguments
 
 ### Adding Commands
 
-1. Create a class (**TCommand** for example) with a public static **LiteralArgumentBuilder\<ServerCommandSource\>** function (named build for example) in [`/src/main/java/pro/piconico/automata/command/`](/src/main/java/pro/piconico/automata/command/)
+1. Create a class (**TCommand** for example) with a public static **LiteralArgumentBuilder\<ServerCommandSource\>** function in [`/src/main/java/pro/piconico/automata/command/`](/src/main/java/pro/piconico/automata/command/)
 2. Append it to the mod command builder in [`/src/main/java/pro/piconico/automata/registry/AutomataCommands.java`](/src/main/java/pro/piconico/automata/registry/AutomataCommands.java)
 
 ### Adding Bot Jobs

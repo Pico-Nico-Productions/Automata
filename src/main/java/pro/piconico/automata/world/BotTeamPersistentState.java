@@ -60,7 +60,7 @@ public class BotTeamPersistentState extends PersistentState {
         return getTeamState().teamMap;
     }
 
-    public static Optional<BotTeam> createTeam(String name) {
+    public static Optional<BotTeam> addTeam(String name) {
         if (name.isBlank())
             return Optional.empty();
 
@@ -74,7 +74,7 @@ public class BotTeamPersistentState extends PersistentState {
         return Optional.of(team);
     }
 
-    public static Optional<BotTeam> deleteTeam(UUID teamUuid) {
+    public static Optional<BotTeam> removeTeam(UUID teamUuid) {
         BotTeamPersistentState teamState = getTeamState();
 
         if (!teamState.teamMap.containsKey(teamUuid))

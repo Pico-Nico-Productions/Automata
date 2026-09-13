@@ -17,9 +17,9 @@ public class AutomataTexts {
     /** Expected arguments: team name and team uuid */
     public static final String TEAM = toTranslationKey("team");
     /** Expected arguments: team name and team uuid */
-    public static final String TEAM_CREATED = toTranslationKey("team_created");
+    public static final String TEAM_ADDED = toTranslationKey("team_added");
     /** Expected arguments: team name and team uuid */
-    public static final String TEAM_DELETED = toTranslationKey("team_deleted");
+    public static final String TEAM_REMOVED = toTranslationKey("team_removed");
     /** Expected argument: team uuid */
     public static final String TEAM_MISSING = toTranslationKey("team_missing");
     /** Expected argument: team name */

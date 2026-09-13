@@ -144,6 +144,6 @@ public class BotSyncManager {
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((serverPlayer, oldServerWorld, newServerWorld) -> syncTo(serverPlayer));
         BotTeamPersistentState.TEAMS_MUTATED.register(BotSyncManager::onTeamsMutated);
         BotNetworkManager.NETWORKS_MUTATED.register((teamUuid, serverWorld, mutation) -> syncToSubscribers(teamUuid, serverWorld));
-        BotJobPersistentState.JOBS_MUTATED.register((teamUuid, serverWorld, mutation) -> syncToSubscribers(teamUuid, serverWorld));
+        BotJobPersistentState.JOBS_MUTATED.register((serverWorld, teamUuid, mutation) -> syncToSubscribers(teamUuid, serverWorld));
     }
 }

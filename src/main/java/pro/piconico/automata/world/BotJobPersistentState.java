@@ -35,7 +35,7 @@ public class BotJobPersistentState extends PersistentState {
 
     @FunctionalInterface
     public interface Mutate {
-        void onMutate(UUID teamUuid, ServerWorld handler, Mutation mutation);
+        void onMutate(ServerWorld serverWorld, UUID teamUuid, Mutation mutation);
     }
 
     public static final Event<Mutate> JOBS_MUTATED = EventFactory.createArrayBacked(Mutate.class, callbacks -> (teamUuid, serverWorld, mutation) -> {
@@ -117,7 +117,7 @@ public class BotJobPersistentState extends PersistentState {
 
         if (notify) {
             jobState.markDirty();
-            JOBS_MUTATED.invoker().onMutate(jobAssignment.TEAM_UUID, serverWorld, Mutation.ASSIGN);
+            JOBS_MUTATED.invoker().onMutate(serverWorld, jobAssignment.TEAM_UUID, Mutation.ASSIGN);
         }
 
         return true;
@@ -145,7 +145,7 @@ public class BotJobPersistentState extends PersistentState {
             return;
 
         jobState.markDirty();
-        JOBS_MUTATED.invoker().onMutate(teamUuid, serverWorld, Mutation.ASSIGN);
+        JOBS_MUTATED.invoker().onMutate(serverWorld, teamUuid, Mutation.ASSIGN);
     }
 
     private static void unassignJob(ServerWorld serverWorld, BotJobAssignment jobAssignment, boolean notify) {
@@ -159,7 +159,7 @@ public class BotJobPersistentState extends PersistentState {
 
         if (notify) {
             jobState.markDirty();
-            JOBS_MUTATED.invoker().onMutate(jobAssignment.TEAM_UUID, serverWorld, Mutation.UNASSIGN);
+            JOBS_MUTATED.invoker().onMutate(serverWorld, jobAssignment.TEAM_UUID, Mutation.UNASSIGN);
         }
     }
 
@@ -188,11 +188,10 @@ public class BotJobPersistentState extends PersistentState {
             return;
 
         jobState.markDirty();
-        JOBS_MUTATED.invoker().onMutate(teamUuid, serverWorld, Mutation.UNASSIGN);
+        JOBS_MUTATED.invoker().onMutate(serverWorld, teamUuid, Mutation.UNASSIGN);
     }
     //#endregion
 
-    //#region Job Addition
     public static Optional<Integer> addJobs(UUID teamUuid, Iterable<BotJob> jobs, ServerWorld serverWorld) {
         if (BotTeamPersistentState.getTeam(teamUuid).isEmpty())
             return Optional.empty();
@@ -218,13 +217,12 @@ public class BotJobPersistentState extends PersistentState {
             return Optional.of(0);
 
         jobState.markDirty();
-        JOBS_MUTATED.invoker().onMutate(teamUuid, serverWorld, Mutation.ADD);
+        JOBS_MUTATED.invoker().onMutate(serverWorld, teamUuid, Mutation.ADD);
 
         assignJobs(serverWorld, teamUuid);
 
         return Optional.of(addedPositions.size());
     }
-    //#endregion
 
     //#region Job Removal
     private static boolean removeJob(ServerWorld serverWorld, UUID teamUuid, BlockPos pos, BotJobType<?> type, boolean notify) {
@@ -238,31 +236,10 @@ public class BotJobPersistentState extends PersistentState {
 
         if (notify) {
             jobState.markDirty();
-            JOBS_MUTATED.invoker().onMutate(teamUuid, serverWorld, Mutation.REMOVE);
+            JOBS_MUTATED.invoker().onMutate(serverWorld, teamUuid, Mutation.REMOVE);
         }
 
         return true;
-    }
-
-    public static int removeJobs(ServerWorld serverWorld) {
-        BotJobPersistentState jobState = getJobState(serverWorld);
-
-        if (jobState.teamJobAssignmentMap.isEmpty())
-            return 0;
-
-        Set<UUID> removedTeamUuids = Set.copyOf(jobState.teamJobAssignmentMap.keySet());
-        List<BotJobAssignment> jobAssignments = flatten(jobState);
-
-        for (BotJobAssignment jobAssignment : jobAssignments) {
-            removeJob(serverWorld, jobAssignment.TEAM_UUID, jobAssignment.JOB.pos(), jobAssignment.JOB.getType(), false);
-        }
-
-        jobState.markDirty();
-        for (UUID teamUuid : removedTeamUuids) {
-            JOBS_MUTATED.invoker().onMutate(teamUuid, serverWorld, Mutation.REMOVE);
-        }
-
-        return jobAssignments.size();
     }
 
     public static int removeJobs(MinecraftServer server, UUID teamUuid) {
@@ -282,7 +259,38 @@ public class BotJobPersistentState extends PersistentState {
             removeCount += jobAssignments.size();
 
             jobState.markDirty();
-            JOBS_MUTATED.invoker().onMutate(teamUuid, serverWorld, Mutation.REMOVE);
+            JOBS_MUTATED.invoker().onMutate(serverWorld, teamUuid, Mutation.REMOVE);
+        }
+
+        return removeCount;
+    }
+
+    public static int removeJobs(ServerWorld serverWorld) {
+        BotJobPersistentState jobState = getJobState(serverWorld);
+
+        if (jobState.teamJobAssignmentMap.isEmpty())
+            return 0;
+
+        Set<UUID> removedTeamUuids = Set.copyOf(jobState.teamJobAssignmentMap.keySet());
+        List<BotJobAssignment> jobAssignments = flatten(jobState);
+
+        for (BotJobAssignment jobAssignment : jobAssignments) {
+            removeJob(serverWorld, jobAssignment.TEAM_UUID, jobAssignment.JOB.pos(), jobAssignment.JOB.getType(), false);
+        }
+
+        jobState.markDirty();
+        for (UUID teamUuid : removedTeamUuids) {
+            JOBS_MUTATED.invoker().onMutate(serverWorld, teamUuid, Mutation.REMOVE);
+        }
+
+        return jobAssignments.size();
+    }
+
+    public static int removeJobs(MinecraftServer server) {
+        int removeCount = 0;
+
+        for (ServerWorld serverWorld : server.getWorlds()) {
+            removeCount += removeJobs(serverWorld);
         }
 
         return removeCount;
