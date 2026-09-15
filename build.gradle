@@ -7,11 +7,9 @@ version = project.mod_version
 group = project.maven_group
 
 repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
+	// GUI Library (owo-lib)
+	maven { url 'https://maven.wispforest.io' }
+	maven { url 'https://jitpack.io' }
 }
 
 sourceSets {
@@ -49,6 +47,11 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// GUI Library (owo-lib)
+	modImplementation "io.wispforest:owo-lib:${project.owo_version}"
+	include "io.wispforest:owo-lib:${project.owo_version}" // Optional for convenience
+    include "io.wispforest:owo-sentinel:${project.owo_version}" // Optional for convenience
 }
 
 processResources {
@@ -99,3 +102,14 @@ publishing {
 		// retrieving dependencies.
 	}
 }
+
+tasks.named('remapJar') {
+    archiveClassifier = 'standalone'
+}
+
+tasks.register('remapDependentJar', net.fabricmc.loom.task.RemapJarTask) {
+    inputFile = tasks.jar.archiveFile
+    archiveClassifier = 'dependent'
+}
+
+tasks.build.dependsOn('remapDependentJar')

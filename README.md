@@ -1,13 +1,19 @@
 # Automata Developer Guide
 
-## Overview
+## License
+- Automata
+    - [![License](https://img.shields.io/badge/License-CC0%201.0%20Universal-yellow.svg?style=flat-square)](https://creativecommons.org/publicdomain/zero/1.0/deed.en)
+- GUI Library ([owo-lib](https://github.com/wisp-forest/owo-lib))
+    - [![License](https://img.shields.io/badge/License-MIT-red.svg?style=flat-square)](http://opensource.org/licenses/MIT)
 
-[/Automata Workflow.bat](/Automata%20Workflow.bat) opens the relevant programs for development
+
+
+## Overview
 
 ### Running The Mod
 
 1. Clone repo
-2. Open in VS Code
+2. Open in VS Code ([/Automata Workflow.bat](/Automata%20Workflow.bat) opens the relevant programs for development)
 4. Run **Data Generation** launch task (generated data is git ignored)
 5. Run **Minecraft Client** launch task
 
@@ -135,9 +141,3 @@ Call **Text**.translatable with the translation key and arguments
 #### Client Mixins
 1. Create a class with the @**Mixin** annotation in [`/src/client/java/pro/piconico/automata/client/mixin`](/src/client/java/pro/piconico/automata/client/mixin)
 2. Add it to the "client" list in [`/src/client/resources/automata.client.mixins.json`](/src/client/resources/automata.client.mixins.json)
-
-
-
-## License
-
-This project is based on a template that is available under the CC0 license. Feel free to learn from it and incorporate it in your own projects.
