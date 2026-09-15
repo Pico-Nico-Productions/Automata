@@ -9,11 +9,11 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
-import pro.piconico.automata.item.CommandToolItem;
+import pro.piconico.automata.item.AutomatoolItem;
 import pro.piconico.automata.item.ConstructionBotItem;
 
 public class AutomataItems {
-    public static final Item COMMAND_TOOL = register(AutomataRegistry.COMMAND_TOOL, CommandToolItem::new);
+    public static final Item AUTOMATOOL = register(AutomataRegistry.AUTOMATOOL, AutomatoolItem::new);
     public static final Item CONSTRUCTION_BOT = register(AutomataRegistry.CONSTRUCTION_BOT, ConstructionBotItem::new);
 
     private static Item register(String name, Function<Settings, Item> itemFactory) {
@@ -25,9 +25,9 @@ public class AutomataItems {
     }
 
     public static void initialize() {
-        CommandToolItem.initialize();
-        
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.add(COMMAND_TOOL));
+        AutomatoolItem.initialize();
+
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.add(AUTOMATOOL));
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.add(CONSTRUCTION_BOT));
     }
 }

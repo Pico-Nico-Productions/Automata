@@ -27,7 +27,7 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
         translationBuilder.add(AutomataTexts.TEAM_SELECTED, "Selected team \"%1$s\"");
         translationBuilder.add(AutomataTexts.TEAMS_EMPTY, "Teams empty");
 
-        translationBuilder.add(AutomataItems.COMMAND_TOOL, "Command Tool");
+        translationBuilder.add(AutomataItems.AUTOMATOOL, "Automatool");
         translationBuilder.add(AutomataItems.CONSTRUCTION_BOT, "Construction Bot");
 
         AutomataLanguageGenerationUtils.AddBlockTranslation(translationBuilder, AutomataBlocks.ROBOPORT, "Roboport");

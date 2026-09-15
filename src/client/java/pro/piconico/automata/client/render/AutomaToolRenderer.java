@@ -22,7 +22,7 @@ import pro.piconico.automata.registry.AutomataComponents;
 import pro.piconico.automata.registry.AutomataItems;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
-public class CommandToolRenderer {
+public class AutomatoolRenderer {
     private static final int NETWORK_ARGB = 0x60FFFF00; // Yellow
     private static final int DECONSTRUCTION_BOX_ARGB = 0xFFFF0000; // Red
     private static final int SELECTION_BOX_ARGB = 0xFF00FFFF; // Cyan
@@ -30,7 +30,7 @@ public class CommandToolRenderer {
     private static final int SELECTION2_ARGB = 0xFF0000FF; // Blue
 
     private static Optional<SelectionComponent> getSelectionComponent() {
-        SequencedMap<Hand, ItemStack> stacks = LivingEntityUtils.getHeldStacks(MinecraftClient.getInstance().player, AutomataItems.COMMAND_TOOL);
+        SequencedMap<Hand, ItemStack> stacks = LivingEntityUtils.getHeldStacks(MinecraftClient.getInstance().player, AutomataItems.AUTOMATOOL);
 
         if (stacks.isEmpty())
             return Optional.empty();
@@ -64,8 +64,8 @@ public class CommandToolRenderer {
     }
 
     public static void initialize() {
-        WorldRenderEvents.END_MAIN.register(CommandToolRenderer::renderNetworks);
-        WorldRenderEvents.END_MAIN.register(CommandToolRenderer::renderDeconstructionJobs);
-        WorldRenderEvents.END_MAIN.register(CommandToolRenderer::renderSelectionOutline);
+        WorldRenderEvents.END_MAIN.register(AutomatoolRenderer::renderNetworks);
+        WorldRenderEvents.END_MAIN.register(AutomatoolRenderer::renderDeconstructionJobs);
+        WorldRenderEvents.END_MAIN.register(AutomatoolRenderer::renderSelectionOutline);
     }
 }

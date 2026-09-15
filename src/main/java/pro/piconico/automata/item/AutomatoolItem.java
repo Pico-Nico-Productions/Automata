@@ -28,8 +28,8 @@ import pro.piconico.automata.world.BotTeamPersistentState;
 import pro.piconico.automata.bot.job.BotJobDispatcher;
 import pro.piconico.automata.bot.team.BotTeam;
 
-public class CommandToolItem extends Item {
-    public CommandToolItem(Settings settings) {
+public class AutomatoolItem extends Item {
+    public AutomatoolItem(Settings settings) {
         super(settings.maxCount(1));
     }
 
@@ -50,7 +50,7 @@ public class CommandToolItem extends Item {
     }
 
     private static void onHoldStarted(PlayerEntity player, Hand hand, ItemStack stack) {
-        if (!stack.isOf(AutomataItems.COMMAND_TOOL))
+        if (!stack.isOf(AutomataItems.AUTOMATOOL))
             return;
 
         if (!(player instanceof ServerPlayerEntity serverPlayer))
@@ -60,13 +60,13 @@ public class CommandToolItem extends Item {
     }
 
     private static void onHoldEnded(PlayerEntity player, Hand hand, ItemStack stack) {
-        if (!stack.isOf(AutomataItems.COMMAND_TOOL))
+        if (!stack.isOf(AutomataItems.AUTOMATOOL))
             return;
 
         if (!(player instanceof ServerPlayerEntity serverPlayer))
             return;
 
-        SequencedMap<Hand, ItemStack> heldStacks = LivingEntityUtils.getHeldStacks(player, AutomataItems.COMMAND_TOOL);
+        SequencedMap<Hand, ItemStack> heldStacks = LivingEntityUtils.getHeldStacks(player, AutomataItems.AUTOMATOOL);
         Optional<UUID> teamUuid = heldStacks.values().stream().map(heldStack -> getTeamUuid(heldStack).orElse(null)).filter(uuid -> uuid != null).findFirst();
         updateSubscription(serverPlayer, teamUuid);
     }
@@ -172,7 +172,7 @@ public class CommandToolItem extends Item {
     private static ActionResult onAttackBlock(PlayerEntity player, World world, Hand hand, BlockPos blockPos, Direction direction) {
         ItemStack stack = player.getStackInHand(hand);
 
-        if (!(stack.isOf(AutomataItems.COMMAND_TOOL)))
+        if (!(stack.isOf(AutomataItems.AUTOMATOOL)))
             return ActionResult.PASS;
 
         return select(player, player.getStackInHand(hand), blockPos, false);
@@ -200,8 +200,8 @@ public class CommandToolItem extends Item {
     }
 
     public static void initialize() {
-        HoldItemCallback.HOLD_STARTED.register(CommandToolItem::onHoldStarted);
-        HoldItemCallback.HOLD_ENDED.register(CommandToolItem::onHoldEnded);
-        AttackBlockCallback.EVENT.register(CommandToolItem::onAttackBlock);
+        HoldItemCallback.HOLD_STARTED.register(AutomatoolItem::onHoldStarted);
+        HoldItemCallback.HOLD_ENDED.register(AutomatoolItem::onHoldEnded);
+        AttackBlockCallback.EVENT.register(AutomatoolItem::onAttackBlock);
     }
 }
