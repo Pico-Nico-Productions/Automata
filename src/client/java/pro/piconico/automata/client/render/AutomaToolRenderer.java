@@ -14,6 +14,7 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
 import pro.piconico.automata.bot.job.BotJobAssignment;
 import pro.piconico.automata.bot.job.BotJobType;
+import pro.piconico.automata.client.design.AutomataColors;
 import pro.piconico.automata.client.network.BotCache;
 import pro.piconico.automata.component.SelectionComponent;
 import pro.piconico.automata.entity.LivingEntityUtils;
@@ -23,12 +24,6 @@ import pro.piconico.automata.registry.AutomataItems;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
 public class AutomatoolRenderer {
-    private static final int NETWORK_ARGB = 0x60FFFF00; // Yellow
-    private static final int DECONSTRUCTION_BOX_ARGB = 0xFFFF0000; // Red
-    private static final int SELECTION_BOX_ARGB = 0xFF00FFFF; // Cyan
-    private static final int SELECTION1_ARGB = 0xFF00FF00; // Green
-    private static final int SELECTION2_ARGB = 0xFF0000FF; // Blue
-
     private static Optional<SelectionComponent> getSelectionComponent() {
         SequencedMap<Hand, ItemStack> stacks = LivingEntityUtils.getHeldStacks(MinecraftClient.getInstance().player, AutomataItems.AUTOMATOOL);
 
@@ -40,7 +35,7 @@ public class AutomatoolRenderer {
 
     private static void renderNetworks(WorldRenderContext context) {
         for (ChunkPos chunkPos : BotCache.networkMap.keySet()) {
-            RenderUtils.drawBox(context, ChunkBounds.of(chunkPos, 0, MinecraftClient.getInstance().world).toBox(), NETWORK_ARGB);
+            RenderUtils.drawBox(context, ChunkBounds.of(chunkPos, 0, MinecraftClient.getInstance().world).toBox(), AutomataColors.NETWORK);
         }
     }
 
@@ -49,7 +44,7 @@ public class AutomatoolRenderer {
             if (!entry.getValue().containsKey(AutomataBotJobs.DECONSTRUCTION_JOB))
                 continue;
 
-            RenderUtils.drawBoxOutline(context, new Box(entry.getKey()), DECONSTRUCTION_BOX_ARGB);
+            RenderUtils.drawBoxOutline(context, new Box(entry.getKey()), AutomataColors.DECONSTRUCTION);
         }
     }
 
@@ -57,9 +52,13 @@ public class AutomatoolRenderer {
         Optional<SelectionComponent> selectionComponent = getSelectionComponent();
 
         selectionComponent.ifPresent(selection -> {
-            if (selection.hasSelection()) RenderUtils.drawBoxOutline(context, selection.getSelectionBox().get(), SELECTION_BOX_ARGB);
-            selection.selection1().ifPresent(selection1 -> RenderUtils.drawBoxOutline(context, new Box(selection1), SELECTION1_ARGB));
-            selection.selection2().ifPresent(selection2 -> RenderUtils.drawBoxOutline(context, new Box(selection2), SELECTION2_ARGB));
+            if (selection.hasSelection()) RenderUtils.drawBoxOutline(context, selection.getSelectionBox().get(), AutomataColors.SELECTION_BOUNDS);
+
+            if (selection.selection1().equals(selection.selection2()))
+                return;
+
+            selection.selection1().ifPresent(selection1 -> RenderUtils.drawBoxOutline(context, new Box(selection1), AutomataColors.SELECTION1));
+            selection.selection2().ifPresent(selection2 -> RenderUtils.drawBoxOutline(context, new Box(selection2), AutomataColors.SELECTION2));
         });
     }
 

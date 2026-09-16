@@ -4,9 +4,11 @@
 
 ### Code Conventions
 
-#### Avoid String Literals
-String values are typically arbitrary so literals should be used to define final variables for adaptability and to avoid duplication. Developer facing strings are the exception (e.g. **Codec** field names, **Exception**/log messages)
-- Define all strings used as **Identifier**s and **RegistryKey**s in [`/src/main/java/pro/piconico/automata/registry/AutomataRegistry.java`](/src/main/java/pro/piconico/automata/registry/AutomataRegistry.java)
+#### Avoid Literals
+Literal values are typically arbitrary so literals should be used to define final variables for adaptability and to avoid duplication. Developer facing values are the exception (e.g. **Codec** field names, **Exception**/log messages)
+- Define all strings used as **Identifier**s and **RegistryKey**s in [`/src/main/java/pro/piconico/automata/registry/AutomataRegistry.java`](/src/main/java/pro/piconico/automata/registry/AutomataRegistry.java) for main code or [`/src/client/java/pro/piconico/automata/client/registry/AutomataClientRegistry.java`](/src/client/java/pro/piconico/automata/client/registry/AutomataClientRegistry.java) for client code
+- Define all strings used as texture names in [`/src/client/java/pro/piconico/automata/client/registry/AutomataClientTextures.java`](/src/client/java/pro/piconico/automata/client/registry/AutomataClientTextures.java)
+- Define all colors in [`/src/client/java/pro/piconico/automata/client/design/AutomataColors.java`](/src/client/java/pro/piconico/automata/client/design/AutomataColors.java)
 - Define all strings used as translation keys in [`/src/main/java/pro/piconico/automata/registry/AutomataTexts.java`](/src/main/java/pro/piconico/automata/registry/AutomataTexts.java)
 - Write all player facing strings in the **FabricLanguageProvider**s in [`/src/client/java/pro/piconico/automata/datagen/lang/`](/src/client/java/pro/piconico/automata/datagen/lang/)
 

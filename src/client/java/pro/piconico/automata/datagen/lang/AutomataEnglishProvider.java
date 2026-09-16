@@ -16,6 +16,8 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
     @Override
     public void generateTranslations(WrapperLookup registryLookup, TranslationBuilder translationBuilder) {
         translationBuilder.add(AutomataTexts.BLOCK_SELECTED, "Selection %1$s: (%2$s)");
+        translationBuilder.add(AutomataTexts.BOT_DEVICE_HOME, "Home");
+        translationBuilder.add(AutomataTexts.BOT_DEVICE_TEAM_SELECT, "Team Selection");
         translationBuilder.add(AutomataTexts.DECONSTRUCTION_FAILED, "Must have 2 selections to deconstruct");
         translationBuilder.add(AutomataTexts.JOBS_ADDED, "Added %1$s job(s)");
         translationBuilder.add(AutomataTexts.JOBS_REMOVED, "Removed %1$s job(s)");
@@ -25,6 +27,7 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
         translationBuilder.add(AutomataTexts.TEAM_MISSING, "No such team \"%1$s\"");
         translationBuilder.add(AutomataTexts.TEAM_NAME_INVALID, "Invalid team name \"%1$s\"");
         translationBuilder.add(AutomataTexts.TEAM_SELECTED, "Selected team \"%1$s\"");
+        translationBuilder.add(AutomataTexts.TEAMS, "Teams");
         translationBuilder.add(AutomataTexts.TEAMS_EMPTY, "Teams empty");
 
         translationBuilder.add(AutomataItems.AUTOMATOOL, "Automatool");

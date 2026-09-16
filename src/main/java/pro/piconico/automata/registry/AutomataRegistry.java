@@ -26,19 +26,11 @@ public class AutomataRegistry {
         return id("packet/" + path);
     }
 
-    public static Identifier textureId(String path) {
-        return id("textures/" + path + ".png");
-    }
-
-    public static Identifier entityTextureId(String path) {
-        return textureId("entity/" + path);
-    }
-
-    public static Identifier guiTextureId(String path) {
-        return textureId("gui/" + path);
-    }
-
     public static <T> RegistryKey<T> toRegistryKey(RegistryKey<Registry<T>> registryKey, String path) {
         return RegistryKey.of(registryKey, id(path));
+    }
+
+    public static String toTextTranslationKey(String name) {
+        return "text." + Automata.MOD_ID + "." + name;
     }
 }

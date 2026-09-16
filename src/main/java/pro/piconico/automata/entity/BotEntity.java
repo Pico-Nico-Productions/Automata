@@ -53,8 +53,9 @@ public abstract class BotEntity extends BeeEntity {
 
     public void setTeamUuid(Optional<UUID> teamUuid) {
         if (this.teamUuid.equals(teamUuid))
+            return;
 
-            endJob(false);
+        endJob(false);
 
         this.teamUuid = teamUuid;
     }
@@ -64,7 +65,7 @@ public abstract class BotEntity extends BeeEntity {
     }
 
     public boolean canDoJob(BotJob job) {
-        return teamUuid.isPresent() && getJob().isEmpty() && getBotType().supportedJobTypes().contains(job.getType());
+        return getJob().isEmpty() && getBotType().supportedJobTypes().contains(job.getType());
     }
 
     private void endJob(boolean completed) {

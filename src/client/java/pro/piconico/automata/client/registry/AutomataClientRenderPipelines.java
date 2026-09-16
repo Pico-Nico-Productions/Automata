@@ -10,8 +10,8 @@ public class AutomataClientRenderPipelines {
     public static final RenderPipeline NO_CULL = register(AutomataClientRegistry.NO_CULL, builder -> builder.withCull(false), RenderPipelines.POSITION_COLOR_SNIPPET);
 
     private static RenderPipeline register(String name, Function<Builder, Builder> builder, Snippet... snippets) {
-        Builder pipelineBase = RenderPipeline.builder(snippets).withLocation(AutomataClientRegistry.pipelineId(name));
-        RenderPipeline pipeline = builder.apply(pipelineBase).build();
+        Builder pipelineBuilder = RenderPipeline.builder(snippets).withLocation(AutomataClientRegistry.pipelineId(name));
+        RenderPipeline pipeline = builder.apply(pipelineBuilder).build();
 
         return RenderPipelines.register(pipeline);
     }

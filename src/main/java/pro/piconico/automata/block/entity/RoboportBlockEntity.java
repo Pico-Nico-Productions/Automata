@@ -84,6 +84,7 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         teamUuid = Optional.of(BotTeamPersistentState.getTeamMap().lastEntry().getKey());
     }
 
+    //#region Team
     public Optional<UUID> getTeamUuid() {
         return teamUuid;
     }
@@ -96,7 +97,9 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         this.teamUuid = teamUuid;
         TEAM_CHANGED.invoker().onChanged(this, oldTeamUuid);
     }
+    //#endregion
 
+    //#region Job
     private Optional<BotEntity> getBotEntityFor(BotJob job) {
         Optional<Set<BotType>> capableBotTypes = AutomataBots.getBotTypesFor(job);
         if (capableBotTypes.isEmpty())
@@ -147,6 +150,7 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
 
         return Optional.of(newBotEntity);
     }
+    //#endregion
 
     public boolean tryAdd(BotEntity botEntity) {
         Item botItem = botEntity.getBotType().item();
@@ -167,6 +171,7 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         return true;
     }
 
+    //#region BlockEntity
     @Override
     protected void readData(ReadView view) {
         super.readData(view);
@@ -180,7 +185,9 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
         Inventories.writeData(view, itemStacks);
         teamUuid.ifPresent(uuid -> view.put(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC, uuid));
     }
+    //#endregion
 
+    //#region Inventory
     @Override
     public void clear() {
         itemStacks.clear();
@@ -240,7 +247,9 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
     public boolean isValid(int slot, ItemStack stack) {
         return stack.getItem() instanceof BotItem;
     }
+    //#endregion
 
+    //#region ExtendedScreenHandlerFactory
     @Override
     public Text getDisplayName() {
         return Text.translatable(AutomataBlocks.ROBOPORT.getTranslationKey());
@@ -255,6 +264,7 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
     public BlockPos getScreenOpeningData(ServerPlayerEntity player) {
         return pos;
     }
+    //#endregion
 
     public static Optional<RoboportBlockEntity> getClosestTo(BlockPos pos, int chunkRange, Predicate<RoboportBlockEntity> predicate, ServerWorld serverWorld) {
         Optional<BlockPos> closestRoboportPos = serverWorld.getPointOfInterestStorage()

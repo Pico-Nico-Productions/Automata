@@ -23,7 +23,7 @@ public class RoboportScreenHandler extends ScreenHandler {
         World world = playerInventory.player.getEntityWorld();
         Optional<RoboportBlockEntity> roboport = world.getBlockEntity(pos, AutomataEntities.ROBOPORT);
         if (roboport.isEmpty()) {
-            throw new IllegalStateException("Incorrect block entity at " + pos);
+            throw new IllegalStateException("Expected roboport block entity at " + pos);
         }
 
         this.inventory = roboport.get();
