@@ -13,7 +13,7 @@ import pro.piconico.automata.component.TeamComponent;
 
 public final class AutomataComponents {
     public static final ComponentType<SelectionComponent> SELECTION = register(AutomataRegistry.SELECTION, SelectionComponent.CODEC, SelectionComponent.PACKET_CODEC);
-    public static final ComponentType<TeamComponent> TEAM = register(AutomataRegistry.TEAM, TeamComponent.CODEC, TeamComponent.PACKET_CODEC);
+    public static final ComponentType<TeamComponent> TEAM = register(AutomataRegistry.BOT_TEAM, TeamComponent.CODEC, TeamComponent.PACKET_CODEC);
 
     private static <T> ComponentType<T> register(String name, Codec<T> codec, PacketCodec<? super ByteBuf, T> packetCodec) {
         RegistryKey<ComponentType<?>> key = AutomataRegistry.toRegistryKey(RegistryKeys.DATA_COMPONENT_TYPE, name);

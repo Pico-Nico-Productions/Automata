@@ -32,6 +32,7 @@ import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.poi.PointOfInterestType;
 import pro.piconico.automata.Automata;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
+import pro.piconico.automata.bot.device.BotDevice;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.entity.BotEntity;
@@ -398,14 +399,14 @@ public class BotNetworkManager {
 
     //#region Event Listeners
     private static void onChunkLoaded(ServerWorld serverWorld, WorldChunk chunk) {
-        for (UUID teamUuid : BotTeamPersistentState.getTeamMap().keySet()) {
+        for (UUID teamUuid : BotTeamPersistentState.getTeamUuids()) {
             loadNetwork(serverWorld, teamUuid, chunk);
         }
     }
 
     private static void onChunkUnloaded(ServerWorld serverWorld, WorldChunk chunk) {
         ChunkPos chunkPos = chunk.getPos();
-        for (UUID teamUuid : BotTeamPersistentState.getTeamMap().keySet()) {
+        for (UUID teamUuid : BotTeamPersistentState.getTeamUuids()) {
             Optional<ServerBotNetwork> serverNetwork = getNetwork(chunkPos, teamUuid, serverWorld);
 
             if (serverNetwork.isEmpty())
@@ -425,7 +426,7 @@ public class BotNetworkManager {
         if (NETWORK_LOADER_CACHE.isEmpty())
             return;
 
-        for (UUID teamUuid : BotTeamPersistentState.getTeamMap().keySet()) {
+        for (UUID teamUuid : BotTeamPersistentState.getTeamUuids()) {
             Optional<NetworkLoader> networkLoader = MapUtils.getNested(NETWORK_LOADER_CACHE, serverWorld, teamUuid);
             if (networkLoader.isEmpty())
                 continue;
@@ -457,7 +458,7 @@ public class BotNetworkManager {
         UUID removedTeamUuid = null;
 
         ChunkPos chunkPos = new ChunkPos(pos);
-        for (UUID teamUuid : BotTeamPersistentState.getTeamMap().keySet()) {
+        for (UUID teamUuid : BotTeamPersistentState.getTeamUuids()) {
             Optional<ServerBotNetwork> serverNetwork = getNetwork(chunkPos, teamUuid, serverWorld);
             if (serverNetwork.isEmpty())
                 continue;
@@ -492,7 +493,7 @@ public class BotNetworkManager {
                         return;
                     }
 
-                    roboport.get().setTeam(Optional.empty());
+                    roboport.get().setTeamUuid(Optional.empty());
                 });
             }
 
@@ -507,16 +508,12 @@ public class BotNetworkManager {
         }
     }
 
-    private static void onRoboportTeamChanged(RoboportBlockEntity roboport, Optional<UUID> oldTeamUuid) {
-        if (!(roboport.getWorld() instanceof ServerWorld serverWorld))
+    private static void onTeamChanged(BotDevice<?> botDevice, Optional<UUID> oldTeamUuid) {
+        if (!(botDevice instanceof RoboportBlockEntity roboport) || !(roboport.getWorld() instanceof ServerWorld serverWorld))
             return;
 
-        if (oldTeamUuid.isPresent()) {
-            removeRoboport(roboport.getPos(), oldTeamUuid.get(), serverWorld);
-        }
-        if (roboport.getTeamUuid().isPresent()) {
-            addRoboport(roboport.getPos(), roboport.getTeamUuid().get(), serverWorld);
-        }
+        oldTeamUuid.ifPresent(uuid -> removeRoboport(roboport.getPos(), uuid, serverWorld));
+        roboport.getTeamUuid().ifPresent(uuid -> addRoboport(roboport.getPos(), uuid, serverWorld));
     }
     //#endregion
 
@@ -527,7 +524,7 @@ public class BotNetworkManager {
         PointOfInterestCallback.ADDED.register(BotNetworkManager::onPointOfInterestAdded);
         PointOfInterestCallback.REMOVED.register(BotNetworkManager::onPointOfInterestRemoved);
         BotTeamPersistentState.TEAMS_MUTATED.register(BotNetworkManager::onTeamsMutated);
-        RoboportBlockEntity.TEAM_CHANGED.register(BotNetworkManager::onRoboportTeamChanged);
+        BotDevice.TEAM_CHANGED.register(BotNetworkManager::onTeamChanged);
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             NETWORK_MAP_CACHE.clear();
             NETWORK_LOADER_CACHE.clear();

@@ -14,7 +14,7 @@ import net.minecraft.registry.RegistryKeys;
 import pro.piconico.automata.block.RoboportBlock;
 
 public class AutomataBlocks {
-    public static Block ROBOPORT = register(AutomataRegistry.ROBOPORT, RoboportBlock::new);
+    public static final Block ROBOPORT = register(AutomataRegistry.ROBOPORT, RoboportBlock::new);
 
     private static Block register(String name, Function<Settings, Block> blockFactory) {
         RegistryKey<Block> blockKey = AutomataRegistry.toRegistryKey(RegistryKeys.BLOCK, name);

@@ -1,48 +1,43 @@
 package pro.piconico.automata.screen;
 
-import java.util.Optional;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
-import pro.piconico.automata.registry.AutomataEntities;
+import pro.piconico.automata.bot.device.BlockBotDevice;
 import pro.piconico.automata.registry.AutomataScreenHandlers;
 import pro.piconico.automata.screen.slot.BotSlot;
+import pro.piconico.automata.screen.slot.DisableableSlot;
 
-public class RoboportScreenHandler extends ScreenHandler {
+public class RoboportScreenHandler extends BotDeviceScreenHandler {
+    public static final int BOT_BAR_X = BODY_WIDTH / 2 - (RoboportBlockEntity.BOT_SLOT_COUNT * SLOT_DELTA - SLOT_SPACING) / 2,
+            BOT_BAR_Y = BODY_HEIGHT / 2 - SLOT_DELTA - BAR_DELTA;
+    public static final int INVENTORY_X = BODY_WIDTH / 2 - 4 * SLOT_DELTA - SLOT_SIZE / 2, INVENTORY_Y = BODY_HEIGHT / 2 - SLOT_DELTA;
+    public static final int HOTBAR_Y = BODY_HEIGHT / 2 + SLOT_DELTA + BAR_DELTA;
+    public static final int OFFSET_Y = BODY_INSET + TEXT_HEIGHT + UI_SPACING;
+
     private final Inventory inventory;
 
     public RoboportScreenHandler(int syncId, PlayerInventory playerInventory, BlockPos pos) {
-        super(AutomataScreenHandlers.ROBOPORT, syncId);
+        super(AutomataScreenHandlers.ROBOPORT, syncId, ((BlockBotDevice)playerInventory.player.getEntityWorld().getBlockEntity(pos)));
 
-        World world = playerInventory.player.getEntityWorld();
-        Optional<RoboportBlockEntity> roboport = world.getBlockEntity(pos, AutomataEntities.ROBOPORT);
-        if (roboport.isEmpty()) {
-            throw new IllegalStateException("Expected roboport block entity at " + pos);
+        this.inventory = (RoboportBlockEntity)botDevice;
+
+        for (int indexX = 0; indexX < RoboportBlockEntity.BOT_SLOT_COUNT; indexX++) {
+            addSlot(new BotSlot(inventory, indexX, BOT_BAR_X + indexX * SLOT_DELTA, BOT_BAR_Y + OFFSET_Y));
         }
 
-        this.inventory = roboport.get();
-
-        // Bot slot(s)
-        for (int i = 0; i < RoboportBlockEntity.BOT_SLOT_COUNT; i++) {
-            addSlot(new BotSlot(inventory, i, 80, 34));
-        }
-
-        // Player inventory
-        for (int y = 0; y < 3; y++) {
-            for (int x = 0; x < 9; x++) {
-                addSlot(new Slot(playerInventory, x + y * 9 + 9, 8 + x * 18, 84 + y * 18));
+        for (int indexY = 0; indexY < 3; indexY++) {
+            for (int indexX = 0; indexX < 9; indexX++) {
+                addSlot(new DisableableSlot(playerInventory, indexY * 9 + indexX + 9, INVENTORY_X + indexX * SLOT_DELTA, INVENTORY_Y + indexY * SLOT_DELTA + OFFSET_Y));
             }
         }
 
-        // Hotbar
-        for (int x = 0; x < 9; x++) {
-            addSlot(new Slot(playerInventory, x, 8 + x * 18, 142));
+        for (int indexX = 0; indexX < 9; indexX++) {
+            addSlot(new DisableableSlot(playerInventory, indexX, INVENTORY_X + indexX * SLOT_DELTA, HOTBAR_Y + OFFSET_Y));
         }
     }
 
@@ -60,13 +55,11 @@ public class RoboportScreenHandler extends ScreenHandler {
             ItemStack originalStack = slot.getStack();
             newStack = originalStack.copy();
 
-            // Roboport slot -> Player inventory
             if (slotIndex < RoboportBlockEntity.BOT_SLOT_COUNT) {
                 if (!this.insertItem(originalStack, RoboportBlockEntity.BOT_SLOT_COUNT, this.slots.size(), true)) {
                     return ItemStack.EMPTY;
                 }
             }
-            // Player inventory -> Roboport slot
             else {
                 if (!this.insertItem(originalStack, 0, RoboportBlockEntity.BOT_SLOT_COUNT, false)) {
                     return ItemStack.EMPTY;
@@ -75,7 +68,8 @@ public class RoboportScreenHandler extends ScreenHandler {
 
             if (originalStack.isEmpty()) {
                 slot.setStack(ItemStack.EMPTY);
-            } else {
+            }
+            else {
                 slot.markDirty();
             }
         }

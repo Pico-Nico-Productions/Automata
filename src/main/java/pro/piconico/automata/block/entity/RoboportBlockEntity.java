@@ -4,14 +4,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
-import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.player.PlayerEntity;
@@ -21,13 +18,10 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
-import net.minecraft.text.Text;
 import net.minecraft.util.TypeFilter;
-import net.minecraft.util.Uuids;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -35,34 +29,21 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.poi.PointOfInterest;
 import net.minecraft.world.poi.PointOfInterestStorage;
 import pro.piconico.automata.bot.BotType;
+import pro.piconico.automata.bot.device.BlockBotDevice;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.inventory.InventoryUtils;
 import pro.piconico.automata.item.BotItem;
-import pro.piconico.automata.registry.AutomataBlocks;
 import pro.piconico.automata.registry.AutomataBots;
 import pro.piconico.automata.registry.AutomataEntities;
 import pro.piconico.automata.registry.AutomataPointOfInterestTypes;
 import pro.piconico.automata.screen.RoboportScreenHandler;
 import pro.piconico.automata.util.math.ChunkUtils;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
-import pro.piconico.automata.world.BotTeamPersistentState;
 
-public class RoboportBlockEntity extends BlockEntity implements Inventory, ExtendedScreenHandlerFactory<BlockPos> {
-    private static final String TEAM_UUID_KEY = "team_uuid";
+public class RoboportBlockEntity extends BlockBotDevice implements Inventory {
     public static final int CHUNK_RANGE = 0;
-    public static final int BOT_SLOT_COUNT = 1;
-
-    @FunctionalInterface
-    public interface ChangeTeam {
-        void onChanged(RoboportBlockEntity roboport, Optional<UUID> oldTeamUuid);
-    }
-
-    public static final Event<ChangeTeam> TEAM_CHANGED = EventFactory.createArrayBacked(ChangeTeam.class, callbacks -> (roboport, oldTeamUuid) -> {
-        for (ChangeTeam callback : callbacks) {
-            callback.onChanged(roboport, oldTeamUuid);
-        }
-    });
+    public static final int BOT_SLOT_COUNT = 3;
 
     @FunctionalInterface
     public interface UpdateRoboport {
@@ -76,30 +57,12 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
     });
 
     private final DefaultedList<ItemStack> itemStacks = DefaultedList.ofSize(BOT_SLOT_COUNT, ItemStack.EMPTY);
-    private Optional<UUID> teamUuid = Optional.empty();
 
     public RoboportBlockEntity(BlockPos pos, BlockState state) {
         super(AutomataEntities.ROBOPORT, pos, state);
-        // TODO: Replace with team select screen
-        teamUuid = Optional.of(BotTeamPersistentState.getTeamMap().lastEntry().getKey());
     }
 
-    //#region Team
-    public Optional<UUID> getTeamUuid() {
-        return teamUuid;
-    }
-
-    public void setTeam(Optional<UUID> teamUuid) {
-        if (this.teamUuid.equals(teamUuid))
-            return;
-
-        Optional<UUID> oldTeamUuid = this.teamUuid;
-        this.teamUuid = teamUuid;
-        TEAM_CHANGED.invoker().onChanged(this, oldTeamUuid);
-    }
-    //#endregion
-
-    //#region Job
+    //#region Bot
     private Optional<BotEntity> getBotEntityFor(BotJob job) {
         Optional<Set<BotType>> capableBotTypes = AutomataBots.getBotTypesFor(job);
         if (capableBotTypes.isEmpty())
@@ -150,7 +113,6 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
 
         return Optional.of(newBotEntity);
     }
-    //#endregion
 
     public boolean tryAdd(BotEntity botEntity) {
         Item botItem = botEntity.getBotType().item();
@@ -170,20 +132,24 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
 
         return true;
     }
+    //#endregion
 
-    //#region BlockEntity
+    //#region BlockBotDevice
     @Override
     protected void readData(ReadView view) {
         super.readData(view);
         Inventories.readData(view, itemStacks);
-        teamUuid = view.read(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC).filter(uuid -> BotTeamPersistentState.getTeam(uuid).isPresent());
     }
 
     @Override
     protected void writeData(WriteView view) {
         super.writeData(view);
         Inventories.writeData(view, itemStacks);
-        teamUuid.ifPresent(uuid -> view.put(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC, uuid));
+    }
+
+    @Override
+    public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
+        return new RoboportScreenHandler(syncId, playerInventory, pos);
     }
     //#endregion
 
@@ -246,23 +212,6 @@ public class RoboportBlockEntity extends BlockEntity implements Inventory, Exten
     @Override
     public boolean isValid(int slot, ItemStack stack) {
         return stack.getItem() instanceof BotItem;
-    }
-    //#endregion
-
-    //#region ExtendedScreenHandlerFactory
-    @Override
-    public Text getDisplayName() {
-        return Text.translatable(AutomataBlocks.ROBOPORT.getTranslationKey());
-    }
-
-    @Override
-    public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
-        return new RoboportScreenHandler(syncId, playerInventory, pos);
-    }
-
-    @Override
-    public BlockPos getScreenOpeningData(ServerPlayerEntity player) {
-        return pos;
     }
     //#endregion
 

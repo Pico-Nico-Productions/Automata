@@ -4,10 +4,12 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.netty.buffer.ByteBuf;
 import java.util.Optional;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import pro.piconico.automata.registry.AutomataComponents;
 
 public record SelectionComponent(Optional<BlockPos> selection1, Optional<BlockPos> selection2) {
     public static final Codec<SelectionComponent> CODEC = RecordCodecBuilder
@@ -21,6 +23,10 @@ public record SelectionComponent(Optional<BlockPos> selection1, Optional<BlockPo
 
     public SelectionComponent of(Optional<BlockPos> selection, boolean isSelection2) {
         return new SelectionComponent(isSelection2 ? selection1 : selection, isSelection2 ? selection : selection2);
+    }
+
+    public static SelectionComponent get(ItemStack stack) {
+        return stack.getOrDefault(AutomataComponents.SELECTION, SelectionComponent.EMPTY);
     }
 
     public boolean hasSelection() {

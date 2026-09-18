@@ -20,7 +20,7 @@ public class BotTeam {
     });
 
     public static final Codec<BotTeam> CODEC = RecordCodecBuilder.create(instance -> instance
-            .group(Uuids.INT_STREAM_CODEC.fieldOf("uuid").forGetter(team -> team.UUID), Codec.STRING.fieldOf("name").forGetter(BotTeam::getName))
+            .group(Codec.STRING.fieldOf("name").forGetter(BotTeam::getName), Uuids.INT_STREAM_CODEC.fieldOf("uuid").forGetter(team -> team.UUID))
             .apply(instance, BotTeam::new));
 
     public static final String EMPTY_UUID = " ";
@@ -29,14 +29,13 @@ public class BotTeam {
 
     public final UUID UUID;
 
-    private BotTeam(UUID uuid, String name) {
-        this.UUID = uuid;
+    public BotTeam(String name, UUID UUID) {
         this.name = name;
+        this.UUID = UUID;
     }
 
     public BotTeam(String name) {
-        UUID = java.util.UUID.randomUUID();
-        this.name = name;
+        this(name, java.util.UUID.randomUUID());
     }
 
     public String getName() {

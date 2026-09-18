@@ -3,12 +3,12 @@ package pro.piconico.automata.screen;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.screen.ScreenHandler;
+import pro.piconico.automata.bot.device.ItemBotDevice;
 import pro.piconico.automata.registry.AutomataScreenHandlers;
 
-public class AutomatoolScreenHandler extends ScreenHandler {
-    public AutomatoolScreenHandler(int syncId, PlayerInventory playerInventory, ItemStack stack) {
-        super(AutomataScreenHandlers.AUTOMATOOL, syncId);
+public class ItemBotDeviceScreenHandler extends BotDeviceScreenHandler {
+    public ItemBotDeviceScreenHandler(int syncId, PlayerInventory playerInventory, ItemStack automatoolStack) {
+        super(AutomataScreenHandlers.ITEM_BOT_DEVICE, syncId, new ItemBotDevice(automatoolStack));
     }
 
     @Override

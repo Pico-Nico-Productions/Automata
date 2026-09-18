@@ -1,31 +1,36 @@
 package pro.piconico.automata.client.gui.screen;
 
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.DrawContext;
+import io.wispforest.owo.ui.component.UIComponents;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
-import pro.piconico.automata.client.registry.AutomataClientTextures;
-import pro.piconico.automata.client.registry.AutomataClientTextures.Texture;
+import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.screen.RoboportScreenHandler;
 
-public class RoboportScreen extends HandledScreen<RoboportScreenHandler> {
+public class RoboportScreen extends BotDeviceScreen<RoboportScreenHandler> {
     public RoboportScreen(RoboportScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
     }
 
-	@Override
-	public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
-		super.render(context, mouseX, mouseY, deltaTicks);
-		this.drawMouseoverTooltip(context, mouseX, mouseY);
-	}
-
     @Override
-    protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
-        int x = (width - backgroundWidth) / 2;
-        int y = (height - backgroundHeight) / 2;
+    protected void buildHomeTab() {
+        body.child(UIComponents.label(this.title).shadow(true));
 
-        Texture texture = AutomataClientTextures.ROBOPORT;
-        context.drawTexture(RenderPipelines.GUI_TEXTURED, texture.id(), x, y, 0, 0, texture.width(), texture.height(), texture.width(), texture.height());
+        for (int indexX = 0; indexX < RoboportBlockEntity.BOT_SLOT_COUNT; indexX++) {
+            int x = RoboportScreenHandler.BOT_BAR_X + indexX * RoboportScreenHandler.SLOT_DELTA;
+            buildSlot(x, RoboportScreenHandler.BOT_BAR_Y);
+        }
+
+        for (int indexY = 0; indexY < 3; indexY++) {
+            for (int indexX = 0; indexX < 9; indexX++) {
+                int x = RoboportScreenHandler.INVENTORY_X + indexX * RoboportScreenHandler.SLOT_DELTA;
+                int y = RoboportScreenHandler.INVENTORY_Y + indexY * RoboportScreenHandler.SLOT_DELTA;
+                buildSlot(x, y);
+            }
+        }
+
+        for (int indexX = 0; indexX < 9; indexX++) {
+            int x = RoboportScreenHandler.INVENTORY_X + indexX * RoboportScreenHandler.SLOT_DELTA;
+            buildSlot(x, RoboportScreenHandler.HOTBAR_Y);
+        }
     }
 }

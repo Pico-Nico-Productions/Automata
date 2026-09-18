@@ -11,7 +11,7 @@ import pro.piconico.automata.bot.job.DeconstructionJob;
 
 public class AutomataBotJobs {
     public static final Set<BotJobType<?>> ALL = new HashSet<>();
-    public static final BotJobType<DeconstructionJob> DECONSTRUCTION_JOB = register(AutomataRegistry.DECONSTRUCTION_JOB, DeconstructionJob.CODEC);
+    public static final BotJobType<DeconstructionJob> DECONSTRUCTION_JOB = register(AutomataRegistry.DECONSTRUCTION_BOT_JOB, DeconstructionJob.CODEC);
 
     private static <T extends BotJob> BotJobType<T> register(String name, MapCodec<T> codec) {
         Identifier identifier = AutomataRegistry.id(name);

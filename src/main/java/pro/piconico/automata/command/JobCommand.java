@@ -8,7 +8,6 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
 import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.util.UUIDUtils;
 import pro.piconico.automata.world.BotJobPersistentState;
@@ -28,7 +27,7 @@ public class JobCommand {
     private static int removeJobs(CommandContext<ServerCommandSource> context, Supplier<Integer> removeJobs) {
         int removeCount = removeJobs.get();
 
-        context.getSource().sendMessage(Text.translatable(AutomataTexts.JOBS_REMOVED, removeCount));
+        context.getSource().sendMessage(AutomataTexts.getJobsRemoved(removeCount));
 
         return removeCount > 0 ? removeCount : 1;
     }
@@ -38,7 +37,7 @@ public class JobCommand {
         Optional<UUID> teamUuid = UUIDUtils.fromString(uuidArgument);
 
         if (teamUuid.isEmpty() || BotTeamPersistentState.getTeam(teamUuid.get()).isEmpty()) {
-            context.getSource().sendMessage(Text.translatable(AutomataTexts.TEAM_MISSING, uuidArgument));
+            context.getSource().sendMessage(AutomataTexts.getTeamMissing(uuidArgument));
             return 0;
         }
 

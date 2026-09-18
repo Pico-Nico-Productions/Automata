@@ -3,6 +3,7 @@ package pro.piconico.automata.network;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.Map.Entry;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
@@ -23,7 +24,7 @@ import pro.piconico.automata.world.BotTeamPersistentState;
 import pro.piconico.automata.world.BotTeamPersistentState.Mutation;
 
 public class BotSyncManager {
-    private record SyncState(BotNetworkMap<ServerBotNetwork> networkMap, BotJobAssignmentMap jobAssignmentMap, UUID teamUuid, ServerWorld serverWorld) {
+    private record SyncState(ServerWorld serverWorld, UUID teamUuid, BotNetworkMap<ServerBotNetwork> networkMap, BotJobAssignmentMap jobAssignmentMap) {
         private static SyncState getCurrent(ServerPlayerEntity serverPlayer, UUID teamUuid) {
             ServerWorld serverWorld = serverPlayer.getEntityWorld();
             ChunkBounds renderBounds = ChunkBounds.of(serverPlayer.getChunkPos(), serverPlayer.getViewDistance(), serverWorld);
@@ -31,7 +32,7 @@ public class BotSyncManager {
             BotNetworkMap<ServerBotNetwork> currentNetworkMap = new BotNetworkMap<>(BotNetworkManager.getNetworks(renderBounds, teamUuid, serverWorld));
             BotJobAssignmentMap currentJobMap = new BotJobAssignmentMap(BotJobPersistentState.getJobAssignments(serverWorld, teamUuid, renderBounds));
 
-            return new SyncState(currentNetworkMap, currentJobMap, teamUuid, serverWorld);
+            return new SyncState(serverWorld, teamUuid, currentNetworkMap, currentJobMap);
         }
 
         private BotSyncS2CPacket calculateDelta(SyncState newState) {
@@ -81,6 +82,15 @@ public class BotSyncManager {
         subscribers.remove(serverPlayer.getUuid());
 
         ServerPlayNetworking.send(serverPlayer, BotSyncS2CPacket.CLEAR);
+    }
+
+    public static void updateSubscription(ServerPlayerEntity serverPlayer, Optional<UUID> teamUuid) {
+        if (teamUuid.isEmpty()) {
+            unsubscribe(serverPlayer);
+            return;
+        }
+
+        subscribe(serverPlayer, teamUuid.get());
     }
 
     private static void syncTo(ServerPlayerEntity serverPlayer) {

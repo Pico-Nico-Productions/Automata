@@ -71,5 +71,4 @@ public class AutomataClientTextures {
     public static final Texture CONSTRUCTION_BOT = new Texture(AutomataClientRegistry.entityTextureId(AutomataRegistry.CONSTRUCTION_BOT), 64, 64);
 
     public static final Texture BOT_DEVICE_ICONS = new Texture(AutomataClientRegistry.screenGuiTextureId(AutomataClientRegistry.BOT_DEVICES), 16, 16, 64, 64);
-    public static final Texture ROBOPORT = new Texture(AutomataClientRegistry.screenGuiTextureId(AutomataRegistry.ROBOPORT), 176, 166);
 }

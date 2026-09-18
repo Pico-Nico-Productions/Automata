@@ -15,20 +15,20 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
 
     @Override
     public void generateTranslations(WrapperLookup registryLookup, TranslationBuilder translationBuilder) {
-        translationBuilder.add(AutomataTexts.BLOCK_SELECTED, "Selection %1$s: (%2$s)");
-        translationBuilder.add(AutomataTexts.BOT_DEVICE_HOME, "Home");
-        translationBuilder.add(AutomataTexts.BOT_DEVICE_TEAM_SELECT, "Team Selection");
-        translationBuilder.add(AutomataTexts.DECONSTRUCTION_FAILED, "Must have 2 selections to deconstruct");
-        translationBuilder.add(AutomataTexts.JOBS_ADDED, "Added %1$s job(s)");
-        translationBuilder.add(AutomataTexts.JOBS_REMOVED, "Removed %1$s job(s)");
-        translationBuilder.add(AutomataTexts.TEAM, "Team \"%1$s\" (%2$s)");
-        translationBuilder.add(AutomataTexts.TEAM_ADDED, "Added team \"%1$s\" (%2$s)");
-        translationBuilder.add(AutomataTexts.TEAM_REMOVED, "Removed team \"%1$s\" (%2$s)");
-        translationBuilder.add(AutomataTexts.TEAM_MISSING, "No such team \"%1$s\"");
-        translationBuilder.add(AutomataTexts.TEAM_NAME_INVALID, "Invalid team name \"%1$s\"");
-        translationBuilder.add(AutomataTexts.TEAM_SELECTED, "Selected team \"%1$s\"");
-        translationBuilder.add(AutomataTexts.TEAMS, "Teams");
-        translationBuilder.add(AutomataTexts.TEAMS_EMPTY, "Teams empty");
+        translationBuilder.add(AutomataTexts.BLOCK_SELECTED_KEY, "Selection %1$s: (%2$s)");
+        translationBuilder.add(AutomataTexts.BOT_DEVICE_HOME_KEY, "Home");
+        translationBuilder.add(AutomataTexts.BOT_DEVICE_TEAM_SELECT_KEY, "Team Selection");
+        translationBuilder.add(AutomataTexts.DECONSTRUCTION_FAILED_KEY, "Must have 2 selections to deconstruct");
+        translationBuilder.add(AutomataTexts.JOBS_ADDED_KEY, "Added %1$s job(s)");
+        translationBuilder.add(AutomataTexts.JOBS_REMOVED_KEY, "Removed %1$s job(s)");
+        translationBuilder.add(AutomataTexts.TEAM_KEY, "Team \"%1$s\" (%2$s)");
+        translationBuilder.add(AutomataTexts.TEAM_ADDED_KEY, "Added team \"%1$s\" (%2$s)");
+        translationBuilder.add(AutomataTexts.TEAM_REMOVED_KEY, "Removed team \"%1$s\" (%2$s)");
+        translationBuilder.add(AutomataTexts.TEAM_MISSING_KEY, "No such team \"%1$s\"");
+        translationBuilder.add(AutomataTexts.TEAM_NAME_INVALID_KEY, "Invalid team name \"%1$s\"");
+        translationBuilder.add(AutomataTexts.TEAM_SELECTED_KEY, "Selected team \"%1$s\"");
+        translationBuilder.add(AutomataTexts.TEAMS_KEY, "Teams");
+        translationBuilder.add(AutomataTexts.TEAMS_EMPTY_KEY, "Teams empty");
 
         translationBuilder.add(AutomataItems.AUTOMATOOL, "Automatool");
         translationBuilder.add(AutomataItems.CONSTRUCTION_BOT, "Construction Bot");

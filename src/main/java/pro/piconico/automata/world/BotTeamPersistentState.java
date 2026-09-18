@@ -1,6 +1,8 @@
 package pro.piconico.automata.world;
 
+import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import com.mojang.serialization.Codec;
 import net.fabricmc.fabric.api.event.Event;
@@ -56,8 +58,12 @@ public class BotTeamPersistentState extends PersistentState {
         return Optional.of(teamState.teamMap.get(teamUuid));
     }
 
-    public static SortedBotTeamMap getTeamMap() {
-        return getTeamState().teamMap;
+    public static Set<UUID> getTeamUuids() {
+        return getTeamState().teamMap.keySet();
+    }
+
+    public static Collection<BotTeam> getTeams() {
+        return getTeamState().teamMap.values();
     }
 
     public static Optional<BotTeam> addTeam(String name) {
