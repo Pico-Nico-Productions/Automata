@@ -53,36 +53,32 @@ public class TeamSelectTab implements Tab<BotDeviceScreenHandler> {
         for (BotTeam team : handler.teams) {
             boolean isSelectedTeam = teamUuid.isPresent() && teamUuid.get().equals(team.UUID);
 
-            FlowLayout teamRow = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.fixed(20));
+            FlowLayout teamRow = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.fixed(11));
             teamRow.verticalAlignment(VerticalAlignment.CENTER);
             teamRow.padding(Insets.horizontal(BotDeviceScreenHandler.UI_SPACING));
             teamRow.surface(Surface.flat(AutomataColors.HOVERED).and(Surface.outline(isSelectedTeam ? AutomataColors.ACTIVE : AutomataColors.INACTIVE)));
+            teamRow.cursorStyle(CursorStyle.HAND);
+            teamRow.mouseDown().subscribe((click, doubled) -> {
+                if (click.button() != 0)
+                    return false;
+
+                Optional<UUID> newTeamUuid = Optional.ofNullable(isSelectedTeam ? null : team.UUID);
+                AutomataMessages.CHANNEL.clientHandle().send(new BotTeamSelectMessage(newTeamUuid));
+
+                return true;
+            });
+            listContainer.child(teamRow);
 
             LabelComponent nameLabel = UIComponents.label(Text.literal(team.getName()));
             nameLabel.horizontalSizing(Sizing.fill(65));
+            nameLabel.cursorStyle(CursorStyle.HAND);
             teamRow.child(nameLabel);
 
             LabelComponent uuidLabel = UIComponents.label(Text.literal(team.UUID.toString().substring(0, 8)));
             uuidLabel.horizontalSizing(Sizing.fill(35));
             uuidLabel.horizontalTextAlignment(HorizontalAlignment.RIGHT);
+            uuidLabel.cursorStyle(CursorStyle.HAND);
             teamRow.child(uuidLabel);
-
-            if (!isSelectedTeam) {
-                teamRow.cursorStyle(CursorStyle.HAND);
-                nameLabel.cursorStyle(CursorStyle.HAND);
-                uuidLabel.cursorStyle(CursorStyle.HAND);
-
-                teamRow.mouseDown().subscribe((click, doubled) -> {
-                    if (click.button() != 0)
-                        return false;
-
-                    AutomataMessages.CHANNEL.clientHandle().send(new BotTeamSelectMessage(Optional.of(team.UUID)));
-
-                    return true;
-                });
-            }
-
-            listContainer.child(teamRow);
         }
         parent.child(listContainer);
     }

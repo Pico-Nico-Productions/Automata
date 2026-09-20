@@ -83,7 +83,7 @@ public class AutomataTexts {
     public static final String TEAM_MISSING_KEY = AutomataRegistry.toTextTranslationKey("team_missing");
 
     public static MutableText getTeamMissing(String teamUuid) {
-        return Text.translatable(TEAM_MISSING_KEY, getCopyableText(teamUuid.toString()));
+        return Text.translatable(TEAM_MISSING_KEY, teamUuid.toString());
     }
 
     /** Expected argument: team name */
