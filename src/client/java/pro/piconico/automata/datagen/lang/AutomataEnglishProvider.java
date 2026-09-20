@@ -27,7 +27,6 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
         translationBuilder.add(AutomataTexts.TEAM_MISSING_KEY, "No such team \"%1$s\"");
         translationBuilder.add(AutomataTexts.TEAM_NAME_INVALID_KEY, "Invalid team name \"%1$s\"");
         translationBuilder.add(AutomataTexts.TEAM_SELECTED_KEY, "Selected team \"%1$s\"");
-        translationBuilder.add(AutomataTexts.TEAMS_KEY, "Teams");
         translationBuilder.add(AutomataTexts.TEAMS_EMPTY_KEY, "Teams empty");
 
         translationBuilder.add(AutomataItems.AUTOMATOOL, "Automatool");

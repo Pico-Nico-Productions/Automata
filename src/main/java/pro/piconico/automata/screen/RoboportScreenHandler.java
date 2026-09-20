@@ -13,10 +13,11 @@ import pro.piconico.automata.screen.slot.BotSlot;
 import pro.piconico.automata.screen.slot.DisableableSlot;
 
 public class RoboportScreenHandler extends BotDeviceScreenHandler {
-    public static final int BOT_BAR_X = BODY_WIDTH / 2 - (RoboportBlockEntity.BOT_SLOT_COUNT * SLOT_DELTA - SLOT_SPACING) / 2,
-            BOT_BAR_Y = BODY_HEIGHT / 2 - SLOT_DELTA - BAR_DELTA;
-    public static final int INVENTORY_X = BODY_WIDTH / 2 - 4 * SLOT_DELTA - SLOT_SIZE / 2, INVENTORY_Y = BODY_HEIGHT / 2 - SLOT_DELTA;
-    public static final int HOTBAR_Y = BODY_HEIGHT / 2 + SLOT_DELTA + BAR_DELTA;
+    public static final int BOT_BAR_X = BODY_WIDTH / 2 - (RoboportBlockEntity.BOT_SLOT_COUNT * ScreenConstants.SLOT_DELTA - ScreenConstants.SLOT_SPACING) / 2,
+            BOT_BAR_Y = BODY_HEIGHT / 2 - ScreenConstants.SLOT_DELTA - ScreenConstants.BAR_DELTA;
+    public static final int INVENTORY_X = BODY_WIDTH / 2 - 4 * ScreenConstants.SLOT_DELTA - ScreenConstants.SLOT_SIZE / 2,
+            INVENTORY_Y = BODY_HEIGHT / 2 - ScreenConstants.SLOT_DELTA;
+    public static final int HOTBAR_Y = BODY_HEIGHT / 2 + ScreenConstants.SLOT_DELTA + ScreenConstants.BAR_DELTA;
     public static final int OFFSET_Y = BODY_INSET + TEXT_HEIGHT + UI_SPACING;
 
     private final Inventory inventory;
@@ -27,17 +28,18 @@ public class RoboportScreenHandler extends BotDeviceScreenHandler {
         this.inventory = (RoboportBlockEntity)botDevice;
 
         for (int indexX = 0; indexX < RoboportBlockEntity.BOT_SLOT_COUNT; indexX++) {
-            addSlot(new BotSlot(inventory, indexX, BOT_BAR_X + indexX * SLOT_DELTA, BOT_BAR_Y + OFFSET_Y));
+            addSlot(new BotSlot(inventory, indexX, BOT_BAR_X + indexX * ScreenConstants.SLOT_DELTA, BOT_BAR_Y + OFFSET_Y));
         }
 
         for (int indexY = 0; indexY < 3; indexY++) {
             for (int indexX = 0; indexX < 9; indexX++) {
-                addSlot(new DisableableSlot(playerInventory, indexY * 9 + indexX + 9, INVENTORY_X + indexX * SLOT_DELTA, INVENTORY_Y + indexY * SLOT_DELTA + OFFSET_Y));
+                addSlot(new DisableableSlot(playerInventory, indexY * 9 + indexX + 9, INVENTORY_X + indexX * ScreenConstants.SLOT_DELTA,
+                        INVENTORY_Y + indexY * ScreenConstants.SLOT_DELTA + OFFSET_Y));
             }
         }
 
         for (int indexX = 0; indexX < 9; indexX++) {
-            addSlot(new DisableableSlot(playerInventory, indexX, INVENTORY_X + indexX * SLOT_DELTA, HOTBAR_Y + OFFSET_Y));
+            addSlot(new DisableableSlot(playerInventory, indexX, INVENTORY_X + indexX * ScreenConstants.SLOT_DELTA, HOTBAR_Y + OFFSET_Y));
         }
     }
 

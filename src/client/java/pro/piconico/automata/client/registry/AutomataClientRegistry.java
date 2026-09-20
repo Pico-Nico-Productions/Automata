@@ -5,7 +5,7 @@ import pro.piconico.automata.registry.AutomataRegistry;
 
 public class AutomataClientRegistry {
     public static final String NO_CULL = "no_cull";
-    public static final String BOT_DEVICES = "bot_devices";
+    public static final String BOT_DEVICE_ICONS = AutomataRegistry.BOT_DEVICE + "_icons";
 
     public static Identifier pipelineId(String path) {
         return AutomataRegistry.id("pipeline/" + path);

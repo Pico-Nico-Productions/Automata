@@ -18,4 +18,13 @@ public class DisableableSlot extends Slot {
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
+
+    public static boolean setEnabled(Slot slot, boolean enabled) {
+        if (!(slot instanceof DisableableSlot disableableSlot))
+            return false;
+
+        disableableSlot.setEnabled(enabled);
+
+        return true;
+    }
 }

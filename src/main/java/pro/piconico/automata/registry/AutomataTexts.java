@@ -100,12 +100,6 @@ public class AutomataTexts {
         return Text.translatable(TEAM_SELECTED_KEY, teamName);
     }
 
-    public static final String TEAMS_KEY = AutomataRegistry.toTextTranslationKey("teams");
-
-    public static final MutableText getTeams() {
-        return Text.translatable(TEAMS_KEY);
-    }
-
     public static final String TEAMS_EMPTY_KEY = AutomataRegistry.toTextTranslationKey("teams_empty");
 
     public static final MutableText getTeamsEmpty() {
