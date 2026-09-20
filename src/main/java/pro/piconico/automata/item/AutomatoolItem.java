@@ -86,7 +86,7 @@ public class AutomatoolItem extends Item {
         }
 
         if (teamUuid.isEmpty()) {
-            player.sendMessage(AutomataTexts.getTeamMissing(BotTeam.EMPTY_UUID), true);
+            player.sendMessage(AutomataTexts.getTeamEmpty(), true);
 
             return ActionResult.FAIL;
         }
@@ -96,7 +96,7 @@ public class AutomatoolItem extends Item {
             if (TeamComponent.set(automatoolStack, Optional.empty())) {
                 BotSyncManager.unsubscribe(serverPlayer);
             }
-            player.sendMessage(AutomataTexts.getTeamMissing(BotTeam.EMPTY_UUID), true);
+            player.sendMessage(AutomataTexts.getTeamEmpty(), true);
 
             return ActionResult.FAIL;
         }

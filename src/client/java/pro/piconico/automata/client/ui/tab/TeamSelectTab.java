@@ -41,11 +41,18 @@ public class TeamSelectTab implements Tab<BotDeviceScreenHandler> {
     @Override
     public void build(BotDeviceScreenHandler handler, FlowLayout parent) {
         FlowLayout headerRow = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
-        headerRow.verticalAlignment(VerticalAlignment.CENTER);
         headerRow.child(UIComponents.label(getName(handler)).shadow(true));
         headerRow.child(UIContainers.horizontalFlow(Sizing.expand(), Sizing.fixed(0)));
         headerRow.child(UIComponents.label(Text.literal(Integer.toString(handler.teams.size()))).shadow(true));
         parent.child(headerRow);
+
+        if (handler.teams.isEmpty()) {
+            FlowLayout infoRow = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
+            infoRow.horizontalAlignment(HorizontalAlignment.CENTER);
+            infoRow.child(UIComponents.label(AutomataTexts.getTeamsEmpty()));
+            parent.child(infoRow);
+            return;
+        }
 
         Optional<UUID> teamUuid = handler.botDevice.getTeamUuid();
         FlowLayout listContainer = UIContainers.verticalFlow(Sizing.fill(100), Sizing.content());
@@ -53,7 +60,7 @@ public class TeamSelectTab implements Tab<BotDeviceScreenHandler> {
         for (BotTeam team : handler.teams) {
             boolean isSelectedTeam = teamUuid.isPresent() && teamUuid.get().equals(team.UUID);
 
-            FlowLayout teamRow = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.fixed(11));
+            FlowLayout teamRow = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.fixed(12));
             teamRow.verticalAlignment(VerticalAlignment.CENTER);
             teamRow.padding(Insets.horizontal(BotDeviceScreenHandler.UI_SPACING));
             teamRow.surface(Surface.flat(AutomataColors.HOVERED).and(Surface.outline(isSelectedTeam ? AutomataColors.ACTIVE : AutomataColors.INACTIVE)));

@@ -2,6 +2,9 @@ package pro.piconico.automata.client.gui.screen;
 
 import io.wispforest.owo.ui.component.UIComponents;
 import io.wispforest.owo.ui.container.FlowLayout;
+import io.wispforest.owo.ui.container.UIContainers;
+import io.wispforest.owo.ui.core.HorizontalAlignment;
+import io.wispforest.owo.ui.core.Sizing;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import pro.piconico.automata.client.ui.tab.BotDeviceHomeTab;
@@ -18,7 +21,10 @@ public class AutomatoolScreen extends BotDeviceScreen<ItemBotDeviceScreenHandler
 
         @Override
         public void build(BotDeviceScreenHandler handler, FlowLayout parent) {
-            parent.child(UIComponents.label(getName(handler)).shadow(true));
+            FlowLayout headerRow = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
+            headerRow.horizontalAlignment(HorizontalAlignment.CENTER);
+            headerRow.child(UIComponents.label(getName(handler)).shadow(true));
+            parent.child(headerRow);
         }
     }
 

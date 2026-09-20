@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 
+// TODO: Check if TEAM_CHANGED on the server needs to be manually synced to clients
 public interface BotDevice<T> extends ExtendedScreenHandlerFactory<T> {
     @FunctionalInterface
     public interface ChangeTeam {

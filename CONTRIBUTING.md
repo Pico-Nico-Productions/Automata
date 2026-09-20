@@ -109,11 +109,11 @@ Call **Text**.translatable with the translation key and arguments
 2. Optional: Give it a public static final **Endec\<TMessage\>** (Optional because owo-lib messages can automatically serialize certain things and this repository uses them for light-weight communication)
 
 #### Client To Server (C2S)
-3. Give it a public static handle function
+3. Give it a public static void function(**TMessage**, **ServerAccess**) that handles the message
 4. Register it in [`/src/main/java/pro/piconico/automata/registry/AutomataMessages.java`](/src/main/java/pro/piconico/automata/registry/AutomataMessages.java)
 
 #### Server To Client (S2C)
-3. Create a class (**THandler** for example) with a public static handle function in [`/src/client/java/pro/piconico/automata/client/network/message/`](/src/client/java/pro/piconico/automata/client/network/message/)
+3. Create a class (**THandler** for example) with a public static void function(**TMessage**, **ClientAccess**) that handles the message in [`/src/client/java/pro/piconico/automata/client/network/message/`](/src/client/java/pro/piconico/automata/client/network/message/)
 4. Register it in [`/src/client/java/pro/piconico/automata/client/registry/AutomataClientMessageHandlers.java`](/src/client/java/pro/piconico/automata/client/registry/AutomataClientMessageHandlers.java)
 
 

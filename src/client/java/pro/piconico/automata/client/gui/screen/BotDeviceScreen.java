@@ -19,6 +19,7 @@ import pro.piconico.automata.client.ui.tab.BotDeviceHomeTab;
 import pro.piconico.automata.client.ui.tab.Tab;
 import pro.piconico.automata.client.ui.tab.TabManager;
 import pro.piconico.automata.client.ui.tab.TeamSelectTab;
+import pro.piconico.automata.client.ui.tab.TeamSettingsTab;
 import pro.piconico.automata.screen.BotDeviceScreenHandler;
 import pro.piconico.automata.screen.ScreenConstants;
 
@@ -64,7 +65,7 @@ public abstract class BotDeviceScreen<HandlerT extends BotDeviceScreenHandler> e
         FlowLayout spacingPanel = UIContainers.horizontalFlow(horizontalScreenSizing, verticalIconSizing);
         rootComponent.child(spacingPanel);
 
-        tabManager = new TabManager<>(handler, body, getHomeTab(), TeamSelectTab.INSTANCE);
+        tabManager = new TabManager<>(handler, body, getHomeTab(), TeamSelectTab.INSTANCE, TeamSettingsTab.INSTANCE);
         tabManager.buildButtons(tabPanel);
     }
 

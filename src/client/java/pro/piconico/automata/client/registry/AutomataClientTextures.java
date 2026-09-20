@@ -70,4 +70,6 @@ public class AutomataClientTextures {
             16, 64, 64);
     public static final Texture BOT_DEVICE_HOME_ICON = BOT_DEVICE_ICONS.getTexture(0);
     public static final Texture BOT_DEVICE_TEAM_SELECT_ICON = BOT_DEVICE_ICONS.getTexture(1);
+    public static final Texture BOT_DEVICE_TEAM_SETTINGS_ICON = BOT_DEVICE_ICONS.getTexture(2);
+    public static final Texture BOT_DEVICE_TEAM_ADD_ICON = BOT_DEVICE_ICONS.getTexture(3);
 }
