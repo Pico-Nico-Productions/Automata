@@ -3,6 +3,7 @@ package pro.piconico.automata.client.ui.tab;
 import io.wispforest.owo.ui.component.ButtonComponent.Renderer;
 import java.util.Optional;
 import java.util.UUID;
+import io.wispforest.owo.ui.component.TextBoxComponent;
 import io.wispforest.owo.ui.component.UIComponents;
 import io.wispforest.owo.ui.container.FlowLayout;
 import io.wispforest.owo.ui.container.UIContainers;
@@ -54,14 +55,19 @@ public class TeamSettingsTab implements Tab<BotDeviceScreenHandler> {
         FlowLayout nameRow = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
         nameRow.verticalAlignment(VerticalAlignment.CENTER);
         nameRow.child(UIComponents.label(AutomataTexts.getName()));
-        nameRow.child(UIComponents.textBox(Sizing.expand(), team.get().getName()));
+        TextBoxComponent nameTextBox = UIComponents.textBox(Sizing.expand(), team.get().getName());
+        nameRow.child(nameTextBox);
         parent.child(nameRow);
 
         FlowLayout actionsRow = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
         actionsRow.horizontalAlignment(HorizontalAlignment.CENTER);
         actionsRow.gap(BotDeviceScreenHandler.UI_SPACING);
         actionsRow.child(UIComponents.button(AutomataTexts.getDelete(), (button) -> {
-            AutomataMessages.CHANNEL.clientHandle().send(new BotTeamDeleteC2SMessage(team.get().UUID));
+            AutomataMessages.CHANNEL.clientHandle().send(new BotTeamDeleteC2SMessage(teamUuid.get()));
+        }));
+        actionsRow.child(UIComponents.button(AutomataTexts.getApply(), (button) -> {
+            BotTeam newTeam = new BotTeam(nameTextBox.getText(), teamUuid.get());
+            team.get().set(newTeam);
         }));
         parent.child(actionsRow);
     }

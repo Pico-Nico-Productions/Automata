@@ -5,13 +5,17 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import com.mojang.serialization.Codec;
+import net.fabricmc.api.EnvType;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.PersistentState;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.bot.team.SortedBotTeamMap;
+import pro.piconico.automata.network.message.BotTeamPutC2SMessage;
+import pro.piconico.automata.registry.AutomataMessages;
 import pro.piconico.automata.registry.AutomataPersistentStates;
 
 public class BotTeamPersistentState extends PersistentState {
@@ -80,6 +84,17 @@ public class BotTeamPersistentState extends PersistentState {
         return Optional.of(team);
     }
 
+    public static Optional<BotTeam> putTeam(BotTeam team) {
+        Optional<BotTeam> existingTeam = getTeam(team.UUID);
+
+        if (existingTeam.isEmpty())
+            return Optional.empty();
+
+        existingTeam.get().set(team);
+
+        return existingTeam;
+    }
+
     public static Optional<BotTeam> removeTeam(UUID teamUuid) {
         BotTeamPersistentState teamState = getTeamState();
 
@@ -95,6 +110,11 @@ public class BotTeamPersistentState extends PersistentState {
     }
 
     private static void onBotTeamMutated(BotTeam team) {
+        if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
+            AutomataMessages.CHANNEL.clientHandle().send(new BotTeamPutC2SMessage(team));
+            return;
+        }
+
         getTeamState().markDirty();
         TEAMS_MUTATED.invoker().onMutate(server, team, Mutation.MODIFY);
     }

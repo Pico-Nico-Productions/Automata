@@ -38,11 +38,23 @@ public class BotTeam {
         this(name, java.util.UUID.randomUUID());
     }
 
+    public void set(BotTeam team) {
+        if (!this.UUID.equals(team.UUID) || this.equals(team))
+            return;
+
+        name = team.name;
+
+        MUTATED.invoker().onMutate(this);
+    }
+
     public String getName() {
         return name;
     }
 
     public void setName(String name) {
+        if (this.name.equals(name))
+            return;
+
         this.name = name;
         MUTATED.invoker().onMutate(this);
     }

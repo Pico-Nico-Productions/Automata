@@ -305,7 +305,7 @@ public class BotJobPersistentState extends PersistentState {
         removeJobs(server, team.UUID);
     }
 
-    private static void onNetworksMutated(UUID teamUuid, ServerWorld serverWorld, BotNetworkManager.Mutation mutation) {
+    private static void onNetworksMutated(ServerWorld serverWorld, UUID teamUuid, BotNetworkManager.Mutation mutation) {
         switch (mutation) {
         case BotNetworkManager.Mutation.ADD:
             assignJobs(serverWorld, teamUuid);

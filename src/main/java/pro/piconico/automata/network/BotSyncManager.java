@@ -107,7 +107,7 @@ public class BotSyncManager {
         ServerPlayNetworking.send(serverPlayer, syncPacket);
     }
 
-    private static void syncToSubscribers(UUID teamUuid, ServerWorld serverWorld) {
+    private static void syncToSubscribers(ServerWorld serverWorld, UUID teamUuid) {
         Iterator<UUID> subscriberIterator = subscribers.keySet().iterator();
         while (subscriberIterator.hasNext()) {
             UUID subscriberUuid = subscriberIterator.next();
@@ -153,7 +153,7 @@ public class BotSyncManager {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> unsubscribe(handler.getPlayer()));
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((serverPlayer, oldServerWorld, newServerWorld) -> syncTo(serverPlayer));
         BotTeamPersistentState.TEAMS_MUTATED.register(BotSyncManager::onTeamsMutated);
-        BotNetworkManager.NETWORKS_MUTATED.register((teamUuid, serverWorld, mutation) -> syncToSubscribers(teamUuid, serverWorld));
-        BotJobPersistentState.JOBS_MUTATED.register((serverWorld, teamUuid, mutation) -> syncToSubscribers(teamUuid, serverWorld));
+        BotNetworkManager.NETWORKS_MUTATED.register((serverWorld, teamUuid, mutation) -> syncToSubscribers(serverWorld, teamUuid));
+        BotJobPersistentState.JOBS_MUTATED.register((serverWorld, teamUuid, mutation) -> syncToSubscribers(serverWorld, teamUuid));
     }
 }

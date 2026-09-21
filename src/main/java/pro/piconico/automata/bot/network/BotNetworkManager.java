@@ -53,7 +53,7 @@ public class BotNetworkManager {
 
     @FunctionalInterface
     public interface Mutate {
-        void onMutate(UUID teamUuid, ServerWorld serverWorld, Mutation mutation);
+        void onMutate(ServerWorld serverWorld, UUID teamUuid, Mutation mutation);
     }
 
     public static final Event<Mutate> NETWORKS_MUTATED = EventFactory.createArrayBacked(Mutate.class, callbacks -> (teamUuid, serverWorld, mutation) -> {
@@ -316,7 +316,7 @@ public class BotNetworkManager {
         }
         MapUtils.<NetworkLoader>removeNested(NETWORK_LOADER_CACHE, networkLoader.serverWorld, networkLoader.teamUuid);
 
-        NETWORKS_MUTATED.invoker().onMutate(networkLoader.teamUuid, networkLoader.serverWorld, Mutation.ADD);
+        NETWORKS_MUTATED.invoker().onMutate(networkLoader.serverWorld, networkLoader.teamUuid, Mutation.ADD);
     }
 
     private static void unloadNetwork(ServerBotNetwork serverNetwork) {
@@ -333,7 +333,7 @@ public class BotNetworkManager {
             }
         }
 
-        NETWORKS_MUTATED.invoker().onMutate(serverNetwork.teamUuid, serverNetwork.serverWorld, Mutation.REMOVE);
+        NETWORKS_MUTATED.invoker().onMutate(serverNetwork.serverWorld, serverNetwork.teamUuid, Mutation.REMOVE);
     }
 
     private static void addRoboport(BlockPos pos, UUID teamUuid, ServerWorld serverWorld) {
@@ -342,7 +342,7 @@ public class BotNetworkManager {
         Optional<ServerBotNetwork> serverNetwork = getNetwork(chunkPos, teamUuid, serverWorld);
         if (serverNetwork.isPresent()) {
             serverNetwork.get().add(pos);
-            NETWORKS_MUTATED.invoker().onMutate(teamUuid, serverWorld, Mutation.ADD);
+            NETWORKS_MUTATED.invoker().onMutate(serverWorld, teamUuid, Mutation.ADD);
             return;
         }
 
@@ -372,7 +372,7 @@ public class BotNetworkManager {
             putNetwork(subnetwork);
         }
 
-        NETWORKS_MUTATED.invoker().onMutate(teamUuid, serverWorld, Mutation.REMOVE);
+        NETWORKS_MUTATED.invoker().onMutate(serverWorld, teamUuid, Mutation.REMOVE);
     }
 
     public static void markAllNotDirty(ServerWorld serverWorld) {
@@ -504,7 +504,7 @@ public class BotNetworkManager {
                 botEntity.setTeamUuid(Optional.empty());
             }
 
-            NETWORKS_MUTATED.invoker().onMutate(team.UUID, serverWorld, Mutation.REMOVE);
+            NETWORKS_MUTATED.invoker().onMutate(serverWorld, team.UUID, Mutation.REMOVE);
         }
     }
 
