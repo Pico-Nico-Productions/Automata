@@ -8,6 +8,8 @@ import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.util.Uuids;
 
 public class BotTeam {
+    public static final int MAX_NAME_LENGTH = 16;
+
     @FunctionalInterface
     public interface Mutate {
         void onMutate(BotTeam team);
@@ -29,9 +31,21 @@ public class BotTeam {
 
     public final UUID UUID;
 
+    public static boolean isValidName(String name) {
+        String strippedName = name.strip();
+        return !strippedName.isEmpty() && strippedName.length() <= MAX_NAME_LENGTH;
+    }
+
+    private static void validateName(String name) {
+        if (!isValidName(name))
+            throw new IllegalArgumentException("\"" + name + "\" is an invalid " + BotTeam.class.getSimpleName() + " name");
+    }
+
     public BotTeam(String name, UUID UUID) {
-        this.name = name;
+        validateName(name);
+
         this.UUID = UUID;
+        this.name = name;
     }
 
     public BotTeam(String name) {
@@ -39,6 +53,8 @@ public class BotTeam {
     }
 
     public void set(BotTeam team) {
+        validateName(team.name);
+
         if (!this.UUID.equals(team.UUID) || this.equals(team))
             return;
 
@@ -52,10 +68,13 @@ public class BotTeam {
     }
 
     public void setName(String name) {
+        validateName(name);
+
         if (this.name.equals(name))
             return;
 
         this.name = name;
+
         MUTATED.invoker().onMutate(this);
     }
 }

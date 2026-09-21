@@ -14,13 +14,13 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.PersistentState;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.bot.team.SortedBotTeamMap;
-import pro.piconico.automata.network.message.BotTeamPutC2SMessage;
+import pro.piconico.automata.network.message.BotTeamUpdateC2SMessage;
 import pro.piconico.automata.registry.AutomataMessages;
 import pro.piconico.automata.registry.AutomataPersistentStates;
 
 public class BotTeamPersistentState extends PersistentState {
     public enum Mutation {
-        ADD, REMOVE, MODIFY
+        ADD, UPDATE, REMOVE
     }
 
     @FunctionalInterface
@@ -70,21 +70,27 @@ public class BotTeamPersistentState extends PersistentState {
         return getTeamState().teamMap.values();
     }
 
-    public static Optional<BotTeam> addTeam(String name) {
-        if (name.isBlank())
+    public static Optional<BotTeam> addTeam(BotTeam team) {
+        if (getTeam(team.UUID).isPresent())
             return Optional.empty();
 
         BotTeamPersistentState teamState = getTeamState();
-        BotTeam team = new BotTeam(name);
-
         teamState.teamMap.put(team.UUID, team);
+
         teamState.markDirty();
         TEAMS_MUTATED.invoker().onMutate(server, team, Mutation.ADD);
 
         return Optional.of(team);
     }
 
-    public static Optional<BotTeam> putTeam(BotTeam team) {
+    public static Optional<BotTeam> addTeam(String name) {
+        if (!BotTeam.isValidName(name))
+            return Optional.empty();
+
+        return addTeam(new BotTeam(name));
+    }
+
+    public static Optional<BotTeam> updateTeam(BotTeam team) {
         Optional<BotTeam> existingTeam = getTeam(team.UUID);
 
         if (existingTeam.isEmpty())
@@ -111,12 +117,12 @@ public class BotTeamPersistentState extends PersistentState {
 
     private static void onBotTeamMutated(BotTeam team) {
         if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
-            AutomataMessages.CHANNEL.clientHandle().send(new BotTeamPutC2SMessage(team));
+            AutomataMessages.CHANNEL.clientHandle().send(new BotTeamUpdateC2SMessage(team));
             return;
         }
 
         getTeamState().markDirty();
-        TEAMS_MUTATED.invoker().onMutate(server, team, Mutation.MODIFY);
+        TEAMS_MUTATED.invoker().onMutate(server, team, Mutation.UPDATE);
     }
 
     public static void initialize() {

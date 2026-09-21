@@ -2,6 +2,8 @@ package pro.piconico.automata.screen;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
@@ -30,5 +32,14 @@ public abstract class BotDeviceScreenHandler extends ScreenHandler {
         else {
             teams = new ArrayList<>(BotTeamPersistentState.getTeams());
         }
+    }
+
+    public Optional<BotTeam> getTeam() {
+        Optional<UUID> teamUuid = botDevice.getTeamUuid();
+
+        if (teamUuid.isEmpty())
+            return Optional.empty();
+
+        return teams.stream().filter(t -> t.UUID.equals(teamUuid.get())).findAny();
     }
 }

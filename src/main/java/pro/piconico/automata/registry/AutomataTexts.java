@@ -15,12 +15,6 @@ public class AutomataTexts {
         return Text.literal(string).setStyle(AutomataTexts.LINK_STYLE.withClickEvent(new ClickEvent.CopyToClipboard(string)));
     }
 
-    public static final String APPLY_KEY = AutomataRegistry.toTextTranslationKey("apply");
-
-    public static final MutableText getApply() {
-        return Text.translatable(APPLY_KEY);
-    }
-
     /** Expected arguments: selection number and selection */
     public static final String BLOCK_SELECTED_KEY = AutomataRegistry.toTextTranslationKey("block_selected");
 
@@ -50,6 +44,12 @@ public class AutomataTexts {
 
     public static final MutableText getBotDeviceTeamSettings() {
         return Text.translatable(BOT_DEVICE_TEAM_SETTINGS_KEY);
+    }
+
+    public static final String CREATE_KEY = AutomataRegistry.toTextTranslationKey("create");
+
+    public static final MutableText getCreate() {
+        return Text.translatable(CREATE_KEY);
     }
 
     public static final String DECONSTRUCTION_FAILED_KEY = AutomataRegistry.toTextTranslationKey("deconstruction_failed");
@@ -136,6 +136,12 @@ public class AutomataTexts {
 
     public static final MutableText getTeamsEmpty() {
         return Text.translatable(TEAMS_EMPTY_KEY);
+    }
+
+    public static final String UPDATE_KEY = AutomataRegistry.toTextTranslationKey("update");
+
+    public static final MutableText getUpdate() {
+        return Text.translatable(UPDATE_KEY);
     }
 
     public static void initialize() {

@@ -9,24 +9,24 @@ import pro.piconico.automata.client.ui.component.BotTeamCrudForm.Action;
 import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.screen.BotDeviceScreenHandler;
 
-public class TeamSettingsTab implements Tab<BotDeviceScreenHandler> {
-    public static final TeamSettingsTab INSTANCE = new TeamSettingsTab();
+public class TeamCreateTab implements Tab<BotDeviceScreenHandler> {
+    public static final TeamCreateTab INSTANCE = new TeamCreateTab();
 
-    private TeamSettingsTab() {
+    private TeamCreateTab() {
     }
 
     @Override
     public Text getName(BotDeviceScreenHandler handler) {
-        return AutomataTexts.getBotDeviceTeamSettings();
+        return AutomataTexts.getBotDeviceTeamAdd();
     }
 
     @Override
     public Renderer getButtonRenderer(BotDeviceScreenHandler handler) {
-        return AutomataClientTextures.BOT_DEVICE_TEAM_SETTINGS_ICON.getButtonRenderer();
+        return AutomataClientTextures.BOT_DEVICE_TEAM_CREATE_ICON.getButtonRenderer();
     }
 
     @Override
     public void build(BotDeviceScreenHandler handler, FlowLayout parent) {
-        BotTeamCrudForm.build(handler, parent, getName(handler), Action.DELETE, Action.UPDATE);
+        BotTeamCrudForm.build(handler, parent, getName(handler), Action.CREATE);
     }
 }

@@ -17,6 +17,7 @@ import net.minecraft.text.Text;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.client.design.AutomataColors;
 import pro.piconico.automata.client.registry.AutomataClientTextures;
+import pro.piconico.automata.client.ui.component.AutomataUIComponents;
 import pro.piconico.automata.network.message.BotTeamSelectMessage;
 import pro.piconico.automata.registry.AutomataMessages;
 import pro.piconico.automata.registry.AutomataTexts;
@@ -40,11 +41,7 @@ public class TeamSelectTab implements Tab<BotDeviceScreenHandler> {
 
     @Override
     public void build(BotDeviceScreenHandler handler, FlowLayout parent) {
-        FlowLayout headerRow = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
-        headerRow.child(UIComponents.label(getName(handler)).shadow(true));
-        headerRow.child(UIContainers.horizontalFlow(Sizing.expand(), Sizing.fixed(0)));
-        headerRow.child(UIComponents.label(Text.literal(Integer.toString(handler.teams.size()))).shadow(true));
-        parent.child(headerRow);
+        parent.child(AutomataUIComponents.centerHeader(getName(handler)));
 
         if (handler.teams.isEmpty()) {
             FlowLayout infoRow = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.content());

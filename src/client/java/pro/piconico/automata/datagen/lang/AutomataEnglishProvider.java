@@ -15,12 +15,12 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
 
     @Override
     public void generateTranslations(WrapperLookup registryLookup, TranslationBuilder translationBuilder) {
-        translationBuilder.add(AutomataTexts.APPLY_KEY, "Apply");
         translationBuilder.add(AutomataTexts.BLOCK_SELECTED_KEY, "Selection %1$s: (%2$s)");
         translationBuilder.add(AutomataTexts.BOT_DEVICE_HOME_KEY, "Home");
         translationBuilder.add(AutomataTexts.BOT_DEVICE_TEAM_ADD_KEY, "Team Creation");
         translationBuilder.add(AutomataTexts.BOT_DEVICE_TEAM_SELECT_KEY, "Team Selection");
         translationBuilder.add(AutomataTexts.BOT_DEVICE_TEAM_SETTINGS_KEY, "Team Settings");
+        translationBuilder.add(AutomataTexts.CREATE_KEY, "Create");
         translationBuilder.add(AutomataTexts.DECONSTRUCTION_FAILED_KEY, "Must have 2 selections to deconstruct");
         translationBuilder.add(AutomataTexts.DELETE_KEY, "Delete");
         translationBuilder.add(AutomataTexts.JOBS_ADDED_KEY, "Added %1$s job(s)");
@@ -34,6 +34,7 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
         translationBuilder.add(AutomataTexts.TEAM_NAME_INVALID_KEY, "Invalid team name \"%1$s\"");
         translationBuilder.add(AutomataTexts.TEAM_SELECTED_KEY, "Selected team \"%1$s\"");
         translationBuilder.add(AutomataTexts.TEAMS_EMPTY_KEY, "No teams");
+        translationBuilder.add(AutomataTexts.UPDATE_KEY, "Update");
 
         translationBuilder.add(AutomataItems.AUTOMATOOL, "Automatool");
         translationBuilder.add(AutomataItems.CONSTRUCTION_BOT, "Construction Bot");
