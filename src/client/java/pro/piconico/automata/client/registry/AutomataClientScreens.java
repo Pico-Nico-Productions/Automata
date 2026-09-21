@@ -14,7 +14,7 @@ import pro.piconico.automata.screen.ItemBotDeviceScreenHandler;
 
 public class AutomataClientScreens {
     private static BotDeviceScreen<ItemBotDeviceScreenHandler> routeItemBotDeviceScreen(ItemBotDeviceScreenHandler handler, PlayerInventory playerInventory, Text title) {
-        ItemBotDevice itemBotDevice = (ItemBotDevice)handler.botDevice;
+        ItemBotDevice itemBotDevice = (ItemBotDevice)handler.device;
         TriFunction<ItemBotDeviceScreenHandler, PlayerInventory, Text, BotDeviceScreen<ItemBotDeviceScreenHandler>> factory = switch (itemBotDevice.getItem()) {
         case AutomatoolItem ignored -> AutomatoolScreen::new;
         default -> throw new IllegalArgumentException(ItemBotDeviceScreenHandler.class.getSimpleName() + " was used with an unregistered item");

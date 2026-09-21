@@ -13,6 +13,6 @@ public record BotTeamUpdateC2SMessage(BotTeam team) {
         if (team.isEmpty())
             return;
 
-        AutomataMessages.CHANNEL.serverHandle(serverAccess.player()).send(new BotTeamsSyncS2CMessage());
+        AutomataMessages.BOT_DEVICE_CHANNEL.serverHandle(serverAccess.player()).send(new BotTeamsSyncS2CMessage());
     }
 }

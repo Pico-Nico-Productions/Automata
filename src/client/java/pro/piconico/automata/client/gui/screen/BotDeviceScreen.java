@@ -1,5 +1,7 @@
 package pro.piconico.automata.client.gui.screen;
 
+import java.util.Optional;
+import java.util.UUID;
 import io.wispforest.owo.ui.base.BaseOwoContainerScreen;
 import io.wispforest.owo.ui.container.FlowLayout;
 import io.wispforest.owo.ui.container.UIContainers;
@@ -30,11 +32,22 @@ public abstract class BotDeviceScreen<HandlerT extends BotDeviceScreenHandler> e
 
     public BotDeviceScreen(HandlerT handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
+
+        handler.device.addTeamChangedListener(this::onTeamChanged);
     }
 
     @Override
     protected OwoUIAdapter<FlowLayout> createAdapter() {
         return OwoUIAdapter.create(this, UIContainers::verticalFlow);
+    }
+
+    @Override
+    public void removed() {
+        handler.device.removeTeamChangedListener(this::onTeamChanged);
+    }
+
+    @Override
+    protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
     }
 
     protected static void buildSlot(FlowLayout parent, int x, int y) {
@@ -74,7 +87,7 @@ public abstract class BotDeviceScreen<HandlerT extends BotDeviceScreenHandler> e
         tabManager.rebuildTab();
     }
 
-    @Override
-    protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
+    private void onTeamChanged(Optional<UUID> oldTeamUuid) {
+        rebuildTab();
     }
 }

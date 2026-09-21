@@ -5,19 +5,29 @@ import java.util.UUID;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
+import net.minecraft.server.world.ServerWorld;
 
-// TODO: Check if TEAM_CHANGED on the server needs to be manually synced to clients
 public interface BotDevice<T> extends ExtendedScreenHandlerFactory<T> {
     @FunctionalInterface
-    public interface ChangeTeam {
-        void onChanged(BotDevice<?> botDevice, Optional<UUID> oldTeamUuid);
+    public interface ChangeServerBotTeam {
+        void onChanged(ServerWorld serverWorld, BotDevice<?> device, Optional<UUID> oldTeamUuid);
     }
 
-    public static final Event<ChangeTeam> TEAM_CHANGED = EventFactory.createArrayBacked(ChangeTeam.class, callbacks -> (botDevice, oldTeamUuid) -> {
-        for (ChangeTeam callback : callbacks) {
-            callback.onChanged(botDevice, oldTeamUuid);
-        }
-    });
+    public static final Event<ChangeServerBotTeam> SERVER_TEAM_CHANGED = EventFactory.createArrayBacked(ChangeServerBotTeam.class,
+            callbacks -> (serverWorld, device, oldTeamUuid) -> {
+                for (ChangeServerBotTeam callback : callbacks) {
+                    callback.onChanged(serverWorld, device, oldTeamUuid);
+                }
+            });
+
+    @FunctionalInterface
+    public interface ChangeBotTeam {
+        void onChanged(Optional<UUID> oldTeamUuid);
+    }
+
+    void addTeamChangedListener(ChangeBotTeam listener);
+
+    void removeTeamChangedListener(ChangeBotTeam listener);
 
     Optional<UUID> getTeamUuid();
 

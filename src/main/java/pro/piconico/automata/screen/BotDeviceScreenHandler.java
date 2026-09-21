@@ -18,16 +18,16 @@ import pro.piconico.automata.world.BotTeamPersistentState;
 public abstract class BotDeviceScreenHandler extends ScreenHandler {
     public static final int BODY_WIDTH = 176, BODY_HEIGHT = 125, UI_SPACING = 4, BODY_INSET = 7, TEXT_HEIGHT = 9;
 
-    public final BotDevice<?> botDevice;
+    public final BotDevice<?> device;
     public final List<BotTeam> teams;
 
-    protected BotDeviceScreenHandler(@Nullable ScreenHandlerType<?> type, int syncId, BotDevice<?> botDevice) {
+    protected BotDeviceScreenHandler(@Nullable ScreenHandlerType<?> type, int syncId, BotDevice<?> device) {
         super(type, syncId);
-        this.botDevice = botDevice;
+        this.device = device;
         if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
             teams = new ArrayList<>();
 
-            AutomataMessages.CHANNEL.clientHandle().send(new BotTeamsSyncC2SMessage());
+            AutomataMessages.BOT_DEVICE_CHANNEL.clientHandle().send(new BotTeamsSyncC2SMessage());
         }
         else {
             teams = new ArrayList<>(BotTeamPersistentState.getTeams());
@@ -35,7 +35,7 @@ public abstract class BotDeviceScreenHandler extends ScreenHandler {
     }
 
     public Optional<BotTeam> getTeam() {
-        Optional<UUID> teamUuid = botDevice.getTeamUuid();
+        Optional<UUID> teamUuid = device.getTeamUuid();
 
         if (teamUuid.isEmpty())
             return Optional.empty();

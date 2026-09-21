@@ -13,7 +13,7 @@ import pro.piconico.automata.screen.BotDeviceScreenHandler;
 public interface BotDeviceHomeTab extends Tab<BotDeviceScreenHandler> {
     @Override
     default Text getName(BotDeviceScreenHandler handler) {
-        return switch (handler.botDevice) {
+        return switch (handler.device) {
             case ItemBotDevice itemBotDevice -> itemBotDevice.getDisplayName();
             case BlockBotDevice blockBotDevice -> blockBotDevice.getCachedState().getBlock().getName();
             default -> AutomataTexts.getBotDeviceHome();
@@ -22,7 +22,7 @@ public interface BotDeviceHomeTab extends Tab<BotDeviceScreenHandler> {
 
     @Override
     default ButtonComponent.Renderer getButtonRenderer(BotDeviceScreenHandler handler) {
-        return switch (handler.botDevice) {
+        return switch (handler.device) {
             case ItemBotDevice itemBotDevice -> ButtonComponentRenderers.item(new ItemStack(itemBotDevice.getItem()));
             case BlockBotDevice blockBotDevice -> ButtonComponentRenderers.block(blockBotDevice.getCachedState());
             default -> AutomataClientTextures.BOT_DEVICE_HOME_ICON.getButtonRenderer();

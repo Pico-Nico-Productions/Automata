@@ -1,8 +1,6 @@
 package pro.piconico.automata.client.network.message;
 
 import io.wispforest.owo.network.ClientAccess;
-import net.minecraft.client.MinecraftClient;
-import pro.piconico.automata.client.gui.screen.BotDeviceScreen;
 import pro.piconico.automata.network.message.BotTeamSelectMessage;
 import pro.piconico.automata.screen.BotDeviceScreenHandler;
 
@@ -12,12 +10,6 @@ public class BotTeamSelectHandler {
         if (!(clientAccess.player().currentScreenHandler instanceof BotDeviceScreenHandler deviceScreenHandler))
             return;
 
-        deviceScreenHandler.botDevice.setTeamUuid(message.teamUuid());
-
-        // TODO: Replace direct screen call with screen listening to TEAM_CHANGED event
-        if (!(MinecraftClient.getInstance().currentScreen instanceof BotDeviceScreen<?> deviceScreen))
-            return;
-
-        deviceScreen.rebuildTab();
+        deviceScreenHandler.device.setTeamUuid(message.teamUuid());
     }
 }

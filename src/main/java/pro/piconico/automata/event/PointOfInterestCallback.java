@@ -8,17 +8,17 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.poi.PointOfInterestType;
 
 public interface PointOfInterestCallback {
-    void onAction(BlockPos pos, RegistryEntry<PointOfInterestType> pointOfInterestType, ServerWorld serverWorld);
+    void onAction(ServerWorld serverWorld, BlockPos pos, RegistryEntry<PointOfInterestType> pointOfInterestType);
 
-    Event<PointOfInterestCallback> ADDED = EventFactory.createArrayBacked(PointOfInterestCallback.class, (listeners) -> (pos, pointOfInterestEntry, serverWorld) -> {
+    Event<PointOfInterestCallback> ADDED = EventFactory.createArrayBacked(PointOfInterestCallback.class, (listeners) -> (serverWorld, pos, pointOfInterestEntry) -> {
         for (PointOfInterestCallback event : listeners) {
-            event.onAction(pos, pointOfInterestEntry, serverWorld);
+            event.onAction(serverWorld, pos, pointOfInterestEntry);
         }
     });
 
-    Event<PointOfInterestCallback> REMOVED = EventFactory.createArrayBacked(PointOfInterestCallback.class, (listeners) -> (pos, pointOfInterestEntry, serverWorld) -> {
+    Event<PointOfInterestCallback> REMOVED = EventFactory.createArrayBacked(PointOfInterestCallback.class, (listeners) -> (serverWorld, pos, pointOfInterestEntry) -> {
         for (PointOfInterestCallback event : listeners) {
-            event.onAction(pos, pointOfInterestEntry, serverWorld);
+            event.onAction(serverWorld, pos, pointOfInterestEntry);
         }
     });
 }

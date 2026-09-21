@@ -51,7 +51,7 @@ public class TeamSelectTab implements Tab<BotDeviceScreenHandler> {
             return;
         }
 
-        Optional<UUID> teamUuid = handler.botDevice.getTeamUuid();
+        Optional<UUID> teamUuid = handler.device.getTeamUuid();
         FlowLayout listContainer = UIContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         listContainer.gap(BotDeviceScreenHandler.UI_SPACING);
         for (BotTeam team : handler.teams) {
@@ -67,7 +67,7 @@ public class TeamSelectTab implements Tab<BotDeviceScreenHandler> {
                     return false;
 
                 Optional<UUID> newTeamUuid = Optional.ofNullable(isSelectedTeam ? null : team.UUID);
-                AutomataMessages.CHANNEL.clientHandle().send(new BotTeamSelectMessage(newTeamUuid));
+                AutomataMessages.BOT_DEVICE_CHANNEL.clientHandle().send(new BotTeamSelectMessage(newTeamUuid));
 
                 return true;
             });

@@ -440,7 +440,7 @@ public class BotNetworkManager {
         }
     }
 
-    private static void onPointOfInterestAdded(BlockPos pos, RegistryEntry<PointOfInterestType> type, ServerWorld serverWorld) {
+    private static void onPointOfInterestAdded(ServerWorld serverWorld, BlockPos pos, RegistryEntry<PointOfInterestType> type) {
         if (type.getKey().get() != AutomataPointOfInterestTypes.ROBOPORT)
             return;
 
@@ -451,7 +451,7 @@ public class BotNetworkManager {
         addRoboport(pos, roboport.get().getTeamUuid().get(), serverWorld);
     }
 
-    private static void onPointOfInterestRemoved(BlockPos pos, RegistryEntry<PointOfInterestType> type, ServerWorld serverWorld) {
+    private static void onPointOfInterestRemoved(ServerWorld serverWorld, BlockPos pos, RegistryEntry<PointOfInterestType> type) {
         if (type.getKey().get() != AutomataPointOfInterestTypes.ROBOPORT)
             return;
 
@@ -498,7 +498,7 @@ public class BotNetworkManager {
             }
 
             for (Entity entity : serverWorld.iterateEntities()) {
-                if (!(entity instanceof BotEntity botEntity) || botEntity.getTeamUuid().filter(uuid -> uuid.equals(team.UUID)).isEmpty())
+                if (!(entity instanceof BotEntity botEntity) || botEntity.getTeamUuid().filter(team.UUID::equals).isEmpty())
                     continue;
 
                 botEntity.setTeamUuid(Optional.empty());
@@ -508,8 +508,8 @@ public class BotNetworkManager {
         }
     }
 
-    private static void onTeamChanged(BotDevice<?> botDevice, Optional<UUID> oldTeamUuid) {
-        if (!(botDevice instanceof RoboportBlockEntity roboport) || !(roboport.getWorld() instanceof ServerWorld serverWorld))
+    private static void onTeamChanged(ServerWorld serverWorld, BotDevice<?> device, Optional<UUID> oldTeamUuid) {
+        if (!(device instanceof RoboportBlockEntity roboport))
             return;
 
         oldTeamUuid.ifPresent(uuid -> removeRoboport(roboport.getPos(), uuid, serverWorld));
@@ -524,7 +524,7 @@ public class BotNetworkManager {
         PointOfInterestCallback.ADDED.register(BotNetworkManager::onPointOfInterestAdded);
         PointOfInterestCallback.REMOVED.register(BotNetworkManager::onPointOfInterestRemoved);
         BotTeamPersistentState.TEAMS_MUTATED.register(BotNetworkManager::onTeamsMutated);
-        BotDevice.TEAM_CHANGED.register(BotNetworkManager::onTeamChanged);
+        BotDevice.SERVER_TEAM_CHANGED.register(BotNetworkManager::onTeamChanged);
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             NETWORK_MAP_CACHE.clear();
             NETWORK_LOADER_CACHE.clear();

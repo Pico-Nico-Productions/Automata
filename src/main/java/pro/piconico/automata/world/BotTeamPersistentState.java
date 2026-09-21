@@ -117,7 +117,7 @@ public class BotTeamPersistentState extends PersistentState {
 
     private static void onBotTeamMutated(BotTeam team) {
         if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
-            AutomataMessages.CHANNEL.clientHandle().send(new BotTeamUpdateC2SMessage(team));
+            AutomataMessages.BOT_DEVICE_CHANNEL.clientHandle().send(new BotTeamUpdateC2SMessage(team));
             return;
         }
 

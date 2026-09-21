@@ -25,7 +25,7 @@ public class BotTeamCrudForm {
                 return;
 
             BotTeam newTeam = new BotTeam(name);
-            AutomataMessages.CHANNEL.clientHandle().send(new BotTeamCreateC2SMessage(newTeam));
+            AutomataMessages.BOT_DEVICE_CHANNEL.clientHandle().send(new BotTeamCreateC2SMessage(newTeam));
         }), //
         UPDATE(AutomataTexts.getUpdate(), (team, name) -> {
             if (team.isEmpty() || !BotTeam.isValidName(name))
@@ -38,7 +38,7 @@ public class BotTeamCrudForm {
             if (team.isEmpty())
                 return;
 
-            AutomataMessages.CHANNEL.clientHandle().send(new BotTeamDeleteC2SMessage(team.get().UUID));
+            AutomataMessages.BOT_DEVICE_CHANNEL.clientHandle().send(new BotTeamDeleteC2SMessage(team.get().UUID));
         });
 
         private Text text;

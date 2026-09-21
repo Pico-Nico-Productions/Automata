@@ -46,7 +46,7 @@ public abstract class PointOfInterestEventMixin extends SerializingRegionBasedSt
         if (originalResult == null)
             return;
 
-        PointOfInterestCallback.ADDED.invoker().onAction(pos, type, (ServerWorld)this.world);
+        PointOfInterestCallback.ADDED.invoker().onAction((ServerWorld)this.world, pos, type);
     }
 
     @Inject(method = "remove", at = @At("HEAD"))
@@ -62,6 +62,6 @@ public abstract class PointOfInterestEventMixin extends SerializingRegionBasedSt
         if (pointOfInterestType.isEmpty())
             return;
 
-        PointOfInterestCallback.REMOVED.invoker().onAction(pos, pointOfInterestType.get(), (ServerWorld)this.world);
+        PointOfInterestCallback.REMOVED.invoker().onAction((ServerWorld)this.world, pos, pointOfInterestType.get());
     }
 }

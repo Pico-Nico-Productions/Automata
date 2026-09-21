@@ -8,7 +8,7 @@ import pro.piconico.automata.registry.AutomataMessages;
 
 public class AutomataClientMessageHandlers {
     public static void initialize() {
-        AutomataMessages.CHANNEL.registerClientbound(BotTeamSelectMessage.class, BotTeamSelectHandler::handle);
-        AutomataMessages.CHANNEL.registerClientbound(BotTeamsSyncS2CMessage.class, BotTeamsSyncS2CHandler::handle);
+        AutomataMessages.BOT_DEVICE_CHANNEL.registerClientbound(BotTeamSelectMessage.class, BotTeamSelectHandler::handle);
+        AutomataMessages.BOT_DEVICE_CHANNEL.registerClientbound(BotTeamsSyncS2CMessage.class, BotTeamsSyncS2CHandler::handle);
     }
 }

@@ -25,7 +25,7 @@ public class RoboportScreenHandler extends BotDeviceScreenHandler {
     public RoboportScreenHandler(int syncId, PlayerInventory playerInventory, BlockPos pos) {
         super(AutomataScreenHandlers.ROBOPORT, syncId, ((BlockBotDevice)playerInventory.player.getEntityWorld().getBlockEntity(pos)));
 
-        this.inventory = (RoboportBlockEntity)botDevice;
+        this.inventory = (RoboportBlockEntity)device;
 
         for (int indexX = 0; indexX < RoboportBlockEntity.BOT_SLOT_COUNT; indexX++) {
             addSlot(new BotSlot(inventory, indexX, BOT_BAR_X + indexX * ScreenConstants.SLOT_DELTA, BOT_BAR_Y + OFFSET_Y));

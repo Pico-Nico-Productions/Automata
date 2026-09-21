@@ -14,6 +14,6 @@ public record BotTeamDeleteC2SMessage(UUID uuid) {
         if (team.isEmpty())
             return;
 
-        AutomataMessages.CHANNEL.serverHandle(serverAccess.player()).send(new BotTeamsSyncS2CMessage());
+        AutomataMessages.BOT_DEVICE_CHANNEL.serverHandle(serverAccess.player()).send(new BotTeamsSyncS2CMessage());
     }
 }
