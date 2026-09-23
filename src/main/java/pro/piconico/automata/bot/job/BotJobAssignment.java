@@ -24,6 +24,10 @@ public class BotJobAssignment {
         this.assignedBot = assignedBot;
     }
 
+    public BotJobAssignment(BotJobAssignment original) {
+        this(original.JOB, original.TEAM_UUID, original.assignedBot);
+    }
+
     public BotJobAssignment(BotJob job, UUID teamUuid) {
         this(job, teamUuid, Optional.empty());
     }

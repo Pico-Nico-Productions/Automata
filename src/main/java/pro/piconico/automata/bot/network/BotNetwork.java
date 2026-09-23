@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import io.netty.buffer.ByteBuf;
@@ -31,16 +32,21 @@ public class BotNetwork {
         this.teamUuid = teamUuid;
     }
 
+    protected BotNetwork(BotNetwork original) {
+        this.roboportMap = original.roboportMap.entrySet().stream().collect(Collectors.toMap(Entry::getKey, entry -> Set.copyOf(entry.getValue())));
+        this.teamUuid = original.teamUuid;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
 
-        if (!(obj instanceof BotNetwork net) || !teamUuid.equals(net.teamUuid))
+        if (!(obj instanceof BotNetwork network) || !teamUuid.equals(network.teamUuid))
             return false;
 
         Set<BlockPos> roboports = getRoboports().collect(Collectors.toSet());
-        Set<BlockPos> otherRoboports = net.getRoboports().collect(Collectors.toSet());
+        Set<BlockPos> otherRoboports = network.getRoboports().collect(Collectors.toSet());
         return roboports.equals(otherRoboports);
     }
 

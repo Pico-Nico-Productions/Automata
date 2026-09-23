@@ -14,7 +14,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.function.TriFunction;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
@@ -65,11 +64,15 @@ public class BotNetworkManager {
 
     public static class ServerBotNetwork extends BotNetwork {
         private final ServerWorld serverWorld;
-        private boolean dirty;
 
         private ServerBotNetwork(Collection<BlockPos> roboports, UUID teamUuid, ServerWorld serverWorld) {
             super(roboports, teamUuid);
             this.serverWorld = serverWorld;
+        }
+
+        private ServerBotNetwork(ServerBotNetwork original) {
+            super(original);
+            this.serverWorld = original.serverWorld;
         }
 
         @Override
@@ -120,28 +123,11 @@ public class BotNetworkManager {
             return subnetworks;
         }
 
-        public boolean isDirty() {
-            return dirty;
-        }
-
-        private void markDirty() {
-            dirty = true;
-        }
-
-        private void markNotDirty() {
-            dirty = false;
-        }
-
         private boolean add(BlockPos roboport) {
             ChunkPos roboportChunk = new ChunkPos(roboport);
             Set<BlockPos> roboportsInChunk = roboportMap.computeIfAbsent(roboportChunk, chunkPos -> new HashSet<>());
-            boolean added = roboportsInChunk.add(roboport);
 
-            if (added) {
-                markDirty();
-            }
-
-            return added;
+            return roboportsInChunk.add(roboport);
         }
 
         private record RemovedObjects(Optional<BlockPos> roboport, Optional<ChunkPos> chunk, Set<ServerBotNetwork> subnetworks) {
@@ -158,8 +144,6 @@ public class BotNetworkManager {
 
             if (!roboportsInChunk.contains(roboport))
                 return RemovedObjects.NONE;
-
-            markDirty();
 
             roboportsInChunk.remove(roboport);
             if (!roboportsInChunk.isEmpty())
@@ -254,17 +238,24 @@ public class BotNetworkManager {
         }
     }
 
-    //#region Network Fetching
-    private static Set<ServerBotNetwork> fetchNetworks(Iterable<ChunkPos> chunks,
-            TriFunction<ChunkPos, UUID, ServerWorld, Optional<ServerBotNetwork>> fetchNetwork, UUID teamUuid, ServerWorld serverWorld) {
-        Set<ServerBotNetwork> networks = new HashSet<>();
+    //#region Network Getting
+    private static Optional<ServerBotNetwork> getNetwork(ChunkPos chunkPos, UUID teamUuid, ServerWorld serverWorld) {
+        return MapUtils.getNested(NETWORK_MAP_CACHE, serverWorld, teamUuid, chunkPos);
+    }
+
+    public static Optional<BotNetwork> getNetworkCopy(ChunkPos chunkPos, UUID teamUuid, ServerWorld serverWorld) {
+        return getNetwork(chunkPos, teamUuid, serverWorld).map(network -> new ServerBotNetwork(network));
+    }
+
+    public static Set<BotNetwork> getNetworkCopies(ChunkBounds chunkBounds, UUID teamUuid, ServerWorld serverWorld) {
+        Set<BotNetwork> networks = new HashSet<>();
 
         Set<ChunkPos> networkChunks = new HashSet<>();
-        for (ChunkPos chunkPos : chunks) {
+        for (ChunkPos chunkPos : chunkBounds.toStream().toList()) {
             if (networkChunks.contains(chunkPos))
                 continue;
 
-            Optional<ServerBotNetwork> serverNetwork = fetchNetwork.apply(chunkPos, teamUuid, serverWorld);
+            Optional<BotNetwork> serverNetwork = getNetworkCopy(chunkPos, teamUuid, serverWorld);
             if (serverNetwork.isEmpty())
                 continue;
 
@@ -274,17 +265,9 @@ public class BotNetworkManager {
 
         return networks;
     }
-
-    public static Optional<ServerBotNetwork> getNetwork(ChunkPos chunkPos, UUID teamUuid, ServerWorld serverWorld) {
-        return MapUtils.getNested(NETWORK_MAP_CACHE, serverWorld, teamUuid, chunkPos);
-    }
-
-    public static Set<ServerBotNetwork> getNetworks(ChunkBounds chunkBounds, UUID teamUuid, ServerWorld serverWorld) {
-        return fetchNetworks(chunkBounds.toStream().toList(), BotNetworkManager::getNetwork, teamUuid, serverWorld);
-    }
     //#endregion
 
-    //#region Mutation Operations
+    //#region Cache Mutation Operations
     private static void putNetwork(ServerBotNetwork serverNetwork) {
         Map<UUID, BotNetworkMap<ServerBotNetwork>> teamMap = NETWORK_MAP_CACHE.computeIfAbsent(serverNetwork.serverWorld, serverWorld -> new HashMap<>());
         BotNetworkMap<ServerBotNetwork> networkMap = teamMap.computeIfAbsent(serverNetwork.teamUuid, uuid -> new BotNetworkMap<>());
@@ -374,17 +357,6 @@ public class BotNetworkManager {
         }
 
         NETWORKS_MUTATED.invoker().onMutate(serverWorld, teamUuid, Mutation.REMOVE);
-    }
-
-    public static void markAllNotDirty(ServerWorld serverWorld) {
-        if (!NETWORK_MAP_CACHE.containsKey(serverWorld))
-            return;
-
-        for (BotNetworkMap<ServerBotNetwork> networkMap : NETWORK_MAP_CACHE.get(serverWorld).values()) {
-            for (ServerBotNetwork serverNetwork : networkMap.values()) {
-                serverNetwork.markNotDirty();
-            }
-        }
     }
 
     public static Optional<BotEntity> getOrSpawnBotFor(ServerWorld serverWorld, UUID teamUuid, BotJob job) {

@@ -5,10 +5,11 @@ import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.network.packet.CustomPayload;
 import pro.piconico.automata.bot.job.BotJobAssignmentMap;
+import pro.piconico.automata.bot.network.BotNetwork;
 import pro.piconico.automata.bot.network.BotNetworkMap;
 import pro.piconico.automata.registry.AutomataRegistry;
 
-public record BotSyncS2CPacket(boolean clear, BotNetworkMap<?> deltaNetworkMap, BotJobAssignmentMap deltaJobAssignmentMap) implements CustomPayload {
+public record BotSyncS2CPacket(boolean clear, BotNetworkMap<BotNetwork> deltaNetworkMap, BotJobAssignmentMap deltaJobAssignmentMap) implements CustomPayload {
     public static final Id<BotSyncS2CPacket> ID = new Id<>(AutomataRegistry.packetId(AutomataRegistry.BOT_SYNC_S2C_PACKET));
     public static final PacketCodec<ByteBuf, BotSyncS2CPacket> PACKET_CODEC = PacketCodec.tuple( //
             PacketCodecs.BOOLEAN, BotSyncS2CPacket::clear, //

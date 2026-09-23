@@ -13,8 +13,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import pro.piconico.automata.bot.job.BotJobAssignmentMap;
+import pro.piconico.automata.bot.network.BotNetwork;
 import pro.piconico.automata.bot.network.BotNetworkManager;
-import pro.piconico.automata.bot.network.BotNetworkManager.ServerBotNetwork;
 import pro.piconico.automata.bot.network.BotNetworkMap;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.network.packet.BotSyncS2CPacket;
@@ -24,20 +24,19 @@ import pro.piconico.automata.world.BotTeamPersistentState;
 import pro.piconico.automata.world.BotTeamPersistentState.Mutation;
 
 public class BotSyncManager {
-    private record SyncState(ServerWorld serverWorld, UUID teamUuid, BotNetworkMap<ServerBotNetwork> networkMap, BotJobAssignmentMap jobAssignmentMap) {
+    private record SyncState(ServerWorld serverWorld, UUID teamUuid, BotNetworkMap<BotNetwork> networkMap, BotJobAssignmentMap jobAssignmentMap) {
         private static SyncState getCurrent(ServerPlayerEntity serverPlayer, UUID teamUuid) {
             ServerWorld serverWorld = serverPlayer.getEntityWorld();
             ChunkBounds renderBounds = ChunkBounds.of(serverPlayer.getChunkPos(), serverPlayer.getViewDistance(), serverWorld);
-            // TODO: Make BotJobAssignment and BotNetwork implement Cloneable so a unique snapshot can be created and BotNetwork.dirty is obsolete
-            BotNetworkMap<ServerBotNetwork> currentNetworkMap = new BotNetworkMap<>(BotNetworkManager.getNetworks(renderBounds, teamUuid, serverWorld));
-            BotJobAssignmentMap currentJobMap = new BotJobAssignmentMap(BotJobPersistentState.getJobAssignments(serverWorld, teamUuid, renderBounds));
+            BotNetworkMap<BotNetwork> currentNetworkMap = new BotNetworkMap<>(BotNetworkManager.getNetworkCopies(renderBounds, teamUuid, serverWorld));
+            BotJobAssignmentMap currentJobMap = new BotJobAssignmentMap(BotJobPersistentState.getJobAssignmentCopies(serverWorld, teamUuid, renderBounds));
 
             return new SyncState(serverWorld, teamUuid, currentNetworkMap, currentJobMap);
         }
 
         private BotSyncS2CPacket calculateDelta(SyncState newState) {
             boolean newWorld = newState.serverWorld != serverWorld;
-            BotNetworkMap<ServerBotNetwork> deltaNetworkMap;
+            BotNetworkMap<BotNetwork> deltaNetworkMap;
             BotJobAssignmentMap deltaJobAssignmentMap;
 
             if (newWorld) {
@@ -126,8 +125,6 @@ public class BotSyncManager {
 
             syncTo(serverPlayer);
         }
-
-        BotNetworkManager.markAllNotDirty(serverWorld);
     }
 
     private static void onTeamsMutated(MinecraftServer server, BotTeam team, Mutation mutation) {

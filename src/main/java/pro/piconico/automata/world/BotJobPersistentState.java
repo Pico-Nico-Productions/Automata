@@ -78,28 +78,28 @@ public class BotJobPersistentState extends PersistentState {
         return MapUtils.getNested(getJobState(serverWorld).jobLookup, botUuid);
     }
 
-    public static Optional<BotJobAssignment> getJobAssignment(ServerWorld serverWorld, UUID teamUuid, BlockPos pos, BotJobType<?> jobType) {
+    private static Optional<BotJobAssignment> getJobAssignment(ServerWorld serverWorld, UUID teamUuid, BlockPos pos, BotJobType<?> jobType) {
         BotJobPersistentState jobState = getJobState(serverWorld);
 
         return MapUtils.getNested(jobState.teamJobAssignmentMap, teamUuid, pos, jobType);
     }
 
-    public static Set<BotJobAssignment> getJobAssignments(ServerWorld serverWorld, UUID teamUuid, ChunkBounds chunkBounds) {
+    public static Set<BotJobAssignment> getJobAssignmentCopies(ServerWorld serverWorld, UUID teamUuid, ChunkBounds chunkBounds) {
         BotJobPersistentState jobState = getJobState(serverWorld);
 
         if (!jobState.teamJobAssignmentMap.containsKey(teamUuid))
             return Set.of();
 
-        Set<BotJobAssignment> inRangeJobs = new HashSet<>();
+        Set<BotJobAssignment> inRangeJobAssignments = new HashSet<>();
 
         for (Entry<BlockPos, Map<BotJobType<?>, BotJobAssignment>> entry : jobState.teamJobAssignmentMap.get(teamUuid).entrySet()) {
             if (!chunkBounds.containsXZ(entry.getKey()))
                 continue;
 
-            inRangeJobs.addAll(entry.getValue().values());
+            inRangeJobAssignments.addAll(entry.getValue().values().stream().map(jobAssignment -> new BotJobAssignment(jobAssignment)).toList());
         }
 
-        return inRangeJobs;
+        return inRangeJobAssignments;
     }
     //#endregion
 
@@ -175,7 +175,7 @@ public class BotJobPersistentState extends PersistentState {
         for (Map<BotJobType<?>, BotJobAssignment> typeMap : teamMap.values()) {
             for (BotJobAssignment jobAssignment : typeMap.values()) {
                 if (!jobAssignment.isAssigned()
-                        || BotNetworkManager.getNetwork(new ChunkPos(jobAssignment.JOB.pos()), jobAssignment.TEAM_UUID, serverWorld).isPresent())
+                        || BotNetworkManager.getNetworkCopy(new ChunkPos(jobAssignment.JOB.pos()), jobAssignment.TEAM_UUID, serverWorld).isPresent())
                     continue;
 
                 unassignJob(serverWorld, jobAssignment, false);

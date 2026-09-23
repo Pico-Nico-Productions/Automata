@@ -8,10 +8,9 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.util.math.ChunkPos;
-import pro.piconico.automata.bot.network.BotNetworkManager.ServerBotNetwork;
 
 public class BotNetworkMap<T extends BotNetwork> extends HashMap<ChunkPos, T> {
-    public static final PacketCodec<ByteBuf, BotNetworkMap<?>> PACKET_CODEC = PacketCodec.tuple(
+    public static final PacketCodec<ByteBuf, BotNetworkMap<BotNetwork>> PACKET_CODEC = PacketCodec.tuple(
             PacketCodecs.map(HashMap::new, ChunkPos.PACKET_CODEC, PacketCodecs.optional(BotNetwork.PACKET_CODEC)), BotNetworkMap::toOptionalMap,
             BotNetworkMap::new);
 
@@ -52,7 +51,7 @@ public class BotNetworkMap<T extends BotNetwork> extends HashMap<ChunkPos, T> {
 
             T oldNetwork = networkEntry.getValue(), newNetwork = newMap.get(chunkPos);
 
-            if (oldNetwork.equals(newNetwork) || newNetwork instanceof ServerBotNetwork serverNetwork && !serverNetwork.isDirty()) {
+            if (oldNetwork.equals(newNetwork)) {
                 deltaMap.remove(chunkPos);
             }
         }
