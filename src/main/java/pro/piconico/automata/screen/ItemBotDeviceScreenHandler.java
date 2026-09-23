@@ -8,7 +8,7 @@ import pro.piconico.automata.registry.AutomataScreenHandlers;
 
 public class ItemBotDeviceScreenHandler extends BotDeviceScreenHandler {
     public ItemBotDeviceScreenHandler(int syncId, PlayerInventory playerInventory, ItemStack automatoolStack) {
-        super(AutomataScreenHandlers.ITEM_BOT_DEVICE, syncId, new ItemBotDevice(automatoolStack));
+        super(AutomataScreenHandlers.ITEM_BOT_DEVICE, syncId, new ItemBotDevice(playerInventory.player, automatoolStack));
     }
 
     @Override

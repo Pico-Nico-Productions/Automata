@@ -6,11 +6,11 @@ import net.minecraft.util.math.BlockPos;
 import pro.piconico.automata.registry.AutomataRegistries;
 
 public interface BotJob {
-    static Codec<BotJob> CODEC = AutomataRegistries.BOT_JOB_TYPE.getCodec().dispatch(BotJob::getType, BotJobType::codec);
+    public static Codec<BotJob> CODEC = AutomataRegistries.BOT_JOB_TYPE.getCodec().dispatch(BotJob::getType, BotJobType::codec);
 
-    BlockPos pos();
+    public BlockPos pos();
 
-    BotJobType<?> getType();
+    public BotJobType<?> getType();
 
-    boolean execute(ServerWorld serverWorld);
+    public boolean execute(ServerWorld serverWorld);
 }

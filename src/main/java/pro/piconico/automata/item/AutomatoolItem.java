@@ -22,6 +22,7 @@ import pro.piconico.automata.registry.AutomataComponents;
 import pro.piconico.automata.registry.AutomataItems;
 import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.world.BotTeamPersistentState;
+import pro.piconico.automata.bot.device.BotDevice;
 import pro.piconico.automata.bot.device.ItemBotDevice;
 import pro.piconico.automata.bot.job.BotJobDispatcher;
 import pro.piconico.automata.bot.team.BotTeam;
@@ -31,7 +32,7 @@ public class AutomatoolItem extends Item {
         super(settings.maxCount(1));
     }
 
-    //#region Hold-Based Sync Subscription
+    //#region Sync Subscription
     private static void onHoldStarted(PlayerEntity player, Hand hand, ItemStack stack) {
         if (!stack.isOf(AutomataItems.AUTOMATOOL))
             return;
@@ -50,9 +51,18 @@ public class AutomatoolItem extends Item {
             return;
 
         Collection<ItemStack> heldStacks = LivingEntityUtils.getHeldStacks(player, AutomataItems.AUTOMATOOL).values();
-        Optional<UUID> teamUuid = heldStacks.stream().map(heldStack -> TeamComponent.get(heldStack).orElse(null)).filter(uuid -> uuid != null)
-                .findFirst();
+        Optional<UUID> teamUuid = heldStacks.stream().map(heldStack -> TeamComponent.get(heldStack).orElse(null)).filter(uuid -> uuid != null).findFirst();
         BotSyncManager.updateSubscription(serverPlayer, teamUuid);
+    }
+
+    private static void onTeamChanged(World world, BotDevice<?> device, Optional<UUID> oldTeamUuid) {
+        if (!(device instanceof ItemBotDevice itemDevice) || itemDevice.getItem() != AutomataItems.AUTOMATOOL)
+            return;
+
+        if (!(itemDevice.player instanceof ServerPlayerEntity serverPlayer))
+            return;
+
+        BotSyncManager.updateSubscription(serverPlayer, device.getTeamUuid());
     }
     //#endregion
 
@@ -72,7 +82,7 @@ public class AutomatoolItem extends Item {
         if (world.isClient())
             return ActionResult.SUCCESS;
 
-        player.openHandledScreen(new ItemBotDevice(automatoolStack));
+        player.openHandledScreen(new ItemBotDevice(player, automatoolStack));
 
         return ActionResult.SUCCESS;
     }
@@ -143,5 +153,6 @@ public class AutomatoolItem extends Item {
         HoldItemCallback.HOLD_STARTED.register(AutomatoolItem::onHoldStarted);
         HoldItemCallback.HOLD_ENDED.register(AutomatoolItem::onHoldEnded);
         AttackBlockCallback.EVENT.register(AutomatoolItem::onAttackBlock);
+        BotDevice.TEAM_CHANGED_CALLBACKS.add(AutomatoolItem::onTeamChanged);
     }
 }

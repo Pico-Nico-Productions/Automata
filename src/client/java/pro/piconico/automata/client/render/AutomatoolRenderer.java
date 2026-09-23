@@ -41,7 +41,7 @@ public class AutomatoolRenderer {
 
     private static void renderDeconstructionJobs(WorldRenderContext context) {
         for (Entry<BlockPos, Map<BotJobType<?>, BotJobAssignment>> entry : BotCache.jobAssignmentMap.entrySet()) {
-            if (!entry.getValue().containsKey(AutomataBotJobs.DECONSTRUCTION_JOB))
+            if (!entry.getValue().containsKey(AutomataBotJobs.DECONSTRUCTION))
                 continue;
 
             RenderUtils.drawBoxOutline(context, new Box(entry.getKey()), AutomataColors.DECONSTRUCTION);

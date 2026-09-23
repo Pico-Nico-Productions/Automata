@@ -64,22 +64,23 @@ public class RoboportBlockEntity extends BlockBotDevice implements Inventory {
 
     //#region Bot
     private Optional<BotEntity> getBotEntityFor(BotJob job) {
-        Optional<Set<BotType>> capableBotTypes = AutomataBots.getBotTypesFor(job);
+        Set<BotType> capableBotTypes = AutomataBots.getBotTypesFor(job);
         if (capableBotTypes.isEmpty())
             return Optional.empty();
 
         Box searchBox = ChunkBounds.of(new ChunkPos(getPos()), CHUNK_RANGE, world).toBox();
         List<BotEntity> capableBots = world.getEntitiesByType(TypeFilter.instanceOf(BotEntity.class), searchBox,
-                botEntity -> botEntity.isAlive() && botEntity.getTeamUuid().equals(teamUuid) && botEntity.canDoJob(job));
+                botEntity -> botEntity.isAlive() && botEntity.getTeamUuid().equals(getTeamUuid()) && botEntity.canDoJob(job));
         return capableBots.isEmpty() ? Optional.empty() : Optional.of(capableBots.getFirst());
     }
 
     private Optional<Integer> getBotSlotFor(BotJob job) {
-        Optional<Set<BotType>> capableBotTypes = AutomataBots.getBotTypesFor(job);
+        Set<BotType> capableBotTypes = AutomataBots.getBotTypesFor(job);
+
         if (capableBotTypes.isEmpty())
             return Optional.empty();
 
-        Set<Item> capableBotItems = capableBotTypes.get().stream().map(botType -> botType.item()).collect(Collectors.toSet());
+        Set<Item> capableBotItems = capableBotTypes.stream().map(botType -> botType.item()).collect(Collectors.toSet());
         for (int i = 0; i < itemStacks.size(); i++) {
             if (capableBotItems.contains(getStack(i).getItem()))
                 return Optional.of(i);
@@ -89,11 +90,11 @@ public class RoboportBlockEntity extends BlockBotDevice implements Inventory {
     }
 
     public boolean canDoJob(BotJob job) {
-        return teamUuid.isPresent() && (getBotEntityFor(job).isPresent() || getBotSlotFor(job).isPresent());
+        return getTeamUuid().isPresent() && (getBotEntityFor(job).isPresent() || getBotSlotFor(job).isPresent());
     }
 
     public Optional<BotEntity> getOrSpawnBotFor(BotJob job) {
-        if (teamUuid.isEmpty())
+        if (getTeamUuid().isEmpty())
             return Optional.empty();
 
         Optional<BotEntity> botEntity = getBotEntityFor(job);
@@ -109,7 +110,7 @@ public class RoboportBlockEntity extends BlockBotDevice implements Inventory {
 
         EntityType<? extends BotEntity> botEntityType = botItem.getBotType().entityType();
         BotEntity newBotEntity = botEntityType.spawn((ServerWorld)getWorld(), getPos().up(), SpawnReason.MOB_SUMMONED);
-        newBotEntity.setTeamUuid(teamUuid);
+        newBotEntity.setTeamUuid(getTeamUuid());
 
         return Optional.of(newBotEntity);
     }

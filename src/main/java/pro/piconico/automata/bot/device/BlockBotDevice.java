@@ -1,12 +1,13 @@
 package pro.piconico.automata.bot.device;
 
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper.WrapperLookup;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -16,15 +17,25 @@ import net.minecraft.storage.WriteView;
 import net.minecraft.text.Text;
 import net.minecraft.util.Uuids;
 import net.minecraft.util.math.BlockPos;
-import pro.piconico.automata.network.message.BotTeamSelectMessage;
+import pro.piconico.automata.network.message.BotDeviceTeamChangeMessage;
+import pro.piconico.automata.registry.AutomataBotDevices;
 import pro.piconico.automata.registry.AutomataMessages;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
 public abstract class BlockBotDevice extends BlockEntity implements BotDevice<BlockPos> {
-    private static final String TEAM_UUID_KEY = "team_uuid";
-    private final Set<ChangeBotTeam> listeners = new HashSet<>();
+    public record Id(BlockPos pos) implements BotDevice.Id {
+        public static final MapCodec<Id> CODEC = RecordCodecBuilder
+                .mapCodec(instance -> instance.group(BlockPos.CODEC.fieldOf("pos").forGetter(Id::pos)).apply(instance, Id::new));
 
-    protected Optional<UUID> teamUuid = Optional.empty();
+        @Override
+        public BotDeviceType<?, ?> getType() {
+            return AutomataBotDevices.BLOCK;
+        }
+    }
+
+    private static final String TEAM_UUID_KEY = "team_uuid";
+
+    private Optional<UUID> teamUuid = Optional.empty();
 
     public BlockBotDevice(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -60,13 +71,19 @@ public abstract class BlockBotDevice extends BlockEntity implements BotDevice<Bl
     }
 
     @Override
-    public void addTeamChangedListener(ChangeBotTeam listener) {
-        listeners.add(listener);
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (!(obj instanceof BlockBotDevice blockDevice))
+            return false;
+
+        return world == blockDevice.world && pos.equals(blockDevice.pos);
     }
 
     @Override
-    public void removeTeamChangedListener(ChangeBotTeam listener) {
-        listeners.remove(listener);
+    public Id getId() {
+        return new Id(pos);
     }
 
     @Override
@@ -82,12 +99,15 @@ public abstract class BlockBotDevice extends BlockEntity implements BotDevice<Bl
 
         this.teamUuid = teamUuid;
 
-        if (getWorld() instanceof ServerWorld serverWorld) {
-            SERVER_TEAM_CHANGED.invoker().onChanged(serverWorld, this, oldTeamUuid);
-            AutomataMessages.BOT_DEVICE_CHANNEL.serverHandle(this).send(new BotTeamSelectMessage(teamUuid));
+        BotDevice.invokeTeamChanged(world, this, oldTeamUuid);
+        if (world instanceof ServerWorld) {
+            AutomataMessages.BOT_DEVICE_CHANNEL.serverHandle(this).send(new BotDeviceTeamChangeMessage(getId(), teamUuid));
         }
-        listeners.forEach(listener -> listener.onChanged(oldTeamUuid));
 
         return true;
+    }
+
+    public static Optional<BlockBotDevice> resolve(PlayerEntity player, Id deviceId) {
+        return Optional.ofNullable((BlockBotDevice)player.getEntityWorld().getBlockEntity(deviceId.pos));
     }
 }

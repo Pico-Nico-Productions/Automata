@@ -28,6 +28,7 @@ import net.minecraft.server.world.ChunkTicketType;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.World;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.poi.PointOfInterestType;
 import pro.piconico.automata.Automata;
@@ -508,8 +509,8 @@ public class BotNetworkManager {
         }
     }
 
-    private static void onTeamChanged(ServerWorld serverWorld, BotDevice<?> device, Optional<UUID> oldTeamUuid) {
-        if (!(device instanceof RoboportBlockEntity roboport))
+    private static void onTeamChanged(World world, BotDevice<?> device, Optional<UUID> oldTeamUuid) {
+        if (!(world instanceof ServerWorld serverWorld) || !(device instanceof RoboportBlockEntity roboport))
             return;
 
         oldTeamUuid.ifPresent(uuid -> removeRoboport(roboport.getPos(), uuid, serverWorld));
@@ -524,7 +525,7 @@ public class BotNetworkManager {
         PointOfInterestCallback.ADDED.register(BotNetworkManager::onPointOfInterestAdded);
         PointOfInterestCallback.REMOVED.register(BotNetworkManager::onPointOfInterestRemoved);
         BotTeamPersistentState.TEAMS_MUTATED.register(BotNetworkManager::onTeamsMutated);
-        BotDevice.SERVER_TEAM_CHANGED.register(BotNetworkManager::onTeamChanged);
+        BotDevice.TEAM_CHANGED_CALLBACKS.add(BotNetworkManager::onTeamChanged);
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             NETWORK_MAP_CACHE.clear();
             NETWORK_LOADER_CACHE.clear();

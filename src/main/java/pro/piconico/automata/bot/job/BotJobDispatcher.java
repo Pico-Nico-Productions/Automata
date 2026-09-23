@@ -20,7 +20,7 @@ public class BotJobDispatcher {
                     if (!BlockUtils.hasDeconstructableBlock(serverWorld, blockPos))
                         continue;
 
-                    jobsToAdd.add(new DeconstructionJob(blockPos));
+                    jobsToAdd.add(new DeconstructionBotJob(blockPos));
                 }
             }
         }

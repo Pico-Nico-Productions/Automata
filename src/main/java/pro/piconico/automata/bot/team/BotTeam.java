@@ -25,8 +25,6 @@ public class BotTeam {
             .group(Codec.STRING.fieldOf("name").forGetter(BotTeam::getName), Uuids.INT_STREAM_CODEC.fieldOf("uuid").forGetter(team -> team.UUID))
             .apply(instance, BotTeam::new));
 
-    public static final String EMPTY_UUID = " ";
-
     private String name;
 
     public final UUID UUID;
@@ -44,8 +42,8 @@ public class BotTeam {
     public BotTeam(String name, UUID UUID) {
         validateName(name);
 
-        this.UUID = UUID;
         this.name = name;
+        this.UUID = UUID;
     }
 
     public BotTeam(String name) {

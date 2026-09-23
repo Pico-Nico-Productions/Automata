@@ -148,20 +148,6 @@ Call **Text**.translatable with the translation key and arguments
 2. Add it to the "client" list [here](/src/client/resources/automata.client.mixins.json)
 
 
-### Bot Jobs
-
-1. Create a record (**TBotJob** for example) that implements **BotJob** [here](/src/main/java/pro/piconico/automata/bot/job/)
-2. Give it a public static final **MapCodec\<TBotJob\>**
-3. Register it as a public static final **BotJobType\<TBotJob\>** [here](/src/main/java/pro/piconico/automata/registry/AutomataBotJobs.java)
-
-
-### Bots
-
-1. [Create an item](#items) that extends **BotItem**
-2. [Create an entity](#living-entities) that extends **BotEntity**
-3. Register a public static final **BotType** [here](/src/main/java/pro/piconico/automata/registry/AutomataBots.java)
-
-
 ### Bot Devices
 
 #### Item Bot Device
@@ -174,7 +160,24 @@ Call **Text**.translatable with the translation key and arguments
 1. [Create a block entity](#block-entities) that extends **BlockBotDevice**
 2. [Create a screen](#screens) where the handler (**TScreenHandler** for example) extends **BotDeviceScreenHandler** and the screen extends **BotDeviceScreen\<TScreenHandler\>**
 
-#### Custom Bot Device
-1. Create a class that implements either **BotDevice** or a custom interface that extends **BotDevice** that's [here](/src/main/java/pro/piconico/automata/bot/device/BotDevice.java)
-2. Ensure your implementation invokes the **BotDevice** team changed events for synchronization
-3. [Create a screen](#screens) where the handler (**TScreenHandler** for example) extends **BotDeviceScreenHandler** and the screen extends **BotDeviceScreen\<TScreenHandler\>**
+#### Bot Device Type
+1. Create a class (**TBotDevice** for example) that implements **BotDevice** [here](/src/main/java/pro/piconico/automata/bot/device/)
+2. Give it a public record (**Id** for example) that implements **BotDevice.Id** and give **Id** a public static final **MapCodec\<Id\>**
+3. Give **TBotDevice** a public static **Optional\<TBotDevice\>** function(**PlayerEntity**, **Id**) that can independently resolve **TBotDevice**s from the given **Id**
+4. Ensure your **TBotDevice** invokes **BotDevice**'s team changed event for synchronization
+5. Register it as a public static final **BotDeviceType\<Id, TBotDevice\>** [here](/src/main/java/pro/piconico/automata/registry/AutomataBotDevices.java)
+6. [Create a screen](#screens) where the handler (**TScreenHandler** for example) extends **BotDeviceScreenHandler** and the screen extends **BotDeviceScreen\<TScreenHandler\>**
+
+
+### Bot Jobs
+
+1. Create a record (**TBotJob** for example) that implements **BotJob** [here](/src/main/java/pro/piconico/automata/bot/job/)
+2. Give it a public static final **MapCodec\<TBotJob\>**
+3. Register it as a public static final **BotJobType\<TBotJob\>** [here](/src/main/java/pro/piconico/automata/registry/AutomataBotJobs.java)
+
+
+### Bots
+
+1. [Create an item](#items) that extends **BotItem**
+2. [Create an entity](#living-entities) that extends **BotEntity**
+3. Register a public static final **BotType** [here](/src/main/java/pro/piconico/automata/registry/AutomataBots.java)

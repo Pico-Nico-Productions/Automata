@@ -18,7 +18,7 @@ import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.client.design.AutomataColors;
 import pro.piconico.automata.client.registry.AutomataClientTextures;
 import pro.piconico.automata.client.ui.component.AutomataUIComponents;
-import pro.piconico.automata.network.message.BotTeamSelectMessage;
+import pro.piconico.automata.network.message.BotDeviceTeamChangeMessage;
 import pro.piconico.automata.registry.AutomataMessages;
 import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.screen.BotDeviceScreenHandler;
@@ -67,7 +67,7 @@ public class TeamSelectTab implements Tab<BotDeviceScreenHandler> {
                     return false;
 
                 Optional<UUID> newTeamUuid = Optional.ofNullable(isSelectedTeam ? null : team.UUID);
-                AutomataMessages.BOT_DEVICE_CHANNEL.clientHandle().send(new BotTeamSelectMessage(newTeamUuid));
+                AutomataMessages.BOT_DEVICE_CHANNEL.clientHandle().send(new BotDeviceTeamChangeMessage(handler.device.getId(), newTeamUuid));
 
                 return true;
             });

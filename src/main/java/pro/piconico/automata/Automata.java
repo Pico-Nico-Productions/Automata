@@ -7,6 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.piconico.automata.bot.network.BotNetworkManager;
 import pro.piconico.automata.registry.AutomataBlocks;
+import pro.piconico.automata.registry.AutomataBotDevices;
+import pro.piconico.automata.registry.AutomataBotJobs;
+import pro.piconico.automata.registry.AutomataBots;
 import pro.piconico.automata.registry.AutomataCommands;
 import pro.piconico.automata.registry.AutomataComponents;
 import pro.piconico.automata.registry.AutomataEntities;
@@ -37,6 +40,9 @@ public class Automata implements ModInitializer {
         AutomataNetworkManagers.initialize();
 		AutomataScreenHandlers.initialize();
         AutomataCommands.initialize();
+        AutomataBotDevices.initialize();
+        AutomataBotJobs.initialize();
+        AutomataBots.initialize();
 
         BotNetworkManager.initialize();
 

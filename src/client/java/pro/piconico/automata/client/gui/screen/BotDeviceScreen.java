@@ -16,6 +16,9 @@ import io.wispforest.owo.ui.core.VerticalAlignment;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
+import net.minecraft.world.World;
+import pro.piconico.automata.bot.device.BotDevice;
+import pro.piconico.automata.bot.device.BotDevice.ChangeBotTeam;
 import pro.piconico.automata.client.registry.AutomataClientTextures;
 import pro.piconico.automata.client.ui.tab.BotDeviceHomeTab;
 import pro.piconico.automata.client.ui.tab.Tab;
@@ -33,7 +36,7 @@ public abstract class BotDeviceScreen<HandlerT extends BotDeviceScreenHandler> e
     public BotDeviceScreen(HandlerT handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
 
-        handler.device.addTeamChangedListener(this::onTeamChanged);
+        BotDevice.TEAM_CHANGED_CALLBACKS.add(this::onTeamChanged);
     }
 
     @Override
@@ -43,7 +46,7 @@ public abstract class BotDeviceScreen<HandlerT extends BotDeviceScreenHandler> e
 
     @Override
     public void removed() {
-        handler.device.removeTeamChangedListener(this::onTeamChanged);
+        BotDevice.TEAM_CHANGED_CALLBACKS.remove((ChangeBotTeam)this::onTeamChanged);
     }
 
     @Override
@@ -87,7 +90,10 @@ public abstract class BotDeviceScreen<HandlerT extends BotDeviceScreenHandler> e
         tabManager.rebuildTab();
     }
 
-    private void onTeamChanged(Optional<UUID> oldTeamUuid) {
+    private void onTeamChanged(World world, BotDevice<?> device, Optional<UUID> oldTeamUuid) {
+        if (!handler.device.equals(device))
+            return;
+
         rebuildTab();
     }
 }
