@@ -32,12 +32,12 @@ public class InventoryUtils {
         return canAdd(inventory, new ItemStack(item));
     }
 
-    private static void add(Inventory inventory, ItemStack stack, Predicate<ItemStack> targePredicate) {
+    private static void add(Inventory inventory, ItemStack stack, Predicate<ItemStack> targetPredicate) {
         Item item = stack.getItem();
         for (int i = 0; i < inventory.size(); i++) {
             ItemStack slotStack = inventory.getStack(i);
 
-            if (!targePredicate.test(slotStack))
+            if (!targetPredicate.test(slotStack))
                 continue;
 
             int addedCount = Math.min(stack.getCount(), slotStack.getMaxCount() - slotStack.getCount());

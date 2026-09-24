@@ -7,6 +7,7 @@ import net.minecraft.text.Text;
 import pro.piconico.automata.bot.device.ItemBotDevice;
 import pro.piconico.automata.client.gui.screen.AutomatoolScreen;
 import pro.piconico.automata.client.gui.screen.BotDeviceScreen;
+import pro.piconico.automata.client.gui.screen.LogisticChestScreen;
 import pro.piconico.automata.client.gui.screen.RoboportScreen;
 import pro.piconico.automata.item.AutomatoolItem;
 import pro.piconico.automata.registry.AutomataScreenHandlers;
@@ -25,6 +26,7 @@ public class AutomataClientScreens {
 
     public static void initialize() {
         HandledScreens.register(AutomataScreenHandlers.ITEM_BOT_DEVICE, AutomataClientScreens::routeItemBotDeviceScreen);
+        HandledScreens.register(AutomataScreenHandlers.LOGISTIC_CHEST, LogisticChestScreen::new);
         HandledScreens.register(AutomataScreenHandlers.ROBOPORT, RoboportScreen::new);
     }
 }

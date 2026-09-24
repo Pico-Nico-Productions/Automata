@@ -22,6 +22,7 @@ import pro.piconico.automata.registry.AutomataBotDevices;
 import pro.piconico.automata.registry.AutomataMessages;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
+// TODO: Make extend LockableContainerBlockEntity
 public abstract class BlockBotDevice extends BlockEntity implements BotDevice<BlockPos> {
     public record Id(BlockPos pos) implements BotDevice.Id {
         public static final MapCodec<Id> CODEC = RecordCodecBuilder

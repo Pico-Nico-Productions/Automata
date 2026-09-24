@@ -14,7 +14,6 @@ import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
@@ -33,6 +32,7 @@ import pro.piconico.automata.bot.device.BlockBotDevice;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.inventory.InventoryUtils;
+import pro.piconico.automata.inventory.SimpleInventory;
 import pro.piconico.automata.item.BotItem;
 import pro.piconico.automata.registry.AutomataBots;
 import pro.piconico.automata.registry.AutomataEntities;
@@ -41,7 +41,7 @@ import pro.piconico.automata.screen.RoboportScreenHandler;
 import pro.piconico.automata.util.math.ChunkUtils;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
-public class RoboportBlockEntity extends BlockBotDevice implements Inventory {
+public class RoboportBlockEntity extends BlockBotDevice implements SimpleInventory {
     public static final int CHUNK_RANGE = 0;
     public static final int BOT_SLOT_COUNT = 3;
 
@@ -56,7 +56,7 @@ public class RoboportBlockEntity extends BlockBotDevice implements Inventory {
         }
     });
 
-    private final DefaultedList<ItemStack> itemStacks = DefaultedList.ofSize(BOT_SLOT_COUNT, ItemStack.EMPTY);
+    private final DefaultedList<ItemStack> inventory = DefaultedList.ofSize(BOT_SLOT_COUNT, ItemStack.EMPTY);
 
     public RoboportBlockEntity(BlockPos pos, BlockState state) {
         super(AutomataEntities.ROBOPORT, pos, state);
@@ -81,7 +81,7 @@ public class RoboportBlockEntity extends BlockBotDevice implements Inventory {
             return Optional.empty();
 
         Set<Item> capableBotItems = capableBotTypes.stream().map(botType -> botType.item()).collect(Collectors.toSet());
-        for (int i = 0; i < itemStacks.size(); i++) {
+        for (int i = 0; i < inventory.size(); i++) {
             if (capableBotItems.contains(getStack(i).getItem()))
                 return Optional.of(i);
         }
@@ -105,7 +105,7 @@ public class RoboportBlockEntity extends BlockBotDevice implements Inventory {
         if (botSlot.isEmpty())
             return Optional.empty();
 
-        BotItem botItem = (BotItem)Inventories.splitStack(itemStacks, botSlot.get(), 1).getItem();
+        BotItem botItem = (BotItem)Inventories.splitStack(inventory, botSlot.get(), 1).getItem();
         markDirty();
 
         EntityType<? extends BotEntity> botEntityType = botItem.getBotType().entityType();
@@ -139,13 +139,13 @@ public class RoboportBlockEntity extends BlockBotDevice implements Inventory {
     @Override
     protected void readData(ReadView view) {
         super.readData(view);
-        Inventories.readData(view, itemStacks);
+        Inventories.readData(view, inventory);
     }
 
     @Override
     protected void writeData(WriteView view) {
         super.writeData(view);
-        Inventories.writeData(view, itemStacks);
+        Inventories.writeData(view, inventory);
     }
 
     @Override
@@ -154,42 +154,10 @@ public class RoboportBlockEntity extends BlockBotDevice implements Inventory {
     }
     //#endregion
 
-    //#region Inventory
+    //#region SimpleInventory
     @Override
-    public void clear() {
-        itemStacks.clear();
-        markDirty();
-    }
-
-    @Override
-    public int size() {
-        return itemStacks.size();
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return itemStacks.stream().allMatch(itemStack -> itemStack.isEmpty());
-    }
-
-    @Override
-    public ItemStack getStack(int slot) {
-        return itemStacks.get(slot);
-    }
-
-    @Override
-    public ItemStack removeStack(int slot, int amount) {
-        ItemStack splitStack = Inventories.splitStack(itemStacks, slot, amount);
-        markDirty();
-
-        return splitStack;
-    }
-
-    @Override
-    public ItemStack removeStack(int slot) {
-        ItemStack removedStack = Inventories.removeStack(itemStacks, slot);
-        markDirty();
-
-        return removedStack;
+    public DefaultedList<ItemStack> getInventory() {
+        return inventory;
     }
 
     @Override
@@ -197,17 +165,12 @@ public class RoboportBlockEntity extends BlockBotDevice implements Inventory {
         ItemStack currentStack = getStack(slot);
         boolean added = !stack.isEmpty() && stack.getItem() != currentStack.getItem() || stack.getCount() > currentStack.getCount();
 
-        itemStacks.set(slot, stack);
+        inventory.set(slot, stack);
         markDirty();
 
         if (added) {
             BOT_ADDED.invoker().onUpdated(this);
         }
-    }
-
-    @Override
-    public boolean canPlayerUse(PlayerEntity player) {
-        return true;
     }
 
     @Override

@@ -7,8 +7,8 @@ import net.minecraft.util.Identifier;
 import pro.piconico.automata.client.registry.AutomataClientTextures;
 
 // TODO: Extend MobEntityRenderer instead and customize rendering
-public class ConstructionBotRenderer extends BeeEntityRenderer {
-    public ConstructionBotRenderer(Context context) {
+public class ConstructionBotEntityRenderer extends BeeEntityRenderer {
+    public ConstructionBotEntityRenderer(Context context) {
         super(context);
     }
 

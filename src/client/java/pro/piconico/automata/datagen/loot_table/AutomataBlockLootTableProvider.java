@@ -14,6 +14,7 @@ public class AutomataBlockLootTableProvider extends FabricBlockLootTableProvider
 
     @Override
     public void generate() {
+        addDrop(AutomataBlocks.LOGISTIC_CHEST);
         addDrop(AutomataBlocks.ROBOPORT);
     }
 }

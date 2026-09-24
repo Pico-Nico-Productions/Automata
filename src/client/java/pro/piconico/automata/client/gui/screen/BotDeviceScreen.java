@@ -15,6 +15,7 @@ import io.wispforest.owo.ui.core.Surface;
 import io.wispforest.owo.ui.core.VerticalAlignment;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.text.Text;
 import net.minecraft.world.World;
 import pro.piconico.automata.bot.device.BotDevice;
@@ -27,7 +28,7 @@ import pro.piconico.automata.client.ui.tab.TeamCreateTab;
 import pro.piconico.automata.client.ui.tab.TeamSelectTab;
 import pro.piconico.automata.client.ui.tab.TeamSettingsTab;
 import pro.piconico.automata.screen.BotDeviceScreenHandler;
-import pro.piconico.automata.screen.ScreenConstants;
+import pro.piconico.automata.screen.ScreenHandlerUtils;
 
 public abstract class BotDeviceScreen<HandlerT extends BotDeviceScreenHandler> extends BaseOwoContainerScreen<FlowLayout, HandlerT> {
     protected FlowLayout body;
@@ -37,6 +38,9 @@ public abstract class BotDeviceScreen<HandlerT extends BotDeviceScreenHandler> e
         super(handler, inventory, title);
 
         BotDevice.TEAM_CHANGED_CALLBACKS.add(this::onTeamChanged);
+
+        backgroundWidth = handler.getBodyWidth();
+        backgroundHeight = handler.getBodyHeight();
     }
 
     @Override
@@ -54,9 +58,46 @@ public abstract class BotDeviceScreen<HandlerT extends BotDeviceScreenHandler> e
     }
 
     protected static void buildSlot(FlowLayout parent, int x, int y) {
-        Sizing slotSize = Sizing.fixed(ScreenConstants.SLOT_DELTA);
+        Sizing slotSize = Sizing.fixed(ScreenHandlerUtils.SLOT_DELTA);
         ParentUIComponent slot = UIContainers.horizontalFlow(slotSize, slotSize).surface(Surface.PANEL_INSET);
-        parent.child(slot.positioning(Positioning.absolute(x - ScreenConstants.SLOT_SIZE / 2, y - ScreenConstants.SLOT_SIZE / 2)));
+        int absoluteX = x - parent.padding().get().left() - 1;
+        int absoluteY = y - parent.padding().get().top() - 1;
+        parent.child(slot.positioning(Positioning.absolute(absoluteX, absoluteY)));
+    }
+
+    protected static void buildDeviceAndPlayerSlots(BotDeviceScreenHandler handler, FlowLayout parent) {
+        int deviceInventorySize = handler.device instanceof Inventory inventory ? inventory.size() : 0;
+        int deviceRowCount = ScreenHandlerUtils.getRowCount(deviceInventorySize);
+        int inventoryX = handler.getInventoryX();
+
+        for (int yIndex = 0; yIndex < deviceRowCount; yIndex++) {
+            for (int xIndex = 0; xIndex < 9; xIndex++) {
+                int index = 9 * yIndex + xIndex;
+
+                if (index >= deviceInventorySize)
+                    break;
+
+                int x = inventoryX + xIndex * ScreenHandlerUtils.SLOT_DELTA;
+                int y = BotDeviceScreenHandler.DEVICE_INVENTORY_Y + yIndex * ScreenHandlerUtils.SLOT_DELTA;
+                buildSlot(parent, x, y);
+            }
+        }
+
+        int playerInventoryY = BotDeviceScreenHandler.DEVICE_INVENTORY_Y + deviceRowCount * ScreenHandlerUtils.SLOT_DELTA
+                + BotDeviceScreenHandler.DEVICE_PLAYER_GAP;
+        for (int yIndex = 0; yIndex < 3; yIndex++) {
+            for (int xIndex = 0; xIndex < 9; xIndex++) {
+                int x = inventoryX + xIndex * ScreenHandlerUtils.SLOT_DELTA;
+                int y = playerInventoryY + yIndex * ScreenHandlerUtils.SLOT_DELTA;
+                BotDeviceScreen.buildSlot(parent, x, y);
+            }
+        }
+
+        int hotbarY = playerInventoryY + 2 * ScreenHandlerUtils.SLOT_DELTA + ScreenHandlerUtils.BAR_DELTA;
+        for (int indexX = 0; indexX < 9; indexX++) {
+            int x = inventoryX + indexX * ScreenHandlerUtils.SLOT_DELTA;
+            BotDeviceScreen.buildSlot(parent, x, hotbarY);
+        }
     }
 
     protected abstract BotDeviceHomeTab getHomeTab();
@@ -64,19 +105,19 @@ public abstract class BotDeviceScreen<HandlerT extends BotDeviceScreenHandler> e
     @Override
     protected void build(FlowLayout rootComponent) {
         rootComponent.surface(Surface.VANILLA_TRANSLUCENT).horizontalAlignment(HorizontalAlignment.CENTER).verticalAlignment(VerticalAlignment.CENTER);
-        rootComponent.gap(BotDeviceScreenHandler.UI_SPACING);
+        rootComponent.gap(BotDeviceScreenHandler.GAP);
 
-        Sizing horizontalScreenSizing = Sizing.fixed(BotDeviceScreenHandler.BODY_WIDTH);
+        Sizing horizontalScreenSizing = Sizing.fixed(handler.getBodyWidth());
         Sizing verticalIconSizing = Sizing.fixed(AutomataClientTextures.BOT_DEVICE_ICONS.regionHeight());
 
         FlowLayout tabPanel = UIContainers.horizontalFlow(horizontalScreenSizing, verticalIconSizing);
         tabPanel.surface(Surface.BLANK).horizontalAlignment(HorizontalAlignment.CENTER).verticalAlignment(VerticalAlignment.CENTER);
-        tabPanel.gap(BotDeviceScreenHandler.UI_SPACING);
+        tabPanel.gap(BotDeviceScreenHandler.GAP);
         rootComponent.child(tabPanel);
 
-        body = UIContainers.verticalFlow(horizontalScreenSizing, Sizing.fixed(BotDeviceScreenHandler.BODY_HEIGHT));
-        body.surface(Surface.PANEL).padding(Insets.of(BotDeviceScreenHandler.BODY_INSET));
-        body.gap(BotDeviceScreenHandler.UI_SPACING);
+        body = UIContainers.verticalFlow(horizontalScreenSizing, Sizing.fixed(handler.getBodyHeight()));
+        body.surface(Surface.DARK_PANEL).padding(Insets.of(BotDeviceScreenHandler.INSET));
+        body.gap(BotDeviceScreenHandler.GAP);
         rootComponent.child(body);
 
         FlowLayout spacingPanel = UIContainers.horizontalFlow(horizontalScreenSizing, verticalIconSizing);

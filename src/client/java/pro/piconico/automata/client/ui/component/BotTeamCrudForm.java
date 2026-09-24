@@ -73,7 +73,7 @@ public class BotTeamCrudForm {
 
         FlowLayout actionsRow = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
         actionsRow.horizontalAlignment(HorizontalAlignment.CENTER);
-        actionsRow.gap(BotDeviceScreenHandler.UI_SPACING);
+        actionsRow.gap(BotDeviceScreenHandler.GAP);
         for (Action action : actions) {
             actionsRow.child(UIComponents.button(action.text, (ignored) -> {
                 String name = nameTextBox.getText();

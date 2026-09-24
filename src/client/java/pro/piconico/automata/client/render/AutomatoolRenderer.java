@@ -14,8 +14,8 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
 import pro.piconico.automata.bot.job.BotJobAssignment;
 import pro.piconico.automata.bot.job.BotJobType;
-import pro.piconico.automata.client.design.AutomataColors;
 import pro.piconico.automata.client.network.BotCache;
+import pro.piconico.automata.client.registry.AutomataColors;
 import pro.piconico.automata.component.SelectionComponent;
 import pro.piconico.automata.entity.LivingEntityUtils;
 import pro.piconico.automata.registry.AutomataBotJobs;
@@ -35,7 +35,7 @@ public class AutomatoolRenderer {
 
     private static void renderNetworks(WorldRenderContext context) {
         for (ChunkPos chunkPos : BotCache.networkMap.keySet()) {
-            RenderUtils.drawBox(context, ChunkBounds.of(chunkPos, 0, MinecraftClient.getInstance().world).toBox(), AutomataColors.NETWORK);
+            RenderUtils.drawBox(context, ChunkBounds.of(chunkPos, 0, MinecraftClient.getInstance().world).toBox(), AutomataColors.NETWORK.argb());
         }
     }
 
@@ -44,7 +44,7 @@ public class AutomatoolRenderer {
             if (!entry.getValue().containsKey(AutomataBotJobs.DECONSTRUCTION))
                 continue;
 
-            RenderUtils.drawBoxOutline(context, new Box(entry.getKey()), AutomataColors.DECONSTRUCTION);
+            RenderUtils.drawBoxOutline(context, new Box(entry.getKey()), AutomataColors.DECONSTRUCTION.argb());
         }
     }
 
@@ -52,13 +52,13 @@ public class AutomatoolRenderer {
         Optional<SelectionComponent> selectionComponent = getSelectionComponent();
 
         selectionComponent.ifPresent(selection -> {
-            if (selection.hasSelection()) RenderUtils.drawBoxOutline(context, selection.getSelectionBox().get(), AutomataColors.SELECTION_BOUNDS);
+            if (selection.hasSelection()) RenderUtils.drawBoxOutline(context, selection.getSelectionBox().get(), AutomataColors.SELECTION_BOUNDS.argb());
 
             if (selection.selection1().equals(selection.selection2()))
                 return;
 
-            selection.selection1().ifPresent(selection1 -> RenderUtils.drawBoxOutline(context, new Box(selection1), AutomataColors.SELECTION1));
-            selection.selection2().ifPresent(selection2 -> RenderUtils.drawBoxOutline(context, new Box(selection2), AutomataColors.SELECTION2));
+            selection.selection1().ifPresent(selection1 -> RenderUtils.drawBoxOutline(context, new Box(selection1), AutomataColors.SELECTION1.argb()));
+            selection.selection2().ifPresent(selection2 -> RenderUtils.drawBoxOutline(context, new Box(selection2), AutomataColors.SELECTION2.argb()));
         });
     }
 

@@ -39,6 +39,7 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
         translationBuilder.add(AutomataItems.AUTOMATOOL, "Automatool");
         translationBuilder.add(AutomataItems.CONSTRUCTION_BOT, "Construction Bot");
 
+        AutomataLanguageGenerationUtils.AddBlockTranslation(translationBuilder, AutomataBlocks.LOGISTIC_CHEST, "Logistic Chest");
         AutomataLanguageGenerationUtils.AddBlockTranslation(translationBuilder, AutomataBlocks.ROBOPORT, "Roboport");
     }
 }

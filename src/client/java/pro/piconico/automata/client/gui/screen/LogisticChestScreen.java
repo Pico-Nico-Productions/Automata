@@ -7,16 +7,16 @@ import net.minecraft.text.Text;
 import pro.piconico.automata.client.ui.component.AutomataUIComponents;
 import pro.piconico.automata.client.ui.tab.BotDeviceHomeTab;
 import pro.piconico.automata.screen.BotDeviceScreenHandler;
-import pro.piconico.automata.screen.RoboportScreenHandler;
+import pro.piconico.automata.screen.LogisticChestScreenHandler;
 import pro.piconico.automata.screen.slot.DisableableSlot;
 
-public class RoboportScreen extends BotDeviceScreen<RoboportScreenHandler> {
-    public RoboportScreen(RoboportScreenHandler handler, PlayerInventory inventory, Text title) {
+public class LogisticChestScreen extends BotDeviceScreen<LogisticChestScreenHandler> {
+    public LogisticChestScreen(LogisticChestScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
     }
 
-    private static class RoboportTab implements BotDeviceHomeTab {
-        public static final RoboportTab INSTANCE = new RoboportTab();
+    private static class LogisticChestTab implements BotDeviceHomeTab {
+        public static final LogisticChestTab INSTANCE = new LogisticChestTab();
 
         @Override
         public void build(BotDeviceScreenHandler handler, FlowLayout parent) {
@@ -32,6 +32,6 @@ public class RoboportScreen extends BotDeviceScreen<RoboportScreenHandler> {
 
     @Override
     protected BotDeviceHomeTab getHomeTab() {
-        return RoboportTab.INSTANCE;
+        return LogisticChestTab.INSTANCE;
     }
 }

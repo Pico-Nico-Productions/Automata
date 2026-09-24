@@ -8,6 +8,7 @@ import net.minecraft.client.data.Models;
 import net.minecraft.client.data.TexturedModel;
 import pro.piconico.automata.registry.AutomataBlocks;
 import pro.piconico.automata.registry.AutomataItems;
+import pro.piconico.automata.registry.AutomataRegistry;
 
 public class AutomataModelProvider extends FabricModelProvider {
     public AutomataModelProvider(FabricDataOutput output) {
@@ -22,6 +23,8 @@ public class AutomataModelProvider extends FabricModelProvider {
 
     @Override
     public void generateBlockStateModels(BlockStateModelGenerator blockStateModelGenerator) {
+        blockStateModelGenerator.registerChest(AutomataBlocks.LOGISTIC_CHEST, AutomataBlocks.LOGISTIC_CHEST,
+                AutomataRegistry.id(AutomataRegistry.LOGISTIC_CHEST), false);
         blockStateModelGenerator.registerSingleton(AutomataBlocks.ROBOPORT, TexturedModel.CUBE_TOP);
     }
 }

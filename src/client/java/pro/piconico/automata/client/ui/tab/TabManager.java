@@ -8,7 +8,7 @@ import io.wispforest.owo.ui.core.Sizing;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
-import pro.piconico.automata.screen.ScreenConstants;
+import pro.piconico.automata.screen.ScreenHandlerUtils;
 import pro.piconico.automata.screen.slot.DisableableSlot;
 
 public class TabManager<HandlerT extends ScreenHandler, TabT extends Tab<HandlerT>> {
@@ -53,7 +53,7 @@ public class TabManager<HandlerT extends ScreenHandler, TabT extends Tab<Handler
     public void buildButtons(FlowLayout buttonParent) {
         for (TabT tab : tabArray) {
             ButtonComponent button = UIComponents.button(Text.empty(), ignored -> selectTab(tab));
-            button.sizing(Sizing.fixed(ScreenConstants.SLOT_SIZE));
+            button.sizing(Sizing.fixed(ScreenHandlerUtils.SLOT_SIZE));
             button.renderer(tab.getButtonRenderer(handler));
             button.tooltip(tab.getName(handler));
             buttonParent.child(button);

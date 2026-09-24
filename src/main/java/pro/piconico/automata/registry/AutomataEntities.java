@@ -14,12 +14,14 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import pro.piconico.automata.block.entity.LogisticChestBlockEntity;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.entity.ConstructionBotEntity;
 
 public class AutomataEntities {
     public static final EntityType<ConstructionBotEntity> CONSTRUCTION_BOT = register(AutomataRegistry.CONSTRUCTION_BOT, ConstructionBotEntity::new, ConstructionBotEntity.createBeeAttributes());
 
+    public static final BlockEntityType<LogisticChestBlockEntity> LOGISTIC_CHEST = register(AutomataRegistry.LOGISTIC_CHEST, LogisticChestBlockEntity::new, AutomataBlocks.LOGISTIC_CHEST);
     public static final BlockEntityType<RoboportBlockEntity> ROBOPORT = register(AutomataRegistry.ROBOPORT, RoboportBlockEntity::new, AutomataBlocks.ROBOPORT);
 
     private static <T extends LivingEntity> EntityType<T> register(String name, EntityFactory<T> entityFactory, DefaultAttributeContainer.Builder builder) {
