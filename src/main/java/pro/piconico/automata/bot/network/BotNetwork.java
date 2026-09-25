@@ -19,22 +19,26 @@ import net.minecraft.util.math.ChunkPos;
 
 public class BotNetwork {
     public static final PacketCodec<ByteBuf, BotNetwork> PACKET_CODEC = PacketCodec.tuple( //
-            PacketCodecs.collection(ArrayList::new, BlockPos.PACKET_CODEC), BotNetwork::flatten, //
+            PacketCodecs.collection(ArrayList::new, BlockPos.PACKET_CODEC), BotNetwork::getRoboports, //
+            PacketCodecs.collection(ArrayList::new, BlockPos.PACKET_CODEC), BotNetwork::getLogisticStorages, //
             Uuids.PACKET_CODEC, net -> net.teamUuid, //
             BotNetwork::new);
 
     protected final Map<ChunkPos, Set<BlockPos>> roboportMap;
+    protected final Map<ChunkPos, Set<BlockPos>> logisticStorageMap;
 
     public final UUID teamUuid;
 
-    protected BotNetwork(Collection<BlockPos> roboports, UUID teamUuid) {
+    protected BotNetwork(Collection<BlockPos> roboports, Collection<BlockPos> logisticStorages, UUID teamUuid) {
         roboportMap = map(roboports);
+        logisticStorageMap = map(logisticStorages);
         this.teamUuid = teamUuid;
     }
 
     protected BotNetwork(BotNetwork original) {
-        this.roboportMap = original.roboportMap.entrySet().stream().collect(Collectors.toMap(Entry::getKey, entry -> Set.copyOf(entry.getValue())));
-        this.teamUuid = original.teamUuid;
+        roboportMap = original.roboportMap.entrySet().stream().collect(Collectors.toMap(Entry::getKey, entry -> Set.copyOf(entry.getValue())));
+        logisticStorageMap = original.logisticStorageMap.entrySet().stream().collect(Collectors.toMap(Entry::getKey, entry -> Set.copyOf(entry.getValue())));
+        teamUuid = original.teamUuid;
     }
 
     @Override
@@ -45,21 +49,27 @@ public class BotNetwork {
         if (!(obj instanceof BotNetwork network) || !teamUuid.equals(network.teamUuid))
             return false;
 
-        Set<BlockPos> roboports = getRoboports().collect(Collectors.toSet());
-        Set<BlockPos> otherRoboports = network.getRoboports().collect(Collectors.toSet());
-        return roboports.equals(otherRoboports);
+        return getRoboports().equals(network.getRoboports()) && getLogisticStorages().equals(network.getRoboports());
     }
 
     public Set<ChunkPos> getChunks() {
         return Collections.unmodifiableSet(roboportMap.keySet());
     }
 
-    public Stream<BlockPos> getRoboports() {
+    public Stream<BlockPos> streamRoboports() {
         return roboportMap.values().stream().flatMap(roboportsInChunk -> roboportsInChunk.stream());
     }
 
-    private List<BlockPos> flatten() {
-        return getRoboports().toList();
+    public List<BlockPos> getRoboports() {
+        return streamRoboports().toList();
+    }
+
+    public Stream<BlockPos> streamLogisticStorages() {
+        return logisticStorageMap.values().stream().flatMap(logisticStoragesInChunk -> logisticStoragesInChunk.stream());
+    }
+
+    public List<BlockPos> getLogisticStorages() {
+        return streamLogisticStorages().toList();
     }
 
     private static Map<ChunkPos, Set<BlockPos>> map(Collection<BlockPos> roboports) {

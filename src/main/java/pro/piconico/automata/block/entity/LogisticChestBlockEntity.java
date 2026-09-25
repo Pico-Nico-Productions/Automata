@@ -16,11 +16,11 @@ import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import pro.piconico.automata.bot.device.BlockBotDevice;
-import pro.piconico.automata.inventory.SimpleInventory;
+import pro.piconico.automata.bot.device.LogisticStorage;
 import pro.piconico.automata.registry.AutomataEntities;
 import pro.piconico.automata.screen.LogisticChestScreenHandler;
 
-public class LogisticChestBlockEntity extends BlockBotDevice implements SimpleInventory, LidOpenable {
+public class LogisticChestBlockEntity extends BlockBotDevice implements LogisticStorage<BlockPos>, LidOpenable {
     public static final int INVENTORY_SIZE = 27;
     private static final int VIEWER_COUNT_UPDATE_EVENT_TYPE = 1;
 

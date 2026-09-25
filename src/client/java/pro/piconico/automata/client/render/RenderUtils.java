@@ -1,6 +1,7 @@
 package pro.piconico.automata.client.render;
 
 import org.joml.Vector3f;
+import io.wispforest.owo.ui.core.Color;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.minecraft.client.render.LayeringTransform;
 import net.minecraft.client.render.RenderLayer;
@@ -37,23 +38,23 @@ public class RenderUtils {
         };
     }
 
-    public static void drawBoxOutline(WorldRenderContext context, Box box, int argbColor) {
+    public static void drawBoxOutline(WorldRenderContext context, Box box, Color color) {
         Vec3d cameraPos = context.gameRenderer().getCamera().getCameraPos();
         VoxelShape boxShape = VoxelShapes.cuboid(box);
         VertexRendering.drawOutline(context.matrices(), context.consumers().getBuffer(RenderLayers.SECONDARY_BLOCK_OUTLINE), boxShape, -cameraPos.x,
-                -cameraPos.y, -cameraPos.z, argbColor, OUTLINE_WIDTH);
+                -cameraPos.y, -cameraPos.z, color.argb(), OUTLINE_WIDTH);
     }
 
-    public static void drawBox(WorldRenderContext context, RenderLayer layer, Box box, int argbColor) {
+    public static void drawBox(WorldRenderContext context, RenderLayer layer, Box box, Color color) {
         VertexConsumer vertexConsumer = context.consumers().getBuffer(layer);
         MatrixStack.Entry matrix = context.matrices().peek();
         Vector3f[] boxVertices = boxToVertices(box.offset(context.gameRenderer().getCamera().getCameraPos().negate()));
         for (int index : BOX_QUAD_INDEXES) {
-            vertexConsumer.vertex(matrix, boxVertices[index]).color(argbColor);
+            vertexConsumer.vertex(matrix, boxVertices[index]).color(color.argb());
         }
     }
 
-    public static void drawBox(WorldRenderContext context, Box box, int argbColor) {
-        drawBox(context, TRANSLUCENT_NO_CULL, box, argbColor);
+    public static void drawBox(WorldRenderContext context, Box box, Color color) {
+        drawBox(context, TRANSLUCENT_NO_CULL, box, color);
     }
 }

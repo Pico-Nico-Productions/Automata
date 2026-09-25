@@ -179,9 +179,9 @@ public class RoboportBlockEntity extends BlockBotDevice implements SimpleInvento
     }
     //#endregion
 
-    public static Optional<RoboportBlockEntity> getClosestTo(BlockPos pos, int chunkRange, Predicate<RoboportBlockEntity> predicate, ServerWorld serverWorld) {
+    public static Optional<RoboportBlockEntity> getClosestTo(BlockPos pos, Predicate<RoboportBlockEntity> predicate, ServerWorld serverWorld) {
         Optional<BlockPos> closestRoboportPos = serverWorld.getPointOfInterestStorage()
-                .getInSquare(entry -> entry.matchesKey(AutomataPointOfInterestTypes.ROBOPORT), pos, ChunkUtils.CHUNK_SIZE * chunkRange,
+                .getInSquare(entry -> entry.matchesKey(AutomataPointOfInterestTypes.ROBOPORT), pos, ChunkUtils.CHUNK_SIZE * (CHUNK_RANGE + 1),
                         PointOfInterestStorage.OccupationStatus.ANY)
                 .map(PointOfInterest::getPos).filter(roboportPos -> serverWorld.getBlockEntity(roboportPos, AutomataEntities.ROBOPORT)
                         .filter(roboport -> predicate.test(roboport)).isPresent())

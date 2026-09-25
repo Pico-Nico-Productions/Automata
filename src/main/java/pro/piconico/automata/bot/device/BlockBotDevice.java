@@ -105,6 +105,8 @@ public abstract class BlockBotDevice extends BlockEntity implements BotDevice<Bl
             AutomataMessages.BOT_DEVICE_CHANNEL.serverHandle(this).send(new BotDeviceTeamChangeMessage(getId(), teamUuid));
         }
 
+        markDirty();
+
         return true;
     }
 

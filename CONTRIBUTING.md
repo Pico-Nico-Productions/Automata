@@ -174,6 +174,7 @@ Call **Text**.translatable with the translation key and arguments
 1. Create a record (**TBotJob** for example) that implements **BotJob** [here](/src/main/java/pro/piconico/automata/bot/job/)
 2. Give it a public static final **MapCodec\<TBotJob\>**
 3. Register it as a public static final **BotJobType\<TBotJob\>** in [**AutomataBotJobs**](/src/main/java/pro/piconico/automata/registry/AutomataBotJobs.java)
+4. Optional: Give it a color in the job function in [**AutomataColors**](/src/client/java/pro/piconico/automata/client/registry/AutomataColors.java) to have it render an outline
 
 
 ### Bots

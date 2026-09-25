@@ -32,7 +32,7 @@ public abstract class PointOfInterestEventMixin extends SerializingRegionBasedSt
     private final ThreadLocal<Optional<RegistryEntry<PointOfInterestType>>> cachedPointOfInterestType = new ThreadLocal<>();
 
     @Shadow
-    protected abstract Optional<RegistryEntry<PointOfInterestType>> getType(BlockPos pos);
+    public abstract Optional<RegistryEntry<PointOfInterestType>> getType(BlockPos pos);
 
     public PointOfInterestEventMixin(VersionedChunkStorage storageAccess, Codec<Serialized> codec, Function<PointOfInterestSet, Serialized> serializer,
             BiFunction<Serialized, Runnable, PointOfInterestSet> deserializer, Function<Runnable, PointOfInterestSet> factory,
@@ -46,7 +46,7 @@ public abstract class PointOfInterestEventMixin extends SerializingRegionBasedSt
         if (originalResult == null)
             return;
 
-        PointOfInterestCallback.ADDED.invoker().onAction((ServerWorld)this.world, pos, type);
+        PointOfInterestCallback.ADDED.invoker().onAction((ServerWorld)world, pos, type);
     }
 
     @Inject(method = "remove", at = @At("HEAD"))
@@ -62,6 +62,6 @@ public abstract class PointOfInterestEventMixin extends SerializingRegionBasedSt
         if (pointOfInterestType.isEmpty())
             return;
 
-        PointOfInterestCallback.REMOVED.invoker().onAction((ServerWorld)this.world, pos, pointOfInterestType.get());
+        PointOfInterestCallback.REMOVED.invoker().onAction((ServerWorld)world, pos, pointOfInterestType.get());
     }
 }
