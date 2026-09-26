@@ -13,7 +13,6 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ChunkTicketType;
@@ -33,7 +32,6 @@ import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.event.PointOfInterestCallback;
 import pro.piconico.automata.registry.AutomataEntities;
-import pro.piconico.automata.registry.AutomataPointOfInterestTypes;
 import pro.piconico.automata.util.MapUtils;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 import pro.piconico.automata.world.BotTeamPersistentState;
@@ -250,9 +248,8 @@ public class BotNetworkManager {
         }
     }
 
-    private static void onPointOfInterestAdded(ServerWorld serverWorld, BlockPos pos, RegistryEntry<PointOfInterestType> pointOfInterestType) {
-        BlockEntity blockEntity = serverWorld.getBlockEntity(pos);
-        if (blockEntity == null || !(blockEntity instanceof BotDevice<?> device) || device.getTeamUuid().isEmpty())
+    private static void onPointOfInterestAdded(ServerWorld serverWorld, BlockPos pos, Optional<BlockEntity> blockEntity, RegistryEntry<PointOfInterestType> pointOfInterestType) {
+        if (blockEntity.isEmpty() || !(blockEntity.get() instanceof BotDevice<?> device) || device.getTeamUuid().isEmpty())
             return;
 
         UUID teamUuid = device.getTeamUuid().get();
@@ -264,32 +261,16 @@ public class BotNetworkManager {
         }
     }
 
-    private static void onPointOfInterestRemoved(ServerWorld serverWorld, BlockPos pos, RegistryEntry<PointOfInterestType> pointOfInterestType) {
-        RegistryKey<PointOfInterestType> type = pointOfInterestType.getKey().get();
-
-        if (type != AutomataPointOfInterestTypes.ROBOPORT && type != AutomataPointOfInterestTypes.LOGISTIC_CHEST)
+    private static void onPointOfInterestRemoved(ServerWorld serverWorld, BlockPos pos, Optional<BlockEntity> blockEntity, RegistryEntry<PointOfInterestType> pointOfInterestType) {
+        if (blockEntity.isEmpty() || !(blockEntity.get() instanceof BotDevice<?> device) || device.getTeamUuid().isEmpty())
             return;
 
-        UUID removedTeamUuid = null;
-
-        ChunkPos chunkPos = new ChunkPos(pos);
-        for (UUID teamUuid : BotTeamPersistentState.getTeamUuids()) {
-            Optional<ServerBotNetwork> serverNetwork = getNetwork(chunkPos, teamUuid, serverWorld);
-            if (serverNetwork.isEmpty())
-                continue;
-
-            removedTeamUuid = serverNetwork.get().teamUuid;
-            break;
+        UUID teamUuid = device.getTeamUuid().get();
+        switch (device) {
+        case RoboportBlockEntity ignored -> removeRoboport(pos, teamUuid, serverWorld);
+        case LogisticStorage<?> ignored -> removeLogisticStorage(pos, teamUuid, serverWorld);
+        default -> {
         }
-
-        if (removedTeamUuid == null)
-            return;
-
-        if (type == AutomataPointOfInterestTypes.ROBOPORT) {
-            removeRoboport(pos, removedTeamUuid, serverWorld);
-        }
-        else if (type == AutomataPointOfInterestTypes.LOGISTIC_CHEST) {
-            removeLogisticStorage(pos, removedTeamUuid, serverWorld);
         }
     }
 
