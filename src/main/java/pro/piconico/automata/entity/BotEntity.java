@@ -2,13 +2,15 @@ package pro.piconico.automata.entity;
 
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.passive.BeeEntity;
+import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.ListInventory;
@@ -18,22 +20,26 @@ import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
 import net.minecraft.util.Uuids;
 import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.TeleportTarget;
 import net.minecraft.world.World;
-import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.bot.BotType;
 import pro.piconico.automata.bot.job.BotJob;
-import pro.piconico.automata.inventory.InventoryUtils;
+import pro.piconico.automata.entity.ai.goal.BotDoJobGoal;
+import pro.piconico.automata.entity.ai.goal.BotHoverGoal;
+import pro.piconico.automata.entity.ai.goal.PickUpItemGoal;
+import pro.piconico.automata.entity.ai.goal.StoreItemsGoal;
+import pro.piconico.automata.entity.ai.goal.BotReturnToRoboportGoal;
 import pro.piconico.automata.world.BotJobPersistentState;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
-// TODO: Extend PathAwareEntity instead and create goals
-public abstract class BotEntity extends BeeEntity implements ListInventory {
+public abstract class BotEntity extends PathAwareEntity implements ListInventory {
     private static final String TEAM_UUID_KEY = "team_uuid";
     public static final double MAX_HEALTH = 10.0;
-    public static final double SPEED = 1.0;
-    public static final int INTERACT_DISTANCE = 1;
     public static final int INVENTORY_SIZE = 3;
+    public static final double SPEED = 1.0;
+    public static final double SEARCH_SCALE = 2.0;
+    public static final int INTERACT_DISTANCE = 1;
+    public static final double PICK_UP_RADIUS = 1.0;
 
     @FunctionalInterface
     public interface EndJob {
@@ -48,14 +54,22 @@ public abstract class BotEntity extends BeeEntity implements ListInventory {
 
     private Optional<UUID> teamUuid = Optional.empty();
     private DefaultedList<ItemStack> inventory = DefaultedList.ofSize(INVENTORY_SIZE, ItemStack.EMPTY);
-    private Optional<RoboportBlockEntity> roboport = Optional.empty();
 
-    public BotEntity(EntityType<? extends BeeEntity> entityType, World world) {
+    public BotEntity(EntityType<? extends BotEntity> entityType, World world) {
         super(entityType, world);
     }
 
     public static DefaultAttributeContainer.Builder createBotAttributes() {
-        return BeeEntity.createBeeAttributes().add(EntityAttributes.MAX_HEALTH, MAX_HEALTH).add(EntityAttributes.FLYING_SPEED, SPEED);
+        return PathAwareEntity.createLivingAttributes().add(EntityAttributes.MAX_HEALTH, MAX_HEALTH).add(EntityAttributes.MOVEMENT_SPEED, SPEED);
+    }
+
+    @Override
+    protected void initGoals() {
+        goalSelector.add(0, new BotDoJobGoal(this, SPEED, INTERACT_DISTANCE));
+        goalSelector.add(1, new PickUpItemGoal(this, this, SEARCH_SCALE, SPEED, PICK_UP_RADIUS));
+        goalSelector.add(2, new StoreItemsGoal(this));
+        goalSelector.add(3, new BotReturnToRoboportGoal(this, SPEED, INTERACT_DISTANCE));
+        goalSelector.add(4, new BotHoverGoal());
     }
 
     public abstract BotType getBotType();
@@ -73,23 +87,7 @@ public abstract class BotEntity extends BeeEntity implements ListInventory {
         this.teamUuid = teamUuid;
     }
 
-    //#region ListInventory
-    @Override
-    public DefaultedList<ItemStack> getHeldStacks() {
-        return inventory;
-    }
-
-    @Override
-    public boolean canPlayerUse(PlayerEntity player) {
-        return true;
-    }
-
-    @Override
-    public void markDirty() {
-    }
-    //#endregion
-
-    private Optional<BotJob> getJob() {
+    public Optional<BotJob> getJob() {
         return BotJobPersistentState.getJob((ServerWorld)getEntityWorld(), uuid);
     }
 
@@ -97,7 +95,7 @@ public abstract class BotEntity extends BeeEntity implements ListInventory {
         return getJob().isEmpty() && getBotType().supportedJobTypes().contains(job.getType()) && job.canExecute((ServerWorld)getEntityWorld(), this);
     }
 
-    private void endJob(boolean completed) {
+    public void endJob(boolean completed) {
         Optional<BotJob> job = getJob();
 
         if (job.isEmpty())
@@ -106,63 +104,14 @@ public abstract class BotEntity extends BeeEntity implements ListInventory {
         JOB_ENDED.invoker().onEnded(this, job.get(), completed);
     }
 
-    private boolean navigateTo(BlockPos pos) {
-        if (getBlockPos().getChebyshevDistance(pos) > INTERACT_DISTANCE) {
-            if (pos.equals(getNavigation().getTargetPos()))
-                return false;
-
-            getNavigation().startMovingTo(pos.getX(), pos.getY(), pos.getZ(), SPEED);
-
-            return false;
-        }
-
-        return true;
-    }
-
-    private boolean doJob(ServerWorld serverWorld) {
-        Optional<BotJob> job = getJob();
-
-        if (job.isEmpty())
-            return true;
-
-        if (!navigateTo(job.get().pos()))
-            return false;
-
-        endJob(job.get().execute(serverWorld, this));
-
-        return true;
-    }
-
-    private boolean returnToPort(ServerWorld serverWorld) {
-        if (teamUuid.isEmpty())
-            return false;
-
-        if (roboport.isEmpty() || !InventoryUtils.canAdd(roboport.get(), getBotType().item())) {
-            roboport = RoboportBlockEntity.getClosestTo(getBlockPos(), port -> InventoryUtils.canAdd(port, getBotType().item()), serverWorld);
-            if (roboport.isEmpty())
-                return false;
-        }
-
-        if (!navigateTo(roboport.get().getPos()))
-            return false;
-
-        roboport.get().tryAdd(this);
-
-        return true;
-    }
-
-    //#region LivingEntity
+    //#region PathAwareEntity
     @Override
-    public void tick() {
-        super.tick();
+    public @Nullable Entity teleportTo(TeleportTarget teleportTarget) {
+        if (getEntityWorld() != teleportTarget.world()) {
+            endJob(false);
+        }
 
-        if (!(getEntityWorld() instanceof ServerWorld serverWorld))
-            return;
-
-        if (!doJob(serverWorld))
-            return;
-
-        returnToPort(serverWorld);
+        return super.teleportTo(teleportTarget);
     }
 
     @Override
@@ -199,6 +148,22 @@ public abstract class BotEntity extends BeeEntity implements ListInventory {
 
         teamUuid.ifPresent(uuid -> view.put(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC, uuid));
         Inventories.writeData(view, inventory);
+    }
+    //#endregion
+
+    //#region ListInventory
+    @Override
+    public DefaultedList<ItemStack> getHeldStacks() {
+        return inventory;
+    }
+
+    @Override
+    public boolean canPlayerUse(PlayerEntity player) {
+        return true;
+    }
+
+    @Override
+    public void markDirty() {
     }
     //#endregion
 }

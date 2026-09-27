@@ -1,11 +1,13 @@
 package pro.piconico.automata.bot.network;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
@@ -31,6 +33,7 @@ import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.event.PointOfInterestCallback;
+import pro.piconico.automata.inventory.InventoryUtils;
 import pro.piconico.automata.registry.AutomataEntities;
 import pro.piconico.automata.util.MapUtils;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
@@ -49,22 +52,22 @@ public class BotNetworkManager {
         void onMutate(ServerWorld serverWorld, UUID teamUuid, Mutation mutation);
     }
 
-    public static final Event<Mutate> NETWORKS_MUTATED = EventFactory.createArrayBacked(Mutate.class, callbacks -> (teamUuid, serverWorld, mutation) -> {
+    public static final Event<Mutate> NETWORKS_MUTATED = EventFactory.createArrayBacked(Mutate.class, callbacks -> (serverWorld, teamUuid, mutation) -> {
         for (Mutate callback : callbacks) {
-            callback.onMutate(teamUuid, serverWorld, mutation);
+            callback.onMutate(serverWorld, teamUuid, mutation);
         }
     });
 
-    //#region Network Getting
-    private static Optional<ServerBotNetwork> getNetwork(ChunkPos chunkPos, UUID teamUuid, ServerWorld serverWorld) {
+    //#region Requests
+    private static Optional<ServerBotNetwork> getNetwork(ServerWorld serverWorld, UUID teamUuid, ChunkPos chunkPos) {
         return MapUtils.getNested(NETWORK_MAP_CACHE, serverWorld, teamUuid, chunkPos);
     }
 
-    public static Optional<BotNetwork> getNetworkCopy(ChunkPos chunkPos, UUID teamUuid, ServerWorld serverWorld) {
-        return getNetwork(chunkPos, teamUuid, serverWorld).map(network -> new ServerBotNetwork(network));
+    public static Optional<BotNetwork> getNetworkCopy(ServerWorld serverWorld, UUID teamUuid, ChunkPos chunkPos) {
+        return getNetwork(serverWorld, teamUuid, chunkPos).map(network -> new ServerBotNetwork(network));
     }
 
-    public static Set<BotNetwork> getNetworkCopies(ChunkBounds chunkBounds, UUID teamUuid, ServerWorld serverWorld) {
+    public static Set<BotNetwork> getNetworkCopies(ServerWorld serverWorld, UUID teamUuid, ChunkBounds chunkBounds) {
         Set<BotNetwork> networks = new HashSet<>();
 
         Set<ChunkPos> networkChunks = new HashSet<>();
@@ -72,7 +75,7 @@ public class BotNetworkManager {
             if (networkChunks.contains(chunkPos))
                 continue;
 
-            Optional<BotNetwork> serverNetwork = getNetworkCopy(chunkPos, teamUuid, serverWorld);
+            Optional<BotNetwork> serverNetwork = getNetworkCopy(serverWorld, teamUuid, chunkPos);
             if (serverNetwork.isEmpty())
                 continue;
 
@@ -81,6 +84,56 @@ public class BotNetworkManager {
         }
 
         return networks;
+    }
+
+    public static Optional<BotEntity> getOrSpawnBotFor(ServerWorld serverWorld, UUID teamUuid, BotJob job) {
+        if (!job.canBeExecuted(serverWorld))
+            return Optional.empty();
+
+        ChunkPos chunkPos = new ChunkPos(job.pos());
+
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(serverWorld, teamUuid, chunkPos);
+        if (serverNetwork.isEmpty())
+            return Optional.empty();
+
+        return serverNetwork.get().getOrSpawnBotFor(job);
+    }
+
+    public static Optional<LogisticStorage<?>> getLogisticStorageFor(ServerWorld serverWorld, BotEntity bot) {
+        Optional<UUID> teamUuid = bot.getTeamUuid();
+
+        if (teamUuid.isEmpty())
+            return Optional.empty();
+
+        Stream<BlockPos> nearbyLogisticStorages = ChunkPos.stream(bot.getChunkPos(), 1) //
+                .map(chunkPos -> getNetwork(serverWorld, teamUuid.get(), chunkPos).orElse(null)) //
+                .filter(net -> net != null).distinct().flatMap(ServerBotNetwork::streamLogisticStorages);
+        Optional<BlockPos> closestLogisticStorage = nearbyLogisticStorages.filter(pos -> serverWorld.getBlockEntity(pos, AutomataEntities.LOGISTIC_CHEST) //
+                .filter(storage -> InventoryUtils.canAddCount(storage, bot) > 0).isPresent()) //
+                .min(Comparator.comparingDouble(roboport -> bot.getBlockPos().getSquaredDistance(roboport)));
+
+        if (closestLogisticStorage.isEmpty())
+            return Optional.empty();
+
+        return serverWorld.getBlockEntity(closestLogisticStorage.get(), AutomataEntities.LOGISTIC_CHEST).map(LogisticStorage.class::cast);
+    }
+
+    public static Optional<RoboportBlockEntity> getRoboportFor(ServerWorld serverWorld, BotEntity bot) {
+        Optional<UUID> teamUuid = bot.getTeamUuid();
+
+        if (teamUuid.isEmpty())
+            return Optional.empty();
+
+        Stream<BlockPos> nearbyRoboports = ChunkPos.stream(bot.getChunkPos(), 1).map(chunkPos -> getNetwork(serverWorld, teamUuid.get(), chunkPos).orElse(null)) //
+                .filter(net -> net != null).distinct().flatMap(ServerBotNetwork::streamRoboports);
+        Optional<BlockPos> closestRoboport = nearbyRoboports.filter(pos -> serverWorld.getBlockEntity(pos, AutomataEntities.ROBOPORT) //
+                .filter(port -> InventoryUtils.canAdd(port, bot.getBotType().item())).isPresent()) //
+                .min(Comparator.comparingDouble(roboport -> bot.getBlockPos().getSquaredDistance(roboport)));
+
+        if (closestRoboport.isEmpty())
+            return Optional.empty();
+
+        return serverWorld.getBlockEntity(closestRoboport.get(), AutomataEntities.ROBOPORT);
     }
     //#endregion
 
@@ -137,10 +190,10 @@ public class BotNetworkManager {
         NETWORKS_MUTATED.invoker().onMutate(serverNetwork.serverWorld, serverNetwork.teamUuid, Mutation.REMOVE);
     }
 
-    private static void addRoboport(BlockPos pos, UUID teamUuid, ServerWorld serverWorld) {
+    private static void addRoboport(ServerWorld serverWorld, UUID teamUuid, BlockPos pos) {
         ChunkPos chunkPos = new ChunkPos(pos);
 
-        Optional<ServerBotNetwork> serverNetwork = getNetwork(chunkPos, teamUuid, serverWorld);
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(serverWorld, teamUuid, chunkPos);
         if (serverNetwork.isPresent()) {
             serverNetwork.get().addRoboport(pos);
             NETWORKS_MUTATED.invoker().onMutate(serverWorld, teamUuid, Mutation.ADD);
@@ -155,8 +208,8 @@ public class BotNetworkManager {
         loadNetwork(serverWorld, teamUuid, worldChunk);
     }
 
-    private static void removeRoboport(BlockPos pos, UUID teamUuid, ServerWorld serverWorld) {
-        Optional<ServerBotNetwork> serverNetwork = getNetwork(new ChunkPos(pos), teamUuid, serverWorld);
+    private static void removeRoboport(ServerWorld serverWorld, UUID teamUuid, BlockPos pos) {
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(serverWorld, teamUuid, new ChunkPos(pos));
 
         if (serverNetwork.isEmpty())
             return;
@@ -176,8 +229,8 @@ public class BotNetworkManager {
         NETWORKS_MUTATED.invoker().onMutate(serverWorld, teamUuid, Mutation.REMOVE);
     }
 
-    private static void addLogisticStorage(BlockPos pos, UUID teamUuid, ServerWorld serverWorld) {
-        Optional<ServerBotNetwork> serverNetwork = getNetwork(new ChunkPos(pos), teamUuid, serverWorld);
+    private static void addLogisticStorage(ServerWorld serverWorld, UUID teamUuid, BlockPos pos) {
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(serverWorld, teamUuid, new ChunkPos(pos));
         if (serverNetwork.isEmpty())
             return;
 
@@ -185,26 +238,13 @@ public class BotNetworkManager {
         NETWORKS_MUTATED.invoker().onMutate(serverWorld, teamUuid, Mutation.ADD);
     }
 
-    private static void removeLogisticStorage(BlockPos pos, UUID teamUuid, ServerWorld serverWorld) {
-        Optional<ServerBotNetwork> serverNetwork = getNetwork(new ChunkPos(pos), teamUuid, serverWorld);
+    private static void removeLogisticStorage(ServerWorld serverWorld, UUID teamUuid, BlockPos pos) {
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(serverWorld, teamUuid, new ChunkPos(pos));
 
         if (serverNetwork.isEmpty() || !serverNetwork.get().removeLogisticStorage(pos))
             return;
 
         NETWORKS_MUTATED.invoker().onMutate(serverWorld, teamUuid, Mutation.REMOVE);
-    }
-
-    public static Optional<BotEntity> getOrSpawnBotFor(ServerWorld serverWorld, UUID teamUuid, BotJob job) {
-        if (!job.canBeExecuted(serverWorld))
-            return Optional.empty();
-
-        ChunkPos chunkPos = new ChunkPos(job.pos());
-
-        Optional<ServerBotNetwork> serverNetwork = getNetwork(chunkPos, teamUuid, serverWorld);
-        if (serverNetwork.isEmpty())
-            return Optional.empty();
-
-        return serverNetwork.get().getOrSpawnBotFor(job);
     }
     //#endregion
 
@@ -218,7 +258,7 @@ public class BotNetworkManager {
     private static void onChunkUnloaded(ServerWorld serverWorld, WorldChunk chunk) {
         ChunkPos chunkPos = chunk.getPos();
         for (UUID teamUuid : BotTeamPersistentState.getTeamUuids()) {
-            Optional<ServerBotNetwork> serverNetwork = getNetwork(chunkPos, teamUuid, serverWorld);
+            Optional<ServerBotNetwork> serverNetwork = getNetwork(serverWorld, teamUuid, chunkPos);
 
             if (serverNetwork.isEmpty())
                 continue;
@@ -251,27 +291,29 @@ public class BotNetworkManager {
         }
     }
 
-    private static void onPointOfInterestAdded(ServerWorld serverWorld, BlockPos pos, Optional<BlockEntity> blockEntity, RegistryEntry<PointOfInterestType> pointOfInterestType) {
+    private static void onPointOfInterestAdded(ServerWorld serverWorld, BlockPos pos, Optional<BlockEntity> blockEntity,
+            RegistryEntry<PointOfInterestType> pointOfInterestType) {
         if (blockEntity.isEmpty() || !(blockEntity.get() instanceof BotDevice<?> device) || device.getTeamUuid().isEmpty())
             return;
 
         UUID teamUuid = device.getTeamUuid().get();
         switch (device) {
-        case RoboportBlockEntity ignored -> addRoboport(pos, teamUuid, serverWorld);
-        case LogisticStorage<?> ignored -> addLogisticStorage(pos, teamUuid, serverWorld);
+        case RoboportBlockEntity ignored -> addRoboport(serverWorld, teamUuid, pos);
+        case LogisticStorage<?> ignored -> addLogisticStorage(serverWorld, teamUuid, pos);
         default -> {
         }
         }
     }
 
-    private static void onPointOfInterestRemoved(ServerWorld serverWorld, BlockPos pos, Optional<BlockEntity> blockEntity, RegistryEntry<PointOfInterestType> pointOfInterestType) {
+    private static void onPointOfInterestRemoved(ServerWorld serverWorld, BlockPos pos, Optional<BlockEntity> blockEntity,
+            RegistryEntry<PointOfInterestType> pointOfInterestType) {
         if (blockEntity.isEmpty() || !(blockEntity.get() instanceof BotDevice<?> device) || device.getTeamUuid().isEmpty())
             return;
 
         UUID teamUuid = device.getTeamUuid().get();
         switch (device) {
-        case RoboportBlockEntity ignored -> removeRoboport(pos, teamUuid, serverWorld);
-        case LogisticStorage<?> ignored -> removeLogisticStorage(pos, teamUuid, serverWorld);
+        case RoboportBlockEntity ignored -> removeRoboport(serverWorld, teamUuid, pos);
+        case LogisticStorage<?> ignored -> removeLogisticStorage(serverWorld, teamUuid, pos);
         default -> {
         }
         }
@@ -330,12 +372,12 @@ public class BotNetworkManager {
 
         switch (device) {
         case RoboportBlockEntity roboport:
-            oldTeamUuid.ifPresent(uuid -> removeRoboport(roboport.getPos(), uuid, serverWorld));
-            roboport.getTeamUuid().ifPresent(uuid -> addRoboport(roboport.getPos(), uuid, serverWorld));
+            oldTeamUuid.ifPresent(uuid -> removeRoboport(serverWorld, uuid, roboport.getPos()));
+            roboport.getTeamUuid().ifPresent(uuid -> addRoboport(serverWorld, uuid, roboport.getPos()));
             break;
         case LogisticStorage<?> logisticStorage:
-            oldTeamUuid.ifPresent(uuid -> removeLogisticStorage(blockDevice.getPos(), uuid, serverWorld));
-            logisticStorage.getTeamUuid().ifPresent(uuid -> addLogisticStorage(blockDevice.getPos(), uuid, serverWorld));
+            oldTeamUuid.ifPresent(uuid -> removeLogisticStorage(serverWorld, uuid, blockDevice.getPos()));
+            logisticStorage.getTeamUuid().ifPresent(uuid -> addLogisticStorage(serverWorld, uuid, blockDevice.getPos()));
             break;
         default:
             break;

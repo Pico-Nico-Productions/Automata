@@ -178,7 +178,7 @@ public class BotJobPersistentState extends PersistentState {
         for (Map<BotJobType<?>, BotJobAssignment> typeMap : teamMap.values()) {
             for (BotJobAssignment jobAssignment : typeMap.values()) {
                 if (!jobAssignment.isAssigned()
-                        || BotNetworkManager.getNetworkCopy(new ChunkPos(jobAssignment.JOB.pos()), jobAssignment.TEAM_UUID, serverWorld).isPresent())
+                        || BotNetworkManager.getNetworkCopy(serverWorld, jobAssignment.TEAM_UUID, new ChunkPos(jobAssignment.JOB.pos())).isPresent())
                     continue;
 
                 unassignJob(serverWorld, jobAssignment, false);

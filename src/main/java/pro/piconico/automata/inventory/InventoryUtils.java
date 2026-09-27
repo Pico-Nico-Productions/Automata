@@ -1,62 +1,99 @@
 package pro.piconico.automata.inventory;
 
-import java.util.Optional;
 import java.util.function.Predicate;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 public class InventoryUtils {
-    public static Optional<ItemStack> getFirst(Inventory inventory, Predicate<ItemStack> predicate) {
-        for (int i = 0; i < inventory.size(); i++) {
-            ItemStack stack = inventory.getStack(i);
-            if (predicate.test(stack))
-                return Optional.of(stack);
-        }
-
-        return Optional.empty();
-    }
-
-    public static boolean canAdd(Inventory inventory, ItemStack stack) {
+    public static int canAddCount(Inventory inventory, ItemStack stack) {
         if (stack.isEmpty())
-            return true;
+            return 0;
 
-        int remainingCount = stack.getCount();
+        int canAddCount = 0;
         for (int i = 0; i < inventory.size(); i++) {
             ItemStack slotStack = inventory.getStack(i);
 
             if (slotStack.isEmpty()) {
-                remainingCount -= inventory.getMaxCount(stack);
+                canAddCount += inventory.getMaxCount(stack);
             }
             else if (ItemStack.areItemsAndComponentsEqual(stack, slotStack)) {
-                remainingCount -= inventory.getMaxCount(slotStack) - slotStack.getCount();
+                canAddCount += inventory.getMaxCount(slotStack) - slotStack.getCount();
             }
 
-            if (remainingCount <= 0)
-                return true;
+            if (canAddCount >= stack.getCount())
+                return stack.getCount();
         }
 
-        return false;
+        return canAddCount;
+    }
+
+    private static void simulateAdd(Inventory inventory, ItemStack[] copies, ItemStack stack, Predicate<ItemStack> targetPredicate) {
+        for (int i = 0; i < copies.length; i++) {
+            ItemStack slotStack = copies[i];
+
+            if (!targetPredicate.test(slotStack))
+                continue;
+
+            int addCount = Math.min(stack.getCount(), inventory.getMaxCount(slotStack) - slotStack.getCount());
+            if (addCount == 0)
+                continue;
+
+            stack.decrement(addCount);
+            copies[i] = new ItemStack(stack.getItem(), slotStack.getCount() + addCount);
+
+            if (stack.getCount() == 0)
+                return;
+        }
+    }
+
+    public static int canAddCount(Inventory inventory, Inventory toAdd) {
+        int canAddCount = 0;
+
+        ItemStack[] inventoryCopy = new ItemStack[inventory.size()];
+
+        for (int i = 0; i < inventoryCopy.length; i++) {
+            inventoryCopy[i] = inventory.getStack(i).copy();
+        }
+
+        for (int i = 0; i < toAdd.size(); i++) {
+            ItemStack stackToAdd = toAdd.getStack(i);
+            int toAddCount = stackToAdd.getCount();
+
+            simulateAdd(inventory, inventoryCopy, stackToAdd, slotStack -> ItemStack.areItemsAndComponentsEqual(stackToAdd, slotStack));
+            if (stackToAdd.isEmpty()) {
+                canAddCount += toAddCount;
+                continue;
+            }
+
+            simulateAdd(inventory, inventoryCopy, stackToAdd, slotStack -> slotStack.isEmpty());
+            canAddCount += toAddCount - stackToAdd.getCount();
+        }
+
+        return canAddCount;
     }
 
     public static boolean canAdd(Inventory inventory, Item item) {
-        return canAdd(inventory, new ItemStack(item));
+        return canAddCount(inventory, new ItemStack(item)) == 1;
+    }
+
+    public static boolean canAddAll(Inventory inventory, ItemStack stack) {
+        return canAddCount(inventory, stack) == stack.getCount();
     }
 
     private static void add(Inventory inventory, ItemStack stack, Predicate<ItemStack> targetPredicate) {
-        Item item = stack.getItem();
         for (int i = 0; i < inventory.size(); i++) {
             ItemStack slotStack = inventory.getStack(i);
 
             if (!targetPredicate.test(slotStack))
                 continue;
 
-            int addedCount = Math.min(stack.getCount(), slotStack.getMaxCount() - slotStack.getCount());
-            if (addedCount == 0)
+            int addCount = Math.min(stack.getCount(), inventory.getMaxCount(slotStack) - slotStack.getCount());
+            if (addCount == 0)
                 continue;
 
-            stack.decrement(addedCount);
-            inventory.setStack(i, new ItemStack(item, slotStack.getCount() + addedCount));
+            stack.decrement(addCount);
+            inventory.setStack(i, new ItemStack(stack.getItem(), slotStack.getCount() + addCount));
 
             if (stack.getCount() == 0)
                 return;
@@ -69,6 +106,7 @@ public class InventoryUtils {
         }
 
         int toAddCount = stack.getCount();
+
         add(inventory, stack, slotStack -> ItemStack.areItemsAndComponentsEqual(stack, slotStack));
         if (stack.isEmpty())
             return toAddCount;

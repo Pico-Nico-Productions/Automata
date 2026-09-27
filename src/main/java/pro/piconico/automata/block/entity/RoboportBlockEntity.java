@@ -1,10 +1,8 @@
 package pro.piconico.automata.block.entity;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
@@ -26,8 +24,6 @@ import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.poi.PointOfInterest;
-import net.minecraft.world.poi.PointOfInterestStorage;
 import pro.piconico.automata.bot.BotType;
 import pro.piconico.automata.bot.device.BlockBotDevice;
 import pro.piconico.automata.bot.job.BotJob;
@@ -36,9 +32,7 @@ import pro.piconico.automata.inventory.InventoryUtils;
 import pro.piconico.automata.item.BotItem;
 import pro.piconico.automata.registry.AutomataBots;
 import pro.piconico.automata.registry.AutomataEntities;
-import pro.piconico.automata.registry.AutomataPointOfInterestTypes;
 import pro.piconico.automata.screen.RoboportScreenHandler;
-import pro.piconico.automata.util.math.ChunkUtils;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
 public class RoboportBlockEntity extends BlockBotDevice implements ListInventory {
@@ -187,18 +181,4 @@ public class RoboportBlockEntity extends BlockBotDevice implements ListInventory
         }
     }
     //#endregion
-
-    public static Optional<RoboportBlockEntity> getClosestTo(BlockPos pos, Predicate<RoboportBlockEntity> predicate, ServerWorld serverWorld) {
-        Optional<BlockPos> closestRoboportPos = serverWorld.getPointOfInterestStorage()
-                .getInSquare(entry -> entry.matchesKey(AutomataPointOfInterestTypes.ROBOPORT), pos, ChunkUtils.CHUNK_SIZE * (CHUNK_RANGE + 1),
-                        PointOfInterestStorage.OccupationStatus.ANY)
-                .map(PointOfInterest::getPos).filter(roboportPos -> serverWorld.getBlockEntity(roboportPos, AutomataEntities.ROBOPORT)
-                        .filter(roboport -> predicate.test(roboport)).isPresent())
-                .min(Comparator.comparingDouble(roboport -> pos.getSquaredDistance(roboport)));
-
-        if (closestRoboportPos.isEmpty())
-            return Optional.empty();
-
-        return serverWorld.getBlockEntity(closestRoboportPos.get(), AutomataEntities.ROBOPORT);
-    }
 }
