@@ -18,7 +18,7 @@ public class BlockUtils {
         return world.getBlockState(blockPos).getFluidState().isStill();
     }
 
-    public static boolean hasDeconstructableBlock(World world, BlockPos blockPos) {
+    public static boolean isDeconstructable(World world, BlockPos blockPos) {
         return hasBreakableBlock(world, blockPos) || hasFluidSourceBlock(world, blockPos);
     }
 }

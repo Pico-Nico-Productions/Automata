@@ -14,6 +14,7 @@ import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
+import net.minecraft.inventory.ListInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
@@ -32,7 +33,6 @@ import pro.piconico.automata.bot.device.BlockBotDevice;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.inventory.InventoryUtils;
-import pro.piconico.automata.inventory.SimpleInventory;
 import pro.piconico.automata.item.BotItem;
 import pro.piconico.automata.registry.AutomataBots;
 import pro.piconico.automata.registry.AutomataEntities;
@@ -41,7 +41,7 @@ import pro.piconico.automata.screen.RoboportScreenHandler;
 import pro.piconico.automata.util.math.ChunkUtils;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
-public class RoboportBlockEntity extends BlockBotDevice implements SimpleInventory {
+public class RoboportBlockEntity extends BlockBotDevice implements ListInventory {
     public static final int CHUNK_RANGE = 0;
     public static final int BOT_SLOT_COUNT = 3;
 
@@ -71,10 +71,14 @@ public class RoboportBlockEntity extends BlockBotDevice implements SimpleInvento
         Box searchBox = ChunkBounds.of(new ChunkPos(getPos()), CHUNK_RANGE, world).toBox();
         List<BotEntity> capableBots = world.getEntitiesByType(TypeFilter.instanceOf(BotEntity.class), searchBox,
                 botEntity -> botEntity.isAlive() && botEntity.getTeamUuid().equals(getTeamUuid()) && botEntity.canDoJob(job));
-        return capableBots.isEmpty() ? Optional.empty() : Optional.of(capableBots.getFirst());
+
+        return Optional.ofNullable(capableBots.isEmpty() ? null : capableBots.getFirst());
     }
 
     private Optional<Integer> getBotSlotFor(BotJob job) {
+        if (!job.canBeExecuted((ServerWorld)world))
+            return Optional.empty();
+
         Set<BotType> capableBotTypes = AutomataBots.getBotTypesFor(job);
 
         if (capableBotTypes.isEmpty())
@@ -154,10 +158,20 @@ public class RoboportBlockEntity extends BlockBotDevice implements SimpleInvento
     }
     //#endregion
 
-    //#region SimpleInventory
+    //#region ListInventory
     @Override
-    public DefaultedList<ItemStack> getInventory() {
+    public DefaultedList<ItemStack> getHeldStacks() {
         return inventory;
+    }
+
+    @Override
+    public boolean isValid(int slot, ItemStack stack) {
+        return stack.getItem() instanceof BotItem;
+    }
+
+    @Override
+    public boolean canPlayerUse(PlayerEntity player) {
+        return true;
     }
 
     @Override
@@ -171,11 +185,6 @@ public class RoboportBlockEntity extends BlockBotDevice implements SimpleInvento
         if (added) {
             BOT_ADDED.invoker().onUpdated(this);
         }
-    }
-
-    @Override
-    public boolean isValid(int slot, ItemStack stack) {
-        return stack.getItem() instanceof BotItem;
     }
     //#endregion
 

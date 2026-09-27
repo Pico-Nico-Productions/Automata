@@ -1,6 +1,6 @@
 package pro.piconico.automata.bot.device;
 
-import pro.piconico.automata.inventory.SimpleInventory;
+import net.minecraft.inventory.ListInventory;
 
-public interface LogisticStorage<T> extends BotDevice<T>, SimpleInventory {
+public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
 }

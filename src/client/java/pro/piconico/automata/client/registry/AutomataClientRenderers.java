@@ -10,6 +10,7 @@ import pro.piconico.automata.registry.AutomataEntities;
 public class AutomataClientRenderers {
     public static void initialize() {
         EntityRendererFactories.register(AutomataEntities.CONSTRUCTION_BOT, ConstructionBotEntityRenderer::new);
+
         BlockEntityRendererFactories.register(AutomataEntities.LOGISTIC_CHEST, LogisticChestBlockEntityRenderer::new);
 
 		AutomatoolRenderer.initialize();

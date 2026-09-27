@@ -195,6 +195,9 @@ public class BotNetworkManager {
     }
 
     public static Optional<BotEntity> getOrSpawnBotFor(ServerWorld serverWorld, UUID teamUuid, BotJob job) {
+        if (!job.canBeExecuted(serverWorld))
+            return Optional.empty();
+
         ChunkPos chunkPos = new ChunkPos(job.pos());
 
         Optional<ServerBotNetwork> serverNetwork = getNetwork(chunkPos, teamUuid, serverWorld);

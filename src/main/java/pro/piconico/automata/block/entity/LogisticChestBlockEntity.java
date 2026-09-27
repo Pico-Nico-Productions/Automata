@@ -95,10 +95,15 @@ public class LogisticChestBlockEntity extends BlockBotDevice implements Logistic
     }
     //#endregion
 
-    //#region SimpleInventory
+    //#region ListInventory
     @Override
-    public DefaultedList<ItemStack> getInventory() {
+    public DefaultedList<ItemStack> getHeldStacks() {
         return inventory;
+    }
+
+    @Override
+    public boolean canPlayerUse(PlayerEntity player) {
+        return true;
     }
     //#endregion
 

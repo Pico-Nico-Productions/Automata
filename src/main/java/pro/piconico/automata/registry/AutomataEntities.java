@@ -16,22 +16,23 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import pro.piconico.automata.block.entity.LogisticChestBlockEntity;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
+import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.entity.ConstructionBotEntity;
 
 public class AutomataEntities {
-    public static final EntityType<ConstructionBotEntity> CONSTRUCTION_BOT = register(AutomataRegistry.CONSTRUCTION_BOT, ConstructionBotEntity::new, ConstructionBotEntity.createBeeAttributes());
+    public static final EntityType<ConstructionBotEntity> CONSTRUCTION_BOT = register(AutomataRegistry.CONSTRUCTION_BOT, ConstructionBotEntity::new, BotEntity.createBotAttributes());
 
     public static final BlockEntityType<LogisticChestBlockEntity> LOGISTIC_CHEST = register(AutomataRegistry.LOGISTIC_CHEST, LogisticChestBlockEntity::new, AutomataBlocks.LOGISTIC_CHEST);
     public static final BlockEntityType<RoboportBlockEntity> ROBOPORT = register(AutomataRegistry.ROBOPORT, RoboportBlockEntity::new, AutomataBlocks.ROBOPORT);
 
     private static <T extends LivingEntity> EntityType<T> register(String name, EntityFactory<T> entityFactory, DefaultAttributeContainer.Builder builder) {
         RegistryKey<EntityType<?>> entityKey = AutomataRegistry.toRegistryKey(RegistryKeys.ENTITY_TYPE, name);
-        EntityType<T> entity = EntityType.Builder.create(entityFactory, SpawnGroup.MISC).build(entityKey);
-        Registry.register(Registries.ENTITY_TYPE, entityKey, entity);
+        EntityType<T> entityType = EntityType.Builder.create(entityFactory, SpawnGroup.MISC).build(entityKey);
+        Registry.register(Registries.ENTITY_TYPE, entityKey, entityType);
 
-        FabricDefaultAttributeRegistry.register(entity, builder);
+        FabricDefaultAttributeRegistry.register(entityType, builder);
 
-        return entity;
+        return entityType;
     }
 
     private static <T extends BlockEntity> BlockEntityType<T> register(String name, FabricBlockEntityTypeBuilder.Factory<T> blockEntityFactory, Block block) {

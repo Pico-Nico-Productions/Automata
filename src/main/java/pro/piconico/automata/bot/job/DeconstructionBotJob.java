@@ -7,6 +7,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import pro.piconico.automata.block.BlockUtils;
+import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.registry.AutomataBotJobs;
 
 public record DeconstructionBotJob(BlockPos pos) implements BotJob {
@@ -19,10 +20,14 @@ public record DeconstructionBotJob(BlockPos pos) implements BotJob {
     }
 
     @Override
-    public boolean execute(ServerWorld serverWorld) {
-        if (!BlockUtils.hasDeconstructableBlock(serverWorld, pos)) {
+    public boolean canBeExecuted(ServerWorld serverWorld) {
+        return BlockUtils.isDeconstructable(serverWorld, pos);
+    }
+
+    @Override
+    public boolean execute(ServerWorld serverWorld, BotEntity bot) {
+        if (!canBeExecuted(serverWorld))
             return true;
-        }
 
         if (BlockUtils.hasBreakableBlock(serverWorld, pos)) {
             serverWorld.breakBlock(pos, true, null);

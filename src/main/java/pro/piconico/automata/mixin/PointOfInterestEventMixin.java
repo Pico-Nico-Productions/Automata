@@ -119,12 +119,8 @@ public abstract class PointOfInterestEventMixin {
 
         PointOfInterestChangeContext change = changes.peek();
 
-        if (!change.pos().equals(pos))
+        if (!change.pos().equals(pos) || change.oldType.isEmpty() || Objects.equals(change.oldType, change.newType))
             return;
-
-        if (change.oldType.isEmpty() || Objects.equals(change.oldType, change.newType)) {
-            return;
-        }
 
         PointOfInterestCallback.REMOVED.invoker().onAction(serverWorld, change.pos(), Optional.ofNullable(change.oldBlockEntity), change.oldType.get());
 

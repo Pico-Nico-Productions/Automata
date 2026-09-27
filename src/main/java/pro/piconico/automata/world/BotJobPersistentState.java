@@ -105,6 +105,9 @@ public class BotJobPersistentState extends PersistentState {
 
     //#region Job Assignment
     private static boolean assignJob(ServerWorld serverWorld, BotJobAssignment jobAssignment, boolean notify) {
+        if (!jobAssignment.JOB.canBeExecuted(serverWorld))
+            return false;
+
         Optional<BotEntity> botEntity = BotNetworkManager.getOrSpawnBotFor(serverWorld, jobAssignment.TEAM_UUID, jobAssignment.JOB);
 
         if (botEntity.isEmpty())

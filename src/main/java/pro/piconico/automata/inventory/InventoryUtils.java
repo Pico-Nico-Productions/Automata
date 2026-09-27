@@ -1,11 +1,22 @@
 package pro.piconico.automata.inventory;
 
+import java.util.Optional;
 import java.util.function.Predicate;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 public class InventoryUtils {
+    public static Optional<ItemStack> getFirst(Inventory inventory, Predicate<ItemStack> predicate) {
+        for (int i = 0; i < inventory.size(); i++) {
+            ItemStack stack = inventory.getStack(i);
+            if (predicate.test(stack))
+                return Optional.of(stack);
+        }
+
+        return Optional.empty();
+    }
+
     public static boolean canAdd(Inventory inventory, ItemStack stack) {
         if (stack.isEmpty())
             return true;

@@ -17,7 +17,7 @@ public class BotJobDispatcher {
             for (int y = min.getY(); y <= max.getY(); y++) {
                 for (int z = min.getZ(); z <= max.getZ(); z++) {
                     BlockPos blockPos = new BlockPos(x, y, z);
-                    if (!BlockUtils.hasDeconstructableBlock(serverWorld, blockPos))
+                    if (!BlockUtils.isDeconstructable(serverWorld, blockPos))
                         continue;
 
                     jobsToAdd.add(new DeconstructionBotJob(blockPos));

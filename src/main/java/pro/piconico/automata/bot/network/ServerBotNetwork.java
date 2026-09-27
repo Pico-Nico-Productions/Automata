@@ -164,6 +164,6 @@ public class ServerBotNetwork extends BotNetwork {
         if (closestCapableRoboport.isEmpty())
             return Optional.empty();
 
-        return (serverWorld.getBlockEntity(closestCapableRoboport.get(), AutomataEntities.ROBOPORT).get()).getOrSpawnBotFor(job);
+        return serverWorld.getBlockEntity(closestCapableRoboport.get(), AutomataEntities.ROBOPORT).get().getOrSpawnBotFor(job);
     }
 }
