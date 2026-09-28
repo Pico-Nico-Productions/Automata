@@ -16,7 +16,7 @@ import io.wispforest.owo.ui.core.VerticalAlignment;
 import net.minecraft.text.Text;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.client.registry.AutomataClientTextures;
-import pro.piconico.automata.client.registry.AutomataColors;
+import pro.piconico.automata.client.registry.AutomataClientColors;
 import pro.piconico.automata.client.ui.component.AutomataUIComponents;
 import pro.piconico.automata.network.message.BotDeviceTeamChangeMessage;
 import pro.piconico.automata.registry.AutomataMessages;
@@ -60,7 +60,7 @@ public class TeamSelectTab implements Tab<BotDeviceScreenHandler> {
             FlowLayout teamRow = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.fixed(12));
             teamRow.verticalAlignment(VerticalAlignment.CENTER);
             teamRow.padding(Insets.horizontal(BotDeviceScreenHandler.GAP));
-            teamRow.surface(Surface.flat(AutomataColors.HOVERED.argb()).and(Surface.outline(isSelectedTeam ? AutomataColors.ACTIVE.argb() : AutomataColors.INACTIVE.argb())));
+            teamRow.surface(Surface.flat(AutomataClientColors.HOVERED.argb()).and(Surface.outline(isSelectedTeam ? AutomataClientColors.ACTIVE.argb() : AutomataClientColors.INACTIVE.argb())));
             teamRow.cursorStyle(CursorStyle.HAND);
             teamRow.mouseDown().subscribe((click, doubled) -> {
                 if (click.button() != 0)

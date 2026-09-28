@@ -24,12 +24,12 @@ public class AutomataClientTextures {
         public ButtonComponent.Renderer getButtonRenderer() {
             return (graphics, button, delta) -> {
                 if (button.active && button.isHovered()) {
-                    graphics.fill(button.getX(), button.getY(), button.getRight(), button.getBottom(), AutomataColors.HOVERED.argb());
+                    graphics.fill(button.getX(), button.getY(), button.getRight(), button.getBottom(), AutomataClientColors.HOVERED.argb());
                 }
 
                 int x = button.getX() + (button.getWidth() - width) / 2;
                 int y = button.getY() + (button.getHeight() - height) / 2;
-                int color = button.active() ? AutomataColors.ACTIVE.argb() : AutomataColors.INACTIVE.argb();
+                int color = button.active() ? AutomataClientColors.ACTIVE.argb() : AutomataClientColors.INACTIVE.argb();
                 graphics.drawTexture(RenderPipelines.GUI_TEXTURED, id, x, y, u, v, width, height, textureWidth, textureHeight, color);
             };
         }

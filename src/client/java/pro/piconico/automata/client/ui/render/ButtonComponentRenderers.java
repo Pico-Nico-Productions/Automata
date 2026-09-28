@@ -4,7 +4,7 @@ import io.wispforest.owo.ui.component.ButtonComponent;
 import io.wispforest.owo.ui.core.OwoUIGraphics;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.ItemStack;
-import pro.piconico.automata.client.registry.AutomataColors;
+import pro.piconico.automata.client.registry.AutomataClientColors;
 import pro.piconico.automata.screen.ScreenHandlerUtils;
 
 public class ButtonComponentRenderers {
@@ -14,7 +14,7 @@ public class ButtonComponentRenderers {
 
         int x2 = button.getX() + ScreenHandlerUtils.SLOT_SIZE;
         int y2 = button.getY() + ScreenHandlerUtils.SLOT_SIZE;
-        graphics.fill(button.getX(), button.getY(), x2, y2, AutomataColors.HOVERED.argb());
+        graphics.fill(button.getX(), button.getY(), x2, y2, AutomataClientColors.HOVERED.argb());
     }
 
     public static ButtonComponent.Renderer item(ItemStack stack) {

@@ -5,7 +5,7 @@ import io.wispforest.owo.ui.core.Color;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.job.DeconstructionBotJob;
 
-public class AutomataColors {
+public class AutomataClientColors {
     public static final Color SELECTION_BOUNDS = Color.ofRgb(0x00FFFF); // Cyan
     public static final Color SELECTION1 = Color.ofRgb(0x00FF00); // Green
     public static final Color SELECTION2 = Color.ofRgb(0x0000FF); // Blue

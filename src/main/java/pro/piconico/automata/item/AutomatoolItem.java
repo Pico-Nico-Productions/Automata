@@ -27,6 +27,7 @@ import pro.piconico.automata.bot.device.ItemBotDevice;
 import pro.piconico.automata.bot.job.BotJobDispatcher;
 import pro.piconico.automata.bot.team.BotTeam;
 
+// TODO: Clear subscription on world change
 public class AutomatoolItem extends Item {
     public AutomatoolItem(Settings settings) {
         super(settings.maxCount(1));

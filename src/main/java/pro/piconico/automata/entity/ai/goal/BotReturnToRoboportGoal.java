@@ -1,70 +1,44 @@
 package pro.piconico.automata.entity.ai.goal;
 
-import java.util.EnumSet;
-import java.util.Optional;
-import net.minecraft.entity.ai.goal.Goal;
-import net.minecraft.server.world.ServerWorld;
+import java.util.stream.Stream;
 import net.minecraft.util.math.BlockPos;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.bot.network.BotNetworkManager;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.inventory.InventoryUtils;
 
-public class BotReturnToRoboportGoal extends Goal {
-    private final BotEntity bot;
-    private final double speed;
-    private final int interactDistance;
-    private Optional<RoboportBlockEntity> roboport = Optional.empty();
-
+public class BotReturnToRoboportGoal extends GoToNearestTargetGoal<BotEntity, RoboportBlockEntity> {
     public BotReturnToRoboportGoal(BotEntity bot, double speed, int interactDistance) {
-        this.bot = bot;
-        this.speed = speed;
-        this.interactDistance = interactDistance;
-        setControls(EnumSet.of(Control.MOVE, Control.LOOK));
+        super(bot, speed, interactDistance);
     }
 
-    private boolean isValidRoboport(RoboportBlockEntity roboport) {
-        return InventoryUtils.canAdd(roboport, bot.getBotType().item());
+    @Override
+    protected Stream<RoboportBlockEntity> streamTargets() {
+        return BotNetworkManager.streamRoboportsNear(getServerWorld(entity), entity.getTeamUuid(), entity.getBlockPos());
+    }
+
+    @Override
+    protected boolean isValidTarget(RoboportBlockEntity target) {
+        return InventoryUtils.canAdd(target, entity.getBotType().item());
+    }
+
+    @Override
+    protected BlockPos getPos(RoboportBlockEntity target) {
+        return target.getPos();
     }
 
     @Override
     public boolean canStart() {
-        roboport = BotNetworkManager.getRoboportFor((ServerWorld)bot.getEntityWorld(), bot);
-
-        return roboport.isPresent();
-    }
-
-    private void startNavigation() {
-        BlockPos pos = roboport.get().getPos();
-        bot.getNavigation().startMovingTo(pos.getX(), pos.getY(), pos.getZ(), speed);
-    }
-
-    @Override
-    public void start() {
-        startNavigation();
-    }
-
-    @Override
-    public void stop() {
-        roboport = Optional.empty();
-    }
-
-    @Override
-    public boolean shouldContinue() {
-        return roboport.map(this::isValidRoboport).isPresent() || canStart();
+        return entity.isEmpty() && super.canStart();
     }
 
     @Override
     public void tick() {
-        BlockPos roboportPos = roboport.get().getPos();
+        super.tick();
 
-        if (!bot.getNavigation().getTargetPos().equals(roboportPos)) {
-            startNavigation();
-        }
-
-        if (bot.getBlockPos().getChebyshevDistance(roboportPos) > interactDistance)
+        if (!reachedDesiredDistance())
             return;
 
-        roboport.get().tryAdd(bot);
+        target.get().tryAdd(entity);
     }
 }

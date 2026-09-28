@@ -4,7 +4,6 @@ import net.minecraft.block.enums.ChestType;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderLayers;
-import net.minecraft.client.render.TexturedRenderLayers;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory.Context;
 import net.minecraft.client.render.block.entity.model.ChestBlockModel;
 import net.minecraft.client.render.block.entity.state.BlockEntityRenderState;
@@ -15,7 +14,6 @@ import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.state.CameraRenderState;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteHolder;
-import net.minecraft.client.util.SpriteIdentifier;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
@@ -23,12 +21,11 @@ import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import org.jspecify.annotations.Nullable;
 import pro.piconico.automata.block.LogisticChestBlock;
 import pro.piconico.automata.block.entity.LogisticChestBlockEntity;
-import pro.piconico.automata.registry.AutomataRegistry;
+import pro.piconico.automata.client.registry.AutomataClientSprites;
 
 public class LogisticChestBlockEntityRenderer implements BlockEntityRenderer<LogisticChestBlockEntity, ChestBlockEntityRenderState> {
     private final ChestBlockModel model;
     private final SpriteHolder spriteHolder;
-    private final SpriteIdentifier spriteIdentifier = TexturedRenderLayers.CHEST_SPRITE_MAPPER.map(AutomataRegistry.id(AutomataRegistry.LOGISTIC_CHEST));
 
     public LogisticChestBlockEntityRenderer(Context context) {
         model = new ChestBlockModel(context.getLayerModelPart(EntityModelLayers.CHEST));
@@ -63,9 +60,9 @@ public class LogisticChestBlockEntityRenderer implements BlockEntityRenderer<Log
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-state.yaw));
         matrices.translate(-0.5F, -0.5F, -0.5F);
 
-        RenderLayer renderLayer = spriteIdentifier.getRenderLayer(RenderLayers::entityCutout);
+        RenderLayer renderLayer = AutomataClientSprites.LOGISTIC_CHEST.getRenderLayer(RenderLayers::entityCutout);
 
-        Sprite sprite = spriteHolder.getSprite(spriteIdentifier);
+        Sprite sprite = spriteHolder.getSprite(AutomataClientSprites.LOGISTIC_CHEST);
 
         queue.submitModel(model, openness, matrices, renderLayer, state.lightmapCoordinates, OverlayTexture.DEFAULT_UV, -1, sprite, 0, state.crumblingOverlay);
 

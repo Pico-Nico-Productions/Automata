@@ -1,6 +1,5 @@
 package pro.piconico.automata.bot.network;
 
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -33,7 +32,6 @@ import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.event.PointOfInterestCallback;
-import pro.piconico.automata.inventory.InventoryUtils;
 import pro.piconico.automata.registry.AutomataEntities;
 import pro.piconico.automata.util.MapUtils;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
@@ -87,7 +85,7 @@ public class BotNetworkManager {
     }
 
     public static Optional<BotEntity> getOrSpawnBotFor(ServerWorld serverWorld, UUID teamUuid, BotJob job) {
-        if (!job.canBeExecuted(serverWorld))
+        if (!job.canStart(serverWorld))
             return Optional.empty();
 
         ChunkPos chunkPos = new ChunkPos(job.pos());
@@ -99,41 +97,25 @@ public class BotNetworkManager {
         return serverNetwork.get().getOrSpawnBotFor(job);
     }
 
-    public static Optional<LogisticStorage<?>> getLogisticStorageFor(ServerWorld serverWorld, BotEntity bot) {
-        Optional<UUID> teamUuid = bot.getTeamUuid();
-
+    public static Stream<LogisticStorage<?>> streamLogisticStoragesNear(ServerWorld serverWorld, Optional<UUID> teamUuid, BlockPos blockPos) {
         if (teamUuid.isEmpty())
-            return Optional.empty();
+            return Stream.empty();
 
-        Stream<BlockPos> nearbyLogisticStorages = ChunkPos.stream(bot.getChunkPos(), 1) //
-                .map(chunkPos -> getNetwork(serverWorld, teamUuid.get(), chunkPos).orElse(null)) //
-                .filter(net -> net != null).distinct().flatMap(ServerBotNetwork::streamLogisticStorages);
-        Optional<BlockPos> closestLogisticStorage = nearbyLogisticStorages.filter(pos -> serverWorld.getBlockEntity(pos, AutomataEntities.LOGISTIC_CHEST) //
-                .filter(storage -> InventoryUtils.canAddCount(storage, bot) > 0).isPresent()) //
-                .min(Comparator.comparingDouble(roboport -> bot.getBlockPos().getSquaredDistance(roboport)));
-
-        if (closestLogisticStorage.isEmpty())
-            return Optional.empty();
-
-        return serverWorld.getBlockEntity(closestLogisticStorage.get(), AutomataEntities.LOGISTIC_CHEST).map(LogisticStorage.class::cast);
+        return ChunkPos.stream(new ChunkPos(blockPos), 1) //
+                .map(chunkPos -> getNetwork(serverWorld, teamUuid.get(), chunkPos).orElse(null)).filter(net -> net != null).distinct() //
+                .flatMap(ServerBotNetwork::streamLogisticStorages)
+                .<LogisticStorage<?>>map(pos -> serverWorld.getBlockEntity(pos, AutomataEntities.LOGISTIC_CHEST).orElse(null))
+                .filter(storage -> storage != null);
     }
 
-    public static Optional<RoboportBlockEntity> getRoboportFor(ServerWorld serverWorld, BotEntity bot) {
-        Optional<UUID> teamUuid = bot.getTeamUuid();
-
+    public static Stream<RoboportBlockEntity> streamRoboportsNear(ServerWorld serverWorld, Optional<UUID> teamUuid, BlockPos blockPos) {
         if (teamUuid.isEmpty())
-            return Optional.empty();
+            return Stream.empty();
 
-        Stream<BlockPos> nearbyRoboports = ChunkPos.stream(bot.getChunkPos(), 1).map(chunkPos -> getNetwork(serverWorld, teamUuid.get(), chunkPos).orElse(null)) //
-                .filter(net -> net != null).distinct().flatMap(ServerBotNetwork::streamRoboports);
-        Optional<BlockPos> closestRoboport = nearbyRoboports.filter(pos -> serverWorld.getBlockEntity(pos, AutomataEntities.ROBOPORT) //
-                .filter(port -> InventoryUtils.canAdd(port, bot.getBotType().item())).isPresent()) //
-                .min(Comparator.comparingDouble(roboport -> bot.getBlockPos().getSquaredDistance(roboport)));
-
-        if (closestRoboport.isEmpty())
-            return Optional.empty();
-
-        return serverWorld.getBlockEntity(closestRoboport.get(), AutomataEntities.ROBOPORT);
+        return ChunkPos.stream(new ChunkPos(blockPos), 1) //
+                .map(chunkPos -> getNetwork(serverWorld, teamUuid.get(), chunkPos).orElse(null)).filter(net -> net != null).distinct() //
+                .flatMap(ServerBotNetwork::streamRoboports).map(pos -> serverWorld.getBlockEntity(pos, AutomataEntities.ROBOPORT).orElse(null))
+                .filter(port -> port != null);
     }
     //#endregion
 

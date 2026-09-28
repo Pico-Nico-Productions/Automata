@@ -20,11 +20,11 @@ public class ScreenHandlerUtils {
     }
 
     public static ItemStack quickMove(DefaultedList<Slot> slots, QuadFunction<ItemStack, Integer, Integer, Boolean, Boolean> insert, PlayerEntity player,
-            int slotIndex, int handlerInventorySize) {
+            int slotIndex, int screenFactoryInventorySize) {
         if (slotIndex < 0 || slotIndex >= slots.size())
             throw new ArgumentIndexOutOfBoundsException(slotIndex);
-        if (handlerInventorySize <= 0 || handlerInventorySize >= slots.size())
-            throw new ArgumentIndexOutOfBoundsException(handlerInventorySize);
+        if (screenFactoryInventorySize <= 0 || screenFactoryInventorySize >= slots.size())
+            throw new ArgumentIndexOutOfBoundsException(screenFactoryInventorySize);
 
         ItemStack newStack = ItemStack.EMPTY;
 
@@ -33,13 +33,13 @@ public class ScreenHandlerUtils {
             ItemStack originalStack = slot.getStack();
             newStack = originalStack.copy();
 
-            if (slotIndex < handlerInventorySize) {
-                if (!insert.apply(originalStack, handlerInventorySize, slots.size(), true)) {
+            if (slotIndex < screenFactoryInventorySize) {
+                if (!insert.apply(originalStack, screenFactoryInventorySize, slots.size(), true)) {
                     return ItemStack.EMPTY;
                 }
             }
             else {
-                if (!insert.apply(originalStack, 0, handlerInventorySize, false)) {
+                if (!insert.apply(originalStack, 0, screenFactoryInventorySize, false)) {
                     return ItemStack.EMPTY;
                 }
             }

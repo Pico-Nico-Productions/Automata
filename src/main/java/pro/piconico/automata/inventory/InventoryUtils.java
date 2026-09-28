@@ -6,11 +6,12 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 public class InventoryUtils {
-    public static int canAddCount(Inventory inventory, ItemStack stack) {
+    public static int canAdd(Inventory inventory, ItemStack stack) {
         if (stack.isEmpty())
             return 0;
 
         int canAddCount = 0;
+
         for (int i = 0; i < inventory.size(); i++) {
             ItemStack slotStack = inventory.getStack(i);
 
@@ -18,7 +19,7 @@ public class InventoryUtils {
                 canAddCount += inventory.getMaxCount(stack);
             }
             else if (ItemStack.areItemsAndComponentsEqual(stack, slotStack)) {
-                canAddCount += inventory.getMaxCount(slotStack) - slotStack.getCount();
+                canAddCount += inventory.getMaxCount(stack) - slotStack.getCount();
             }
 
             if (canAddCount >= stack.getCount())
@@ -28,6 +29,10 @@ public class InventoryUtils {
         return canAddCount;
     }
 
+    public static boolean canAdd(Inventory inventory, Item item) {
+        return canAdd(inventory, new ItemStack(item)) == 1;
+    }
+
     private static void simulateAdd(Inventory inventory, ItemStack[] copies, ItemStack stack, Predicate<ItemStack> targetPredicate) {
         for (int i = 0; i < copies.length; i++) {
             ItemStack slotStack = copies[i];
@@ -35,19 +40,19 @@ public class InventoryUtils {
             if (!targetPredicate.test(slotStack))
                 continue;
 
-            int addCount = Math.min(stack.getCount(), inventory.getMaxCount(slotStack) - slotStack.getCount());
+            int addCount = Math.min(stack.getCount(), inventory.getMaxCount(stack) - slotStack.getCount());
             if (addCount == 0)
                 continue;
 
-            stack.decrement(addCount);
             copies[i] = new ItemStack(stack.getItem(), slotStack.getCount() + addCount);
+            stack.decrement(addCount);
 
             if (stack.getCount() == 0)
                 return;
         }
     }
 
-    public static int canAddCount(Inventory inventory, Inventory toAdd) {
+    public static int canAdd(Inventory inventory, Inventory toAdd) {
         int canAddCount = 0;
 
         ItemStack[] inventoryCopy = new ItemStack[inventory.size()];
@@ -57,7 +62,7 @@ public class InventoryUtils {
         }
 
         for (int i = 0; i < toAdd.size(); i++) {
-            ItemStack stackToAdd = toAdd.getStack(i);
+            ItemStack stackToAdd = toAdd.getStack(i).copy();
             int toAddCount = stackToAdd.getCount();
 
             simulateAdd(inventory, inventoryCopy, stackToAdd, slotStack -> ItemStack.areItemsAndComponentsEqual(stackToAdd, slotStack));
@@ -73,14 +78,6 @@ public class InventoryUtils {
         return canAddCount;
     }
 
-    public static boolean canAdd(Inventory inventory, Item item) {
-        return canAddCount(inventory, new ItemStack(item)) == 1;
-    }
-
-    public static boolean canAddAll(Inventory inventory, ItemStack stack) {
-        return canAddCount(inventory, stack) == stack.getCount();
-    }
-
     private static void add(Inventory inventory, ItemStack stack, Predicate<ItemStack> targetPredicate) {
         for (int i = 0; i < inventory.size(); i++) {
             ItemStack slotStack = inventory.getStack(i);
@@ -88,12 +85,12 @@ public class InventoryUtils {
             if (!targetPredicate.test(slotStack))
                 continue;
 
-            int addCount = Math.min(stack.getCount(), inventory.getMaxCount(slotStack) - slotStack.getCount());
+            int addCount = Math.min(stack.getCount(), inventory.getMaxCount(stack) - slotStack.getCount());
             if (addCount == 0)
                 continue;
 
-            stack.decrement(addCount);
             inventory.setStack(i, new ItemStack(stack.getItem(), slotStack.getCount() + addCount));
+            stack.decrement(addCount);
 
             if (stack.getCount() == 0)
                 return;
@@ -118,5 +115,15 @@ public class InventoryUtils {
 
     public static boolean add(Inventory inventory, Item item) {
         return add(inventory, new ItemStack(item)) > 0;
+    }
+
+    public static int add(Inventory inventory, Inventory toAdd) {
+        int added = 0;
+
+        for (ItemStack stack : toAdd) {
+            added += add(inventory, stack);
+        }
+
+        return added;
     }
 }

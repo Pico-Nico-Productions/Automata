@@ -2,9 +2,9 @@ package pro.piconico.automata.entity.ai.goal;
 
 import java.util.EnumSet;
 import net.minecraft.entity.ai.goal.Goal;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import pro.piconico.automata.bot.job.BotJob;
+import pro.piconico.automata.bot.job.BotJob.TickResult;
 import pro.piconico.automata.entity.BotEntity;
 
 public class BotDoJobGoal extends Goal {
@@ -21,30 +21,31 @@ public class BotDoJobGoal extends Goal {
 
     @Override
     public boolean canStart() {
-        return bot.getJob().isPresent();
-    }
-
-    private void startNavigation() {
-        BlockPos targetPos = bot.getJob().get().pos();
-        bot.getNavigation().startMovingTo(targetPos.getX(), targetPos.getY(), targetPos.getZ(), speed);
+        return bot.hasEmptyStack() && bot.getJob().isPresent();
     }
 
     @Override
-    public void start() {
-        startNavigation();
+    public void stop() {
+        bot.getNavigation().stop();
     }
 
     @Override
     public void tick() {
         BotJob job = bot.getJob().get();
 
-        if (!bot.getNavigation().getTargetPos().equals(job.pos())) {
-            startNavigation();
+        if (bot.getNavigation().isIdle() || !job.pos().equals(bot.getNavigation().getTargetPos())) {
+            BlockPos targetPos = bot.getJob().get().pos();
+            bot.getNavigation().startMovingTo(targetPos.getX(), targetPos.getY(), targetPos.getZ(), speed);
         }
 
         if (bot.getBlockPos().getChebyshevDistance(job.pos()) > interactDistance)
             return;
 
-        bot.endJob(job.execute((ServerWorld)bot.getEntityWorld(), bot));
+        TickResult tickResult = job.tick(getServerWorld(bot), bot);
+
+        if (tickResult == TickResult.Pending)
+            return;
+
+        bot.endJob(tickResult == TickResult.Succeeded);
     }
 }

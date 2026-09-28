@@ -70,7 +70,7 @@ public class RoboportBlockEntity extends BlockBotDevice implements ListInventory
     }
 
     private Optional<Integer> getBotSlotFor(BotJob job) {
-        if (!job.canBeExecuted((ServerWorld)world))
+        if (!job.canStart((ServerWorld)world))
             return Optional.empty();
 
         Set<BotType> capableBotTypes = AutomataBots.getBotTypesFor(job);
@@ -122,6 +122,7 @@ public class RoboportBlockEntity extends BlockBotDevice implements ListInventory
         botEntity.stopRiding();
         botEntity.removeAllPassengers();
         botEntity.detachLeash();
+        botEntity.dropInventory((ServerWorld)botEntity.getEntityWorld());
         botEntity.discard();
 
         InventoryUtils.add(this, botItem);

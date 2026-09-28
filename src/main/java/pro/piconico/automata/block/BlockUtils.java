@@ -6,7 +6,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class BlockUtils {
-    public static boolean hasBreakableBlock(World world, BlockPos blockPos) {
+    public static boolean isBreakableBlock(World world, BlockPos blockPos) {
         BlockState blockState = world.getBlockState(blockPos);
         if (blockState.isAir() || blockState.getHardness(world, blockPos) < 0f)
             return false;
@@ -14,11 +14,11 @@ public class BlockUtils {
         return blockState.contains(Properties.WATERLOGGED) || blockState.getFluidState().isEmpty();
     }
 
-    public static boolean hasFluidSourceBlock(World world, BlockPos blockPos) {
+    public static boolean isFluidSourceBlock(World world, BlockPos blockPos) {
         return world.getBlockState(blockPos).getFluidState().isStill();
     }
 
     public static boolean isDeconstructable(World world, BlockPos blockPos) {
-        return hasBreakableBlock(world, blockPos) || hasFluidSourceBlock(world, blockPos);
+        return isBreakableBlock(world, blockPos) || isFluidSourceBlock(world, blockPos);
     }
 }
