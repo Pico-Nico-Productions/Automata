@@ -59,6 +59,11 @@ public class BotGrabJobItemsGoal extends GoToNearestTargetGoal<BotEntity, Logist
 
     @Override
     public void tick() {
+        if (target.isEmpty()) {
+            stop();
+            return;
+        }
+
         super.tick();
 
         if (!reachedDesiredDistance())

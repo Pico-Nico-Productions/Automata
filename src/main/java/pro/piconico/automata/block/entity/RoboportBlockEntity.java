@@ -58,6 +58,7 @@ public class RoboportBlockEntity extends BlockBotDevice implements ListInventory
     }
 
     //#region Bot
+    // TODO: Add check to see if bot has necessary items
     private Optional<BotEntity> getBotEntityFor(BotJob job) {
         Set<BotType> capableBotTypes = AutomataBots.getBotTypesFor(job);
         if (capableBotTypes.isEmpty())

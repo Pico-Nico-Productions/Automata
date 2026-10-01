@@ -11,6 +11,7 @@ public class BotDoJobGoal extends Goal {
     private final BotEntity bot;
     private final double speed;
     private final int interactDistance;
+    private int tick;
 
     public BotDoJobGoal(BotEntity bot, double speed, int interactDistance) {
         this.bot = bot;
@@ -27,6 +28,8 @@ public class BotDoJobGoal extends Goal {
     @Override
     public void stop() {
         bot.getNavigation().stop();
+        tick = 0;
+        bot.getJob().ifPresent(job -> job.stop(getServerWorld(bot), bot));
     }
 
     @Override
@@ -41,11 +44,12 @@ public class BotDoJobGoal extends Goal {
         if (bot.getBlockPos().getChebyshevDistance(job.pos()) > interactDistance)
             return;
 
-        TickResult tickResult = job.tick(getServerWorld(bot), bot);
+        TickResult tickResult = job.tick(getServerWorld(bot), bot, tick++);
 
         if (tickResult == TickResult.Pending)
             return;
 
+        tick = 0;
         bot.endJob(tickResult == TickResult.Succeeded);
     }
 }

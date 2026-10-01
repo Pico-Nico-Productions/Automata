@@ -7,6 +7,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
@@ -22,6 +23,7 @@ import pro.piconico.automata.registry.AutomataBotJobs;
 public record DeconstructionBotJob(BlockPos pos) implements BotJob {
     public static final MapCodec<DeconstructionBotJob> CODEC = RecordCodecBuilder
             .mapCodec(instance -> instance.group(BlockPos.CODEC.fieldOf("pos").forGetter(job -> job.pos)).apply(instance, DeconstructionBotJob::new));
+    public static final float TOOL_SPEED = 1F / 30F, NO_TOOL_SPEED = 1F / 100F;
 
     @Override
     public BotJobType<?> getType() {
@@ -49,20 +51,33 @@ public record DeconstructionBotJob(BlockPos pos) implements BotJob {
     }
 
     @Override
-    public TickResult tick(ServerWorld serverWorld, BotEntity bot) {
+    public TickResult tick(ServerWorld serverWorld, BotEntity bot, int tick) {
         if (!canStart(serverWorld))
             return TickResult.Succeeded;
 
-        // TODO: Simulate breaking like a player
         if (BlockUtils.isBreakableBlock(serverWorld, pos)) {
             if (serverWorld.getBlockEntity(pos) instanceof Inventory inventory && !inventory.isEmpty()) {
                 InventoryUtils.add(bot, inventory);
                 return TickResult.Pending;
             }
 
-            if (!serverWorld.breakBlock(pos, true, bot))
+            BlockState state = serverWorld.getBlockState(pos);
+            ItemStack toolStack = bot.getEquippedStack(EquipmentSlot.MAINHAND);
+            if (toolStack == ItemStack.EMPTY) {
+                toolStack = InventoryUtils.getSlot(bot, stack -> stack.isSuitableFor(state)).map(slot -> bot.getStack(slot)).orElse(ItemStack.EMPTY);
+                bot.equipStack(EquipmentSlot.MAINHAND, toolStack);
+            }
+            float toolMultiplier = (!state.isToolRequired() || !toolStack.isEmpty()) ? TOOL_SPEED : NO_TOOL_SPEED;
+            float progress = tick * toolStack.getMiningSpeedMultiplier(state) * toolMultiplier / state.getHardness(serverWorld, pos);
+            serverWorld.setBlockBreakingInfo(bot.getId(), pos, BlockUtils.getBreakProgress(progress));
+
+            if (progress < 1F || !serverWorld.breakBlock(pos, true, bot))
                 return TickResult.Pending;
 
+            if (toolStack != ItemStack.EMPTY) {
+                toolStack.getItem().postMine(toolStack, serverWorld, state, pos, bot);
+                bot.equipStack(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+            }
             bot.addItemsToPickUp(serverWorld.getEntitiesByClass(ItemEntity.class, new Box(pos), entity -> true));
         }
         if (BlockUtils.isFluidSourceBlock(serverWorld, pos)) {
@@ -70,5 +85,10 @@ public record DeconstructionBotJob(BlockPos pos) implements BotJob {
         }
 
         return TickResult.Succeeded;
+    }
+
+    @Override
+    public void stop(ServerWorld serverWorld, BotEntity bot) {
+        serverWorld.setBlockBreakingInfo(bot.getId(), pos, BlockUtils.BREAK_NOT_IN_PROGRESS);
     }
 }

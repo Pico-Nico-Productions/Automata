@@ -8,6 +8,10 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 public class InventoryUtils {
+    public enum SetStackResult {
+        NONE, REPLACE, ADD, REMOVE
+    }
+
     public static Optional<Integer> getSlot(Inventory inventory, Predicate<ItemStack> predicate, Set<Integer> blacklist) {
         for (int i = 0; i < inventory.size(); i++) {
             if (blacklist.contains(i))
@@ -22,10 +26,6 @@ public class InventoryUtils {
 
     public static Optional<Integer> getSlot(Inventory inventory, Predicate<ItemStack> predicate) {
         return getSlot(inventory, predicate, Set.of());
-    }
-
-    public enum SetStackResult {
-        NONE, REPLACE, ADD, REMOVE
     }
 
     public static SetStackResult getSetStackResult(Inventory inventory, int slot, ItemStack stack) {
@@ -81,7 +81,7 @@ public class InventoryUtils {
             if (addCount == 0)
                 continue;
 
-            copies[i] = new ItemStack(stack.getItem(), slotStack.getCount() + addCount);
+            copies[i] = stack.copyWithCount(slotStack.getCount() + addCount);
             stack.decrement(addCount);
 
             if (stack.getCount() == 0)
@@ -126,7 +126,7 @@ public class InventoryUtils {
             if (addCount == 0)
                 continue;
 
-            inventory.setStack(i, new ItemStack(stack.getItem(), slotStack.getCount() + addCount));
+            inventory.setStack(i, stack.copyWithCount(slotStack.getCount() + addCount));
             stack.decrement(addCount);
 
             if (stack.getCount() == 0)
@@ -135,9 +135,8 @@ public class InventoryUtils {
     }
 
     public static int add(Inventory inventory, ItemStack stack) {
-        if (stack.isEmpty()) {
+        if (stack.isEmpty())
             return 0;
-        }
 
         int toAddCount = stack.getCount();
 

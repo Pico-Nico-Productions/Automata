@@ -27,5 +27,8 @@ public interface BotJob {
 
     public boolean canStart(World world);
 
-    public TickResult tick(ServerWorld serverWorld, BotEntity bot);
+    public TickResult tick(ServerWorld serverWorld, BotEntity bot, int tick);
+
+    public default void stop(ServerWorld serverWorld, BotEntity bot) {
+    }
 }
