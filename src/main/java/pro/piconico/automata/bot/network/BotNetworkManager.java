@@ -88,34 +88,41 @@ public class BotNetworkManager {
         if (!job.canStart(serverWorld))
             return Optional.empty();
 
-        ChunkPos chunkPos = new ChunkPos(job.pos());
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(serverWorld, teamUuid, new ChunkPos(job.pos()));
 
-        Optional<ServerBotNetwork> serverNetwork = getNetwork(serverWorld, teamUuid, chunkPos);
-        if (serverNetwork.isEmpty())
+        if (serverNetwork.isEmpty() || !serverNetwork.get().containsItems(job.getRequiredStackPredicates(serverWorld)))
             return Optional.empty();
 
         return serverNetwork.get().getOrSpawnBotFor(job);
     }
 
-    public static Stream<LogisticStorage<?>> streamLogisticStoragesNear(ServerWorld serverWorld, Optional<UUID> teamUuid, BlockPos blockPos) {
+    public static Stream<LogisticStorage<?>> streamLogisticStoragesNear(ServerWorld serverWorld, Optional<UUID> teamUuid, BlockPos blockPos, int chunkRadius) {
         if (teamUuid.isEmpty())
             return Stream.empty();
 
-        return ChunkPos.stream(new ChunkPos(blockPos), 1) //
+        return ChunkPos.stream(new ChunkPos(blockPos), chunkRadius) //
                 .map(chunkPos -> getNetwork(serverWorld, teamUuid.get(), chunkPos).orElse(null)).filter(net -> net != null).distinct() //
                 .flatMap(ServerBotNetwork::streamLogisticStorages)
                 .<LogisticStorage<?>>map(pos -> serverWorld.getBlockEntity(pos, AutomataEntities.LOGISTIC_CHEST).orElse(null))
                 .filter(storage -> storage != null);
     }
 
-    public static Stream<RoboportBlockEntity> streamRoboportsNear(ServerWorld serverWorld, Optional<UUID> teamUuid, BlockPos blockPos) {
+    public static Stream<LogisticStorage<?>> streamLogisticStoragesNear(ServerWorld serverWorld, Optional<UUID> teamUuid, BlockPos blockPos) {
+        return streamLogisticStoragesNear(serverWorld, teamUuid, blockPos, 0);
+    }
+
+    public static Stream<RoboportBlockEntity> streamRoboportsNear(ServerWorld serverWorld, Optional<UUID> teamUuid, BlockPos blockPos, int chunkRadius) {
         if (teamUuid.isEmpty())
             return Stream.empty();
 
-        return ChunkPos.stream(new ChunkPos(blockPos), 1) //
+        return ChunkPos.stream(new ChunkPos(blockPos), chunkRadius) //
                 .map(chunkPos -> getNetwork(serverWorld, teamUuid.get(), chunkPos).orElse(null)).filter(net -> net != null).distinct() //
                 .flatMap(ServerBotNetwork::streamRoboports).map(pos -> serverWorld.getBlockEntity(pos, AutomataEntities.ROBOPORT).orElse(null))
                 .filter(port -> port != null);
+    }
+
+    public static Stream<RoboportBlockEntity> streamRoboportsNear(ServerWorld serverWorld, Optional<UUID> teamUuid, BlockPos blockPos) {
+        return streamRoboportsNear(serverWorld, teamUuid, blockPos, 0);
     }
     //#endregion
 

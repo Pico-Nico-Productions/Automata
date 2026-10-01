@@ -1,11 +1,48 @@
 package pro.piconico.automata.inventory;
 
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 public class InventoryUtils {
+    public static Optional<Integer> getSlot(Inventory inventory, Predicate<ItemStack> predicate, Set<Integer> blacklist) {
+        for (int i = 0; i < inventory.size(); i++) {
+            if (blacklist.contains(i))
+                continue;
+
+            if (predicate.test(inventory.getStack(i)))
+                return Optional.of(i);
+        }
+
+        return Optional.empty();
+    }
+
+    public static Optional<Integer> getSlot(Inventory inventory, Predicate<ItemStack> predicate) {
+        return getSlot(inventory, predicate, Set.of());
+    }
+
+    public enum SetStackResult {
+        NONE, REPLACE, ADD, REMOVE
+    }
+
+    public static SetStackResult getSetStackResult(Inventory inventory, int slot, ItemStack stack) {
+        ItemStack currentStack = inventory.getStack(slot);
+        boolean itemsAndComponentsAreEqual = ItemStack.areItemsAndComponentsEqual(currentStack, stack);
+        int currentCount = currentStack.getCount();
+        int newCount = stack.getCount();
+
+        if (itemsAndComponentsAreEqual && currentCount == newCount)
+            return SetStackResult.NONE;
+
+        if (!itemsAndComponentsAreEqual && currentCount != 0 && newCount != 0)
+            return SetStackResult.REPLACE;
+
+        return newCount > currentCount ? SetStackResult.ADD : SetStackResult.REMOVE;
+    }
+
     public static int canAdd(Inventory inventory, ItemStack stack) {
         if (stack.isEmpty())
             return 0;

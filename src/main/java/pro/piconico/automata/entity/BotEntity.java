@@ -37,6 +37,7 @@ import net.minecraft.world.World;
 import pro.piconico.automata.bot.BotType;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.entity.ai.goal.BotDoJobGoal;
+import pro.piconico.automata.entity.ai.goal.BotGrabJobItemsGoal;
 import pro.piconico.automata.entity.ai.goal.BotHoverGoal;
 import pro.piconico.automata.entity.ai.goal.BotPickUpItemsGoal;
 import pro.piconico.automata.entity.ai.goal.BotStoreItemsGoal;
@@ -99,7 +100,7 @@ public abstract class BotEntity extends PathAwareEntity implements ListInventory
     }
 
     public boolean canDoJob(BotJob job) {
-        return getJob().isEmpty() && getBotType().supportedJobTypes().contains(job.getType()) && job.canStart((ServerWorld)getEntityWorld());
+        return getJob().isEmpty() && getBotType().supportedJobTypes().contains(job.getType()) && job.canStart(getEntityWorld());
     }
 
     public void endJob(boolean completed) {
@@ -112,7 +113,7 @@ public abstract class BotEntity extends PathAwareEntity implements ListInventory
     }
 
     public boolean hasEmptyStack() {
-        return inventory.stream().anyMatch(stack -> stack.isEmpty());
+        return getFilledSlotCount() < size();
     }
 
     public Set<ItemEntity> getItemsToPickUp() {
@@ -130,11 +131,12 @@ public abstract class BotEntity extends PathAwareEntity implements ListInventory
     //#region PathAwareEntity
     @Override
     protected void initGoals() {
-        goalSelector.add(0, new BotDoJobGoal(this, SPEED, INTERACT_DISTANCE));
-        goalSelector.add(1, new BotPickUpItemsGoal(this, this, SPEED, INTERACT_DISTANCE));
-        goalSelector.add(2, new BotStoreItemsGoal(this, SPEED, INTERACT_DISTANCE));
-        goalSelector.add(3, new BotReturnToRoboportGoal(this, SPEED, INTERACT_DISTANCE));
-        goalSelector.add(4, new BotHoverGoal(this));
+        goalSelector.add(0, new BotGrabJobItemsGoal(this, SPEED, INTERACT_DISTANCE));
+        goalSelector.add(1, new BotDoJobGoal(this, SPEED, INTERACT_DISTANCE));
+        goalSelector.add(2, new BotPickUpItemsGoal(this, this, SPEED, INTERACT_DISTANCE));
+        goalSelector.add(3, new BotStoreItemsGoal(this, SPEED, INTERACT_DISTANCE));
+        goalSelector.add(4, new BotReturnToRoboportGoal(this, SPEED, INTERACT_DISTANCE));
+        goalSelector.add(5, new BotHoverGoal(this));
     }
 
     @Override

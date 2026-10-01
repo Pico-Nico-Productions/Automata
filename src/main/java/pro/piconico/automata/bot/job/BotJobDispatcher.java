@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
-import pro.piconico.automata.block.BlockUtils;
 import pro.piconico.automata.world.BotJobPersistentState;
 
 public class BotJobDispatcher {
@@ -16,11 +15,11 @@ public class BotJobDispatcher {
         for (int x = min.getX(); x <= max.getX(); x++) {
             for (int y = min.getY(); y <= max.getY(); y++) {
                 for (int z = min.getZ(); z <= max.getZ(); z++) {
-                    BlockPos blockPos = new BlockPos(x, y, z);
-                    if (!BlockUtils.isDeconstructable(serverWorld, blockPos))
+                    DeconstructionBotJob deconstructionJob = new DeconstructionBotJob(new BlockPos(x, y, z));
+                    if (!deconstructionJob.canStart(serverWorld))
                         continue;
 
-                    jobsToAdd.add(new DeconstructionBotJob(blockPos));
+                    jobsToAdd.add(deconstructionJob);
                 }
             }
         }

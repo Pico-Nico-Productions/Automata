@@ -11,6 +11,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import pro.piconico.automata.registry.AutomataComponents;
 
+// TODO: Add world to selection
 public record SelectionComponent(Optional<BlockPos> selection1, Optional<BlockPos> selection2) {
     public static final Codec<SelectionComponent> CODEC = RecordCodecBuilder
             .create(instance -> instance.group(BlockPos.CODEC.optionalFieldOf("selection1").forGetter(SelectionComponent::selection1),

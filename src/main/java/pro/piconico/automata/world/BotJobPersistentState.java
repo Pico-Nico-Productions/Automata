@@ -16,7 +16,9 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.PersistentState;
+import net.minecraft.world.World;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
+import pro.piconico.automata.bot.device.LogisticStorage;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.job.BotJobAssignment;
 import pro.piconico.automata.bot.job.BotJobAssignmentMap;
@@ -326,6 +328,13 @@ public class BotJobPersistentState extends PersistentState {
         assignJobs(serverWorld, roboport.getTeamUuid().get());
     }
 
+    private static void onInventoryStackChanged(World world, LogisticStorage<?> logisticStorage, Optional<Integer> slot, LogisticStorage.Mutation mutation) {
+        if (!(world instanceof ServerWorld serverWorld) || logisticStorage.getTeamUuid().isEmpty())
+            return;
+
+        assignJobs(serverWorld, logisticStorage.getTeamUuid().get());
+    }
+
     private static void onJobEnded(BotEntity botEntity, BotJob job, boolean completed) {
         if (!(botEntity.getEntityWorld() instanceof ServerWorld serverWorld))
             return;
@@ -348,6 +357,7 @@ public class BotJobPersistentState extends PersistentState {
         BotTeamPersistentState.TEAMS_MUTATED.register(BotJobPersistentState::onTeamsMutated);
         BotNetworkManager.NETWORKS_MUTATED.register(BotJobPersistentState::onNetworksMutated);
         RoboportBlockEntity.BOT_ADDED.register(BotJobPersistentState::onBotAdded);
+        LogisticStorage.INVENTORY_STACK_CHANGED.register(BotJobPersistentState::onInventoryStackChanged);
         BotEntity.JOB_ENDED.register(BotJobPersistentState::onJobEnded);
     }
 }

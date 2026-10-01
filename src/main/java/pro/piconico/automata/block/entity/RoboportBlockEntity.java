@@ -29,6 +29,7 @@ import pro.piconico.automata.bot.device.BlockBotDevice;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.inventory.InventoryUtils;
+import pro.piconico.automata.inventory.InventoryUtils.SetStackResult;
 import pro.piconico.automata.item.BotItem;
 import pro.piconico.automata.registry.AutomataBots;
 import pro.piconico.automata.registry.AutomataEntities;
@@ -70,7 +71,7 @@ public class RoboportBlockEntity extends BlockBotDevice implements ListInventory
     }
 
     private Optional<Integer> getBotSlotFor(BotJob job) {
-        if (!job.canStart((ServerWorld)world))
+        if (!job.canStart(world))
             return Optional.empty();
 
         Set<BotType> capableBotTypes = AutomataBots.getBotTypesFor(job);
@@ -171,15 +172,18 @@ public class RoboportBlockEntity extends BlockBotDevice implements ListInventory
 
     @Override
     public void setStack(int slot, ItemStack stack) {
-        ItemStack currentStack = getStack(slot);
-        boolean added = !stack.isEmpty() && stack.getItem() != currentStack.getItem() || stack.getCount() > currentStack.getCount();
+        SetStackResult setStackResult = InventoryUtils.getSetStackResult(this, slot, stack);
+
+        if (setStackResult == SetStackResult.NONE)
+            return;
 
         inventory.set(slot, stack);
         markDirty();
 
-        if (added) {
-            BOT_ADDED.invoker().onUpdated(this);
-        }
+        if (setStackResult != SetStackResult.ADD)
+            return;
+
+        BOT_ADDED.invoker().onUpdated(this);
     }
     //#endregion
 }

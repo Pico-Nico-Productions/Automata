@@ -30,8 +30,7 @@ public class BotTeam {
     public final UUID UUID;
 
     public static boolean isValidName(String name) {
-        String strippedName = name.strip();
-        return !strippedName.isEmpty() && strippedName.length() <= MAX_NAME_LENGTH;
+        return !name.strip().isEmpty() && name.length() <= MAX_NAME_LENGTH;
     }
 
     private static void validateName(String name) {
