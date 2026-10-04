@@ -1,9 +1,8 @@
 package pro.piconico.automata.entity.ai.goal;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
@@ -13,6 +12,7 @@ import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.network.BotNetworkManager;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.inventory.InventoryUtils;
+import pro.piconico.automata.item.ItemUtils.PredicateItemStack;
 
 public class BotGrabJobItemsGoal extends GoToNearestTargetGoal<BotEntity, LogisticStorage<?>> {
     public BotGrabJobItemsGoal(BotEntity bot, double speed, int desiredDistance) {
@@ -24,24 +24,36 @@ public class BotGrabJobItemsGoal extends GoToNearestTargetGoal<BotEntity, Logist
         return BotNetworkManager.streamLogisticStoragesNear(getServerWorld(entity), entity.getTeamUuid(), entity.getBlockPos());
     }
 
-    private Set<Predicate<ItemStack>> getStackPredicatesToGrab(boolean requiredOnly) {
+    private List<PredicateItemStack> getMissingStackPredicates(boolean requiredOnly) {
         BotJob job = entity.getJob().get();
         World world = entity.getEntityWorld();
-        Set<Predicate<ItemStack>> stackPredicatesToGrab = new HashSet<>(requiredOnly ? job.getRequiredStackPredicates(world) : job.getPreferredStackPredicates(world));
-        if (stackPredicatesToGrab.isEmpty())
-            return Set.of();
+        List<PredicateItemStack> stacks = requiredOnly ? job.getRequiredStacks(world) : job.getPreferredStacks(world);
 
-        stackPredicatesToGrab.removeIf(predicate -> entity.containsAny(predicate));
-        return stackPredicatesToGrab;
+        if (stacks.isEmpty())
+            return List.of();
+
+        List<Integer> missingCounts = InventoryUtils.getMissingCounts(entity, stacks);
+        List<PredicateItemStack> missingStacks = new ArrayList<>();
+
+        for (int i = 0; i < stacks.size(); i++) {
+            int count = missingCounts.get(i);
+
+            if (count == 0)
+                continue;
+
+            missingStacks.add(new PredicateItemStack(stacks.get(i).predicate(), missingCounts.get(i)));
+        }
+
+        return missingStacks;
     }
 
-    private Set<Predicate<ItemStack>> getStackPredicatesToGrab() {
-        return getStackPredicatesToGrab(false);
+    private List<PredicateItemStack> getStackPredicatesToGrab() {
+        return getMissingStackPredicates(false);
     }
 
     @Override
     protected boolean isValidTarget(LogisticStorage<?> target) {
-        return getStackPredicatesToGrab().stream().anyMatch(predicate -> target.containsAny(predicate));
+        return getStackPredicatesToGrab().stream().anyMatch(predicate -> target.containsAny(predicate.predicate()));
     }
 
     @Override
@@ -54,7 +66,7 @@ public class BotGrabJobItemsGoal extends GoToNearestTargetGoal<BotEntity, Logist
         if (!entity.hasEmptyStack() || entity.getJob().isEmpty())
             return false;
 
-        return super.canStart() || !getStackPredicatesToGrab(true).isEmpty();
+        return super.canStart() || !getMissingStackPredicates(true).isEmpty();
     }
 
     @Override
@@ -69,11 +81,11 @@ public class BotGrabJobItemsGoal extends GoToNearestTargetGoal<BotEntity, Logist
         if (!reachedDesiredDistance())
             return;
 
-        for (Predicate<ItemStack> predicate : getStackPredicatesToGrab()) {
+        for (PredicateItemStack predicate : getStackPredicatesToGrab()) {
             if (!entity.hasEmptyStack())
                 break;
 
-            Optional<Integer> slot = InventoryUtils.getSlot(target.get(), predicate);
+            Optional<Integer> slot = InventoryUtils.getSlot(target.get(), predicate.predicate());
             if (slot.isEmpty())
                 continue;
 

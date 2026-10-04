@@ -2,11 +2,9 @@ package pro.piconico.automata.bot.network;
 
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
@@ -16,15 +14,19 @@ import java.util.stream.Stream;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.TypeFilter;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
+import pro.piconico.automata.bot.BotType;
 import pro.piconico.automata.bot.device.LogisticStorage;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.entity.BotEntity;
-import pro.piconico.automata.inventory.InventoryUtils;
+import pro.piconico.automata.registry.AutomataBots;
 import pro.piconico.automata.registry.AutomataEntities;
+import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
-// TODO: Add item reservation so bots can't both aim for the same item
+// TODO: Add item reservation so multiple bots don't aim for the same item
 public class ServerBotNetwork extends BotNetwork {
     final ServerWorld serverWorld;
 
@@ -100,40 +102,13 @@ public class ServerBotNetwork extends BotNetwork {
         return logisticStorage;
     }
 
-    boolean containsItem(Predicate<ItemStack> predicate) {
+    boolean containsItemStack(Predicate<ItemStack> predicate) {
         for (BlockPos pos : getLogisticStorages()) {
             if (getLogisticStorage(serverWorld, pos).containsAny(predicate))
                 return true;
         }
 
         return false;
-    }
-
-    // TODO: Refine blacklist to include stack item count
-    boolean containsItems(Collection<Predicate<ItemStack>> predicates) {
-        Map<BlockPos, LogisticStorage<?>> logisticStorages = new HashMap<>();
-        Map<BlockPos, Set<Integer>> blacklists = new HashMap<>();
-        for (Predicate<ItemStack> predicate : predicates) {
-            boolean passed = false;
-
-            for (BlockPos pos : getLogisticStorages()) {
-                LogisticStorage<?> logisticStorage = logisticStorages.computeIfAbsent(pos, ignored -> getLogisticStorage(serverWorld, pos));
-                Set<Integer> blacklist = blacklists.computeIfAbsent(pos, ignored -> new HashSet<>());
-                Optional<Integer> slot = InventoryUtils.getSlot(logisticStorage, predicate, blacklist);
-
-                if (slot.isEmpty())
-                    continue;
-
-                blacklist.add(slot.get());
-                passed = true;
-                break;
-            }
-
-            if (!passed)
-                return false;
-        }
-
-        return true;
     }
 
     boolean addRoboport(BlockPos pos) {
@@ -209,14 +184,29 @@ public class ServerBotNetwork extends BotNetwork {
     }
 
     Optional<BotEntity> getOrSpawnBotFor(BotJob job) {
+        Set<BotType> capableBotTypes = AutomataBots.getBotTypesFor(job);
+        if (capableBotTypes.isEmpty())
+            return Optional.empty();
+
+        for (ChunkPos chunkPos : roboportMap.keySet()) {
+            Box searchBox = ChunkBounds.of(chunkPos, 0, serverWorld).toBox();
+            List<BotEntity> capableBots = serverWorld.getEntitiesByType(TypeFilter.instanceOf(BotEntity.class), searchBox, //
+                    botEntity -> botEntity.isAlive() && botEntity.isOnTeam(teamUuid) && botEntity.canDoJob(job));
+
+            if (capableBots.isEmpty())
+                continue;
+
+            return Optional.of(capableBots.getFirst());
+        }
+
         Stream<BlockPos> capableRoboports = roboportMap.values().stream().flatMap(roboportsInChunk -> roboportsInChunk.stream()) //
-                .filter(roboportPos -> serverWorld.getBlockEntity(roboportPos, AutomataEntities.ROBOPORT).map(roboport -> roboport.canDoJob(job))
+                .filter(roboportPos -> serverWorld.getBlockEntity(roboportPos, AutomataEntities.ROBOPORT).map(roboport -> roboport.canSpawnBotFor(job))
                         .orElse(false));
         Optional<BlockPos> closestCapableRoboport = capableRoboports.min(Comparator.comparingDouble(pos -> pos.getSquaredDistance(job.pos())));
 
         if (closestCapableRoboport.isEmpty())
             return Optional.empty();
 
-        return serverWorld.getBlockEntity(closestCapableRoboport.get(), AutomataEntities.ROBOPORT).get().getOrSpawnBotFor(job);
+        return serverWorld.getBlockEntity(closestCapableRoboport.get(), AutomataEntities.ROBOPORT).get().spawnBotFor(job);
     }
 }

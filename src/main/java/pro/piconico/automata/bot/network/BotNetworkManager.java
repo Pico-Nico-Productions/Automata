@@ -90,7 +90,7 @@ public class BotNetworkManager {
 
         Optional<ServerBotNetwork> serverNetwork = getNetwork(serverWorld, teamUuid, new ChunkPos(job.pos()));
 
-        if (serverNetwork.isEmpty() || !serverNetwork.get().containsItems(job.getRequiredStackPredicates(serverWorld)))
+        if (serverNetwork.isEmpty())
             return Optional.empty();
 
         return serverNetwork.get().getOrSpawnBotFor(job);

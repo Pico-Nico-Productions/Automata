@@ -1,7 +1,7 @@
 package pro.piconico.automata.bot.job;
 
-import java.util.Set;
-import java.util.function.Predicate;
+import java.util.Collections;
+import java.util.List;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.block.Block;
@@ -18,6 +18,7 @@ import net.minecraft.world.World;
 import pro.piconico.automata.block.BlockUtils;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.inventory.InventoryUtils;
+import pro.piconico.automata.item.ItemUtils.PredicateItemStack;
 import pro.piconico.automata.registry.AutomataBotJobs;
 
 public record DeconstructionBotJob(BlockPos pos) implements BotJob {
@@ -31,18 +32,18 @@ public record DeconstructionBotJob(BlockPos pos) implements BotJob {
     }
 
     @Override
-    public Set<Predicate<ItemStack>> getRequiredStackPredicates(World world) {
+    public List<PredicateItemStack> getRequiredStacks(World world) {
         BlockState state = world.getBlockState(pos);
 
         if (!state.isToolRequired())
-            return Set.of();
+            return List.of();
 
-        return Set.of(stack -> stack.isSuitableFor(state));
+        return Collections.unmodifiableList(List.of(new PredicateItemStack(stack -> stack.isSuitableFor(state))));
     }
 
     @Override
-    public Set<Predicate<ItemStack>> getPreferredStackPredicates(World world) {
-        return Set.of(stack -> stack.isSuitableFor(world.getBlockState(pos)));
+    public List<PredicateItemStack> getPreferredStacks(World world) {
+        return Collections.unmodifiableList(List.of(new PredicateItemStack(stack -> stack.isSuitableFor(world.getBlockState(pos)))));
     }
 
     @Override
@@ -53,12 +54,12 @@ public record DeconstructionBotJob(BlockPos pos) implements BotJob {
     @Override
     public TickResult tick(ServerWorld serverWorld, BotEntity bot, int tick) {
         if (!canStart(serverWorld))
-            return TickResult.Succeeded;
+            return TickResult.SUCCEEDED;
 
         if (BlockUtils.isBreakableBlock(serverWorld, pos)) {
             if (serverWorld.getBlockEntity(pos) instanceof Inventory inventory && !inventory.isEmpty()) {
                 InventoryUtils.add(bot, inventory);
-                return TickResult.Pending;
+                return TickResult.PENDING;
             }
 
             BlockState state = serverWorld.getBlockState(pos);
@@ -72,7 +73,7 @@ public record DeconstructionBotJob(BlockPos pos) implements BotJob {
             serverWorld.setBlockBreakingInfo(bot.getId(), pos, BlockUtils.getBreakProgress(progress));
 
             if (progress < 1F || !serverWorld.breakBlock(pos, true, bot))
-                return TickResult.Pending;
+                return TickResult.PENDING;
 
             if (toolStack != ItemStack.EMPTY) {
                 toolStack.getItem().postMine(toolStack, serverWorld, state, pos, bot);
@@ -84,7 +85,7 @@ public record DeconstructionBotJob(BlockPos pos) implements BotJob {
             serverWorld.setBlockState(pos, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
         }
 
-        return TickResult.Succeeded;
+        return TickResult.SUCCEEDED;
     }
 
     @Override

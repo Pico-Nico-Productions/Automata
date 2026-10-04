@@ -1,6 +1,5 @@
 package pro.piconico.automata.block.entity;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -19,11 +18,8 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
-import net.minecraft.util.TypeFilter;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.ChunkPos;
 import pro.piconico.automata.bot.BotType;
 import pro.piconico.automata.bot.device.BlockBotDevice;
 import pro.piconico.automata.bot.job.BotJob;
@@ -34,10 +30,8 @@ import pro.piconico.automata.item.BotItem;
 import pro.piconico.automata.registry.AutomataBots;
 import pro.piconico.automata.registry.AutomataEntities;
 import pro.piconico.automata.screen.RoboportScreenHandler;
-import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
 public class RoboportBlockEntity extends BlockBotDevice implements ListInventory {
-    public static final int CHUNK_RANGE = 0;
     public static final int BOT_SLOT_COUNT = 3;
 
     @FunctionalInterface
@@ -58,19 +52,6 @@ public class RoboportBlockEntity extends BlockBotDevice implements ListInventory
     }
 
     //#region Bot
-    // TODO: Add check to see if bot has necessary items
-    private Optional<BotEntity> getBotEntityFor(BotJob job) {
-        Set<BotType> capableBotTypes = AutomataBots.getBotTypesFor(job);
-        if (capableBotTypes.isEmpty())
-            return Optional.empty();
-
-        Box searchBox = ChunkBounds.of(new ChunkPos(getPos()), CHUNK_RANGE, world).toBox();
-        List<BotEntity> capableBots = world.getEntitiesByType(TypeFilter.instanceOf(BotEntity.class), searchBox,
-                botEntity -> botEntity.isAlive() && botEntity.getTeamUuid().equals(getTeamUuid()) && botEntity.canDoJob(job));
-
-        return Optional.ofNullable(capableBots.isEmpty() ? null : capableBots.getFirst());
-    }
-
     private Optional<Integer> getBotSlotFor(BotJob job) {
         if (!job.canStart(world))
             return Optional.empty();
@@ -89,17 +70,13 @@ public class RoboportBlockEntity extends BlockBotDevice implements ListInventory
         return Optional.empty();
     }
 
-    public boolean canDoJob(BotJob job) {
-        return getTeamUuid().isPresent() && (getBotEntityFor(job).isPresent() || getBotSlotFor(job).isPresent());
+    public boolean canSpawnBotFor(BotJob job) {
+        return getTeamUuid().isPresent() && getBotSlotFor(job).isPresent();
     }
 
-    public Optional<BotEntity> getOrSpawnBotFor(BotJob job) {
+    public Optional<BotEntity> spawnBotFor(BotJob job) {
         if (getTeamUuid().isEmpty())
             return Optional.empty();
-
-        Optional<BotEntity> botEntity = getBotEntityFor(job);
-        if (botEntity.isPresent())
-            return botEntity;
 
         Optional<Integer> botSlot = getBotSlotFor(job);
         if (botSlot.isEmpty())

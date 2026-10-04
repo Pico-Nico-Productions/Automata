@@ -46,10 +46,10 @@ public class BotDoJobGoal extends Goal {
 
         TickResult tickResult = job.tick(getServerWorld(bot), bot, tick++);
 
-        if (tickResult == TickResult.Pending)
+        if (tickResult == TickResult.PENDING)
             return;
 
         tick = 0;
-        bot.endJob(tickResult == TickResult.Succeeded);
+        bot.endJob(tickResult == TickResult.SUCCEEDED);
     }
 }

@@ -1,22 +1,24 @@
 package pro.piconico.automata.inventory;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Predicate;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import pro.piconico.automata.item.ItemUtils.PredicateItemStack;
 
 public class InventoryUtils {
     public enum SetStackResult {
         NONE, REPLACE, ADD, REMOVE
     }
 
-    public static Optional<Integer> getSlot(Inventory inventory, Predicate<ItemStack> predicate, Set<Integer> blacklist) {
+    //#region Searching
+    public static Optional<Integer> getSlot(Inventory inventory, Predicate<ItemStack> predicate) {
         for (int i = 0; i < inventory.size(); i++) {
-            if (blacklist.contains(i))
-                continue;
-
             if (predicate.test(inventory.getStack(i)))
                 return Optional.of(i);
         }
@@ -24,9 +26,65 @@ public class InventoryUtils {
         return Optional.empty();
     }
 
-    public static Optional<Integer> getSlot(Inventory inventory, Predicate<ItemStack> predicate) {
-        return getSlot(inventory, predicate, Set.of());
+    public static boolean hasStacks(Inventory inventory, List<PredicateItemStack> predicateItemStacks) {
+        Map<Integer, Integer> reservations = new HashMap<>();
+        for (PredicateItemStack predicateItemStack : predicateItemStacks) {
+            int requiredCount = predicateItemStack.count();
+            for (int i = 0; i < inventory.size(); i++) {
+                ItemStack stack = inventory.getStack(i);
+                int simulatedCount = stack.getCount() - reservations.getOrDefault(i, 0);
+
+                if (simulatedCount == 0 || !predicateItemStack.test(stack))
+                    continue;
+
+                int reservationCount = Math.min(requiredCount, simulatedCount);
+                reservations.put(i, reservations.getOrDefault(i, 0) + reservationCount);
+                requiredCount -= reservationCount;
+                if (requiredCount == 0)
+                    break;
+            }
+
+            if (requiredCount > 0)
+                return false;
+        }
+
+        return true;
     }
+
+    public static List<Integer> getCounts(Inventory inventory, List<PredicateItemStack> predicateItemStacks, boolean existing) {
+        List<Integer> stacks = new ArrayList<>();
+
+        Map<Integer, Integer> reservations = new HashMap<>();
+        for (PredicateItemStack predicateItemStack : predicateItemStacks) {
+            int requiredCount = predicateItemStack.count();
+            for (int i = 0; i < inventory.size(); i++) {
+                ItemStack stack = inventory.getStack(i);
+                int simulatedCount = stack.getCount() - reservations.getOrDefault(i, 0);
+
+                if (simulatedCount == 0 || !predicateItemStack.test(stack))
+                    continue;
+
+                int reservationCount = Math.min(requiredCount, simulatedCount);
+                reservations.put(i, reservations.getOrDefault(i, 0) + reservationCount);
+                requiredCount -= reservationCount;
+                if (requiredCount == 0)
+                    break;
+            }
+
+            stacks.add(existing ? predicateItemStack.count() - requiredCount : requiredCount);
+        }
+
+        return stacks;
+    }
+
+    public static List<Integer> getExistingCounts(Inventory inventory, List<PredicateItemStack> predicateItemStacks) {
+        return getCounts(inventory, predicateItemStacks, true);
+    }
+
+    public static List<Integer> getMissingCounts(Inventory inventory, List<PredicateItemStack> predicateItemStacks) {
+        return getCounts(inventory, predicateItemStacks, false);
+    }
+    //#endregion
 
     public static SetStackResult getSetStackResult(Inventory inventory, int slot, ItemStack stack) {
         ItemStack currentStack = inventory.getStack(slot);
@@ -43,6 +101,7 @@ public class InventoryUtils {
         return newCount > currentCount ? SetStackResult.ADD : SetStackResult.REMOVE;
     }
 
+    //#region Adding
     public static int canAdd(Inventory inventory, ItemStack stack) {
         if (stack.isEmpty())
             return 0;
@@ -162,4 +221,5 @@ public class InventoryUtils {
 
         return added;
     }
+    //#endregion
 }
