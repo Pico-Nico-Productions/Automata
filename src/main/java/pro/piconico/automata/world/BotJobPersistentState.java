@@ -16,9 +16,9 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.PersistentState;
-import net.minecraft.world.World;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.bot.device.LogisticStorage;
+import pro.piconico.automata.bot.device.LogisticStorage.SlotStack;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.job.BotJobAssignment;
 import pro.piconico.automata.bot.job.BotJobAssignmentMap;
@@ -26,6 +26,7 @@ import pro.piconico.automata.bot.job.BotJobType;
 import pro.piconico.automata.bot.network.BotNetworkManager;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.entity.BotEntity;
+import pro.piconico.automata.inventory.InventoryUtils.ItemStackMutation;
 import pro.piconico.automata.registry.AutomataPersistentStates;
 import pro.piconico.automata.util.MapUtils;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
@@ -328,11 +329,13 @@ public class BotJobPersistentState extends PersistentState {
         assignJobs(serverWorld, roboport.getTeamUuid().get());
     }
 
-    private static void onInventoryStackChanged(World world, LogisticStorage<?> logisticStorage, Optional<Integer> slot, LogisticStorage.Mutation mutation) {
-        if (!(world instanceof ServerWorld serverWorld) || logisticStorage.getTeamUuid().isEmpty())
+    private static void onInventoryStackChanged(ServerWorld serverWorld, LogisticStorage<?> logisticStorage, List<SlotStack> oldSlotStacks, ItemStackMutation mutation) {
+        Optional<UUID> teamUuid = logisticStorage.getTeamUuid();
+
+        if (teamUuid.isEmpty() || mutation == ItemStackMutation.REMOVE)
             return;
 
-        assignJobs(serverWorld, logisticStorage.getTeamUuid().get());
+        assignJobs(serverWorld, teamUuid.get());
     }
 
     private static void onJobEnded(BotEntity botEntity, BotJob job, boolean completed) {

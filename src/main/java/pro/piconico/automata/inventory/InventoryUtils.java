@@ -1,44 +1,66 @@
 package pro.piconico.automata.inventory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.collection.DefaultedList;
 import pro.piconico.automata.item.ItemUtils.PredicateItemStack;
 
 public class InventoryUtils {
-    public enum SetStackResult {
-        NONE, REPLACE, ADD, REMOVE
+    public enum ItemStackMutation {
+        ADD, REMOVE, REPLACE
+    }
+
+    private static void validateReservations(Inventory inventory, List<Integer> reservations) {
+        if (inventory.size() != reservations.size())
+            throw new IllegalArgumentException("reservations must be the same length as its inventory");
     }
 
     //#region Searching
-    public static Optional<Integer> getSlot(Inventory inventory, Predicate<ItemStack> predicate) {
+    public static Optional<Integer> getSlot(Inventory inventory, List<Integer> reservations, PredicateItemStack predicateItemStack) {
+        validateReservations(inventory, reservations);
+
         for (int i = 0; i < inventory.size(); i++) {
-            if (predicate.test(inventory.getStack(i)))
+            ItemStack stack = inventory.getStack(i).copyWithCount(inventory.getStack(i).getCount() - reservations.get(i));
+
+            if (stack.getCount() >= predicateItemStack.count() && predicateItemStack.test(stack))
                 return Optional.of(i);
         }
 
         return Optional.empty();
     }
 
-    public static boolean hasStacks(Inventory inventory, List<PredicateItemStack> predicateItemStacks) {
-        Map<Integer, Integer> reservations = new HashMap<>();
+    public static Optional<Integer> getSlot(Inventory inventory, PredicateItemStack predicateItemStack) {
+        return getSlot(inventory, DefaultedList.ofSize(inventory.size(), 0), predicateItemStack);
+    }
+
+    public static Optional<Integer> getSlot(Inventory inventory, List<Integer> reservations, Predicate<ItemStack> itemStackPredicate) {
+        return getSlot(inventory, reservations, new PredicateItemStack(itemStackPredicate));
+    }
+
+    public static Optional<Integer> getSlot(Inventory inventory, Predicate<ItemStack> itemStackPredicate) {
+        return getSlot(inventory, new PredicateItemStack(itemStackPredicate));
+    }
+
+    public static boolean hasStacks(Inventory inventory, List<Integer> reservations, List<PredicateItemStack> predicateItemStacks) {
+        validateReservations(inventory, reservations);
+
+        Integer[] simulatedReservations = reservations.toArray(new Integer[reservations.size()]);
         for (PredicateItemStack predicateItemStack : predicateItemStacks) {
             int requiredCount = predicateItemStack.count();
             for (int i = 0; i < inventory.size(); i++) {
                 ItemStack stack = inventory.getStack(i);
-                int simulatedCount = stack.getCount() - reservations.getOrDefault(i, 0);
+                int simulatedCount = stack.getCount() - simulatedReservations[i];
 
                 if (simulatedCount == 0 || !predicateItemStack.test(stack))
                     continue;
 
                 int reservationCount = Math.min(requiredCount, simulatedCount);
-                reservations.put(i, reservations.getOrDefault(i, 0) + reservationCount);
+                simulatedReservations[i] += reservationCount;
                 requiredCount -= reservationCount;
                 if (requiredCount == 0)
                     break;
@@ -51,54 +73,57 @@ public class InventoryUtils {
         return true;
     }
 
-    public static List<Integer> getCounts(Inventory inventory, List<PredicateItemStack> predicateItemStacks, boolean existing) {
-        List<Integer> stacks = new ArrayList<>();
+    public static boolean hasStacks(Inventory inventory, List<PredicateItemStack> predicateItemStacks) {
+        return hasStacks(inventory, DefaultedList.ofSize(inventory.size(), 0), predicateItemStacks);
+    }
 
-        Map<Integer, Integer> reservations = new HashMap<>();
+    public static List<PredicateItemStack> getStacks(Inventory inventory, List<Integer> reservations, List<PredicateItemStack> predicateItemStacks,
+            boolean existing) {
+        validateReservations(inventory, reservations);
+
+        List<PredicateItemStack> stacks = new ArrayList<>();
+
+        Integer[] simulatedReservations = reservations.toArray(new Integer[reservations.size()]);
         for (PredicateItemStack predicateItemStack : predicateItemStacks) {
-            int requiredCount = predicateItemStack.count();
+            int missingCount = predicateItemStack.count();
             for (int i = 0; i < inventory.size(); i++) {
                 ItemStack stack = inventory.getStack(i);
-                int simulatedCount = stack.getCount() - reservations.getOrDefault(i, 0);
+                int simulatedCount = stack.getCount() - simulatedReservations[i];
 
                 if (simulatedCount == 0 || !predicateItemStack.test(stack))
                     continue;
 
-                int reservationCount = Math.min(requiredCount, simulatedCount);
-                reservations.put(i, reservations.getOrDefault(i, 0) + reservationCount);
-                requiredCount -= reservationCount;
-                if (requiredCount == 0)
+                int reservationCount = Math.min(missingCount, simulatedCount);
+                simulatedReservations[i] += reservationCount;
+                missingCount -= reservationCount;
+                if (missingCount == 0)
                     break;
             }
 
-            stacks.add(existing ? predicateItemStack.count() - requiredCount : requiredCount);
+            stacks.add(predicateItemStack.copyWithCount(existing ? predicateItemStack.count() - missingCount : missingCount));
         }
 
         return stacks;
     }
 
-    public static List<Integer> getExistingCounts(Inventory inventory, List<PredicateItemStack> predicateItemStacks) {
-        return getCounts(inventory, predicateItemStacks, true);
-    }
-
-    public static List<Integer> getMissingCounts(Inventory inventory, List<PredicateItemStack> predicateItemStacks) {
-        return getCounts(inventory, predicateItemStacks, false);
+    public static List<PredicateItemStack> getStacks(Inventory inventory, List<PredicateItemStack> predicateItemStacks, boolean existing) {
+        return getStacks(inventory, DefaultedList.ofSize(inventory.size(), 0), predicateItemStacks, existing);
     }
     //#endregion
 
-    public static SetStackResult getSetStackResult(Inventory inventory, int slot, ItemStack stack) {
+    public static Optional<ItemStackMutation> getSetStackMutation(Inventory inventory, int slot, ItemStack stack) {
         ItemStack currentStack = inventory.getStack(slot);
         boolean itemsAndComponentsAreEqual = ItemStack.areItemsAndComponentsEqual(currentStack, stack);
         int currentCount = currentStack.getCount();
         int newCount = stack.getCount();
 
         if (itemsAndComponentsAreEqual && currentCount == newCount)
-            return SetStackResult.NONE;
+            return Optional.empty();
 
         if (!itemsAndComponentsAreEqual && currentCount != 0 && newCount != 0)
-            return SetStackResult.REPLACE;
+            return Optional.of(ItemStackMutation.REPLACE);
 
-        return newCount > currentCount ? SetStackResult.ADD : SetStackResult.REMOVE;
+        return Optional.of(newCount > currentCount ? ItemStackMutation.ADD : ItemStackMutation.REMOVE);
     }
 
     //#region Adding

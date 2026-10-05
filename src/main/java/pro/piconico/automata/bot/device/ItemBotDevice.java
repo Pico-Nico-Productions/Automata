@@ -13,6 +13,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 import pro.piconico.automata.component.TeamComponent;
 import pro.piconico.automata.network.message.BotDeviceTeamChangeMessage;
 import pro.piconico.automata.registry.AutomataBotDevices;
@@ -42,6 +43,10 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
 
         this.player = player;
         this.slot = slot;
+    }
+
+    public BlockPos getPos() {
+        return player.getBlockPos();
     }
 
     private ItemStack getStack() {

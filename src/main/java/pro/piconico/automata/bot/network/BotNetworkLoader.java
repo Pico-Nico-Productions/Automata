@@ -17,7 +17,7 @@ import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.bot.device.BotDevice;
 import pro.piconico.automata.bot.device.LogisticStorage;
 
-class NetworkLoader {
+class BotNetworkLoader {
     private final Set<ChunkPos> requested = new HashSet<>();
     private final Set<ChunkPos> loaded = new HashSet<>();
     private final Set<BlockPos> roboports = new HashSet<>();
@@ -26,7 +26,7 @@ class NetworkLoader {
     public final ServerWorld serverWorld;
     public final UUID teamUuid;
 
-    public NetworkLoader(ServerWorld serverWorld, UUID teamUuid, WorldChunk chunk) {
+    public BotNetworkLoader(ServerWorld serverWorld, UUID teamUuid, WorldChunk chunk) {
         this.serverWorld = serverWorld;
         this.teamUuid = teamUuid;
         load(chunk);

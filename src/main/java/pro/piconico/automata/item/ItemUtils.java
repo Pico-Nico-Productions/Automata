@@ -9,6 +9,10 @@ public class ItemUtils {
             this(predicate, 1);
         }
 
+        public PredicateItemStack copyWithCount(int count) {
+            return new PredicateItemStack(predicate, count);
+        }
+
         public boolean test(ItemStack stack) {
             return predicate.test(stack);
         }

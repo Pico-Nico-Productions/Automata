@@ -1,5 +1,7 @@
 package pro.piconico.automata.entity.ai.goal;
 
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 import net.minecraft.util.math.BlockPos;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
@@ -14,7 +16,12 @@ public class BotReturnToRoboportGoal extends GoToNearestTargetGoal<BotEntity, Ro
 
     @Override
     protected Stream<RoboportBlockEntity> streamTargets() {
-        return BotNetworkManager.streamRoboportsNear(getServerWorld(entity), entity.getTeamUuid(), entity.getBlockPos());
+        Optional<UUID> teamUuid = entity.getTeamUuid();
+
+        if (teamUuid.isEmpty())
+            return Stream.empty();
+
+        return BotNetworkManager.streamRoboportsNear(getServerWorld(entity), teamUuid.get(), entity.getBlockPos());
     }
 
     @Override

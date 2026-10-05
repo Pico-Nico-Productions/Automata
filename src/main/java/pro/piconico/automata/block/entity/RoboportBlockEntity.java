@@ -25,7 +25,7 @@ import pro.piconico.automata.bot.device.BlockBotDevice;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.inventory.InventoryUtils;
-import pro.piconico.automata.inventory.InventoryUtils.SetStackResult;
+import pro.piconico.automata.inventory.InventoryUtils.ItemStackMutation;
 import pro.piconico.automata.item.BotItem;
 import pro.piconico.automata.registry.AutomataBots;
 import pro.piconico.automata.registry.AutomataEntities;
@@ -150,15 +150,15 @@ public class RoboportBlockEntity extends BlockBotDevice implements ListInventory
 
     @Override
     public void setStack(int slot, ItemStack stack) {
-        SetStackResult setStackResult = InventoryUtils.getSetStackResult(this, slot, stack);
+        Optional<ItemStackMutation> mutation = InventoryUtils.getSetStackMutation(this, slot, stack);
 
-        if (setStackResult == SetStackResult.NONE)
+        if (mutation.isEmpty())
             return;
 
         inventory.set(slot, stack);
         markDirty();
 
-        if (setStackResult != SetStackResult.ADD)
+        if (mutation.get() == ItemStackMutation.REMOVE)
             return;
 
         BOT_ADDED.invoker().onUpdated(this);

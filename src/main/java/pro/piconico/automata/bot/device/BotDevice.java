@@ -8,6 +8,7 @@ import io.wispforest.endec.Endec;
 import io.wispforest.owo.serialization.CodecUtils;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import pro.piconico.automata.registry.AutomataRegistries;
 
@@ -34,6 +35,8 @@ public interface BotDevice<T> extends ExtendedScreenHandlerFactory<T> {
     public boolean equals(Object obj);
 
     public Id getId();
+
+    public BlockPos getPos();
 
     public Optional<UUID> getTeamUuid();
 

@@ -1,43 +1,58 @@
 package pro.piconico.automata.bot.network;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
+import java.util.Map.Entry;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.TypeFilter;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
+import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.bot.BotType;
 import pro.piconico.automata.bot.device.LogisticStorage;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.entity.BotEntity;
+import pro.piconico.automata.inventory.InventoryUtils;
+import pro.piconico.automata.item.ItemUtils.PredicateItemStack;
 import pro.piconico.automata.registry.AutomataBots;
-import pro.piconico.automata.registry.AutomataEntities;
+import pro.piconico.automata.util.MapUtils;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
-// TODO: Add item reservation so multiple bots don't aim for the same item
 public class ServerBotNetwork extends BotNetwork {
     final ServerWorld serverWorld;
+    private final Map<BlockPos, Map<Integer, Integer>> reservations;
+    private final Map<UUID, Map<BlockPos, Map<Integer, Integer>>> reservationLookup;
 
     ServerBotNetwork(Collection<BlockPos> roboports, Collection<BlockPos> logisticStorages, UUID teamUuid, ServerWorld serverWorld) {
         super(roboports, logisticStorages, teamUuid);
         this.serverWorld = serverWorld;
+        reservations = new HashMap<>();
+        reservationLookup = new HashMap<>();
     }
 
     ServerBotNetwork(ServerBotNetwork original) {
         super(original);
-        this.serverWorld = original.serverWorld;
+        serverWorld = original.serverWorld;
+        reservations = original.reservations.entrySet().stream().collect(Collectors.toMap(Entry::getKey, entry -> Map.copyOf(entry.getValue())));
+        reservationLookup = original.reservationLookup.entrySet().stream().collect(Collectors.toMap(Entry::getKey,
+                entry -> entry.getValue().entrySet().stream().collect(Collectors.toMap(Entry::getKey, e -> Map.copyOf(e.getValue())))));
     }
 
     @Override
@@ -83,6 +98,7 @@ public class ServerBotNetwork extends BotNetwork {
             }
 
             ServerBotNetwork serverNetwork = new ServerBotNetwork(subnetworkRoboports, subnetworkLogisticStorages, teamUuid, serverWorld);
+
             if (equals(serverNetwork))
                 return Set.of(this);
 
@@ -93,24 +109,7 @@ public class ServerBotNetwork extends BotNetwork {
         return subnetworks;
     }
 
-    private static LogisticStorage<?> getLogisticStorage(ServerWorld serverWorld, BlockPos pos) {
-        BlockEntity blockEntity = serverWorld.getBlockEntity(pos);
-
-        if (blockEntity == null || !(blockEntity instanceof LogisticStorage<?> logisticStorage))
-            throw new IllegalStateException(BotNetworkManager.class.getSimpleName() + " had an invalid logistic storage " + BlockPos.class.getSimpleName());
-
-        return logisticStorage;
-    }
-
-    boolean containsItemStack(Predicate<ItemStack> predicate) {
-        for (BlockPos pos : getLogisticStorages()) {
-            if (getLogisticStorage(serverWorld, pos).containsAny(predicate))
-                return true;
-        }
-
-        return false;
-    }
-
+    //#region Roboports
     boolean addRoboport(BlockPos pos) {
         ChunkPos chunkPos = new ChunkPos(pos);
         Set<BlockPos> roboportsInChunk = roboportMap.computeIfAbsent(chunkPos, chunk -> new HashSet<>());
@@ -155,6 +154,17 @@ public class ServerBotNetwork extends BotNetwork {
 
         return new RemovedObjects(Optional.of(pos), Optional.of(chunkPos), subnetworks);
     }
+    //#endregion
+
+    //#region Logistic Storages
+    LogisticStorage<?> getLogisticStorage(BlockPos pos) {
+        BlockEntity blockEntity = serverWorld.getBlockEntity(pos);
+
+        if (blockEntity == null || !(blockEntity instanceof LogisticStorage<?> logisticStorage))
+            throw new IllegalStateException(BotNetworkManager.class.getSimpleName() + " had an invalid logistic storage " + BlockPos.class.getSimpleName());
+
+        return logisticStorage;
+    }
 
     boolean addLogisticStorage(BlockPos pos) {
         ChunkPos chunkPos = new ChunkPos(pos);
@@ -175,13 +185,117 @@ public class ServerBotNetwork extends BotNetwork {
             return false;
 
         logisticStoragesInChunk.remove(pos);
-        if (!logisticStoragesInChunk.isEmpty())
-            return true;
+        if (logisticStoragesInChunk.isEmpty()) {
+            logisticStorageMap.remove(chunkPos);
+        }
+        reservations.remove(pos);
+        Iterator<Entry<UUID, Map<BlockPos, Map<Integer, Integer>>>> reservationIterator = reservationLookup.entrySet().iterator();
+        while (reservationIterator.hasNext()) {
+            Entry<UUID, Map<BlockPos, Map<Integer, Integer>>> entry = reservationIterator.next();
 
-        logisticStorageMap.remove(chunkPos);
+            if (!entry.getValue().containsKey(pos))
+                continue;
+
+            if (entry.getValue().size() == 1) {
+                reservationIterator.remove();
+                continue;
+            }
+
+            entry.getValue().remove(pos);
+        }
 
         return true;
     }
+    //#endregion
+
+    //#region Reservations
+    private List<Integer> flattenReservations(LogisticStorage<?> storage) {
+        BlockPos pos = storage.getPos();
+
+        if (!reservations.containsKey(pos))
+            return new ArrayList<>(Collections.nCopies(storage.size(), 0));
+
+        Map<Integer, Integer> storageReservations = reservations.get(pos);
+        List<Integer> flattenedReservations = IntStream.range(0, storage.size()).map(i -> storageReservations.getOrDefault(i, 0)).boxed().toList();
+
+        return flattenedReservations;
+    }
+
+    public boolean hasStacks(List<PredicateItemStack> predicateItemStacks) {
+        if (predicateItemStacks.isEmpty())
+            return true;
+
+        for (BlockPos pos : getLogisticStorages()) {
+            LogisticStorage<?> storage = getLogisticStorage(pos);
+            List<Integer> storageReservations = flattenReservations(storage);
+            predicateItemStacks = InventoryUtils.getStacks(storage, storageReservations, predicateItemStacks, false).stream()
+                    .filter(stack -> stack.count() != 0).toList();
+            if (predicateItemStacks.isEmpty())
+                return true;
+        }
+
+        return false;
+    }
+
+    Map<BlockPos, Map<Integer, Integer>> getReservations(UUID entityUuid) {
+        if (!reservationLookup.containsKey(entityUuid))
+            return Map.of();
+
+        return Collections.unmodifiableMap(reservationLookup.get(entityUuid));
+    }
+
+    private void reserve(UUID entityUuid, List<PredicateItemStack> predicateItemStacks) {
+        if (predicateItemStacks.isEmpty())
+            return;
+
+        List<PredicateItemStack> unreservedPredicateItemStacks = new ArrayList<>(predicateItemStacks);
+        for (BlockPos pos : getLogisticStorages()) {
+
+            LogisticStorage<?> storage = getLogisticStorage(pos);
+            for (int i = 0; i < unreservedPredicateItemStacks.size(); i++) {
+                while (unreservedPredicateItemStacks.get(i).count() > 0) {
+
+                    List<Integer> flatReservations = flattenReservations(storage);
+                    PredicateItemStack unreservedPredicateItemStack = unreservedPredicateItemStacks.get(i);
+                    Optional<Integer> slot = InventoryUtils.getSlot(storage, flatReservations, unreservedPredicateItemStack.predicate());
+
+                    if (slot.isEmpty())
+                        break;
+
+                    int availableCount = storage.getStack(slot.get()).getCount() - flatReservations.get(slot.get());
+                    int reserveCount = Math.min(unreservedPredicateItemStack.count(), availableCount);
+                    unreservedPredicateItemStacks.set(i, unreservedPredicateItemStack.copyWithCount(unreservedPredicateItemStack.count() - reserveCount));
+                    BiFunction<Object, Integer, Integer> incrementReservationCount = (ignored, count) -> (count != null ? count : 0) + reserveCount;
+                    MapUtils.computeNested(reservations, incrementReservationCount, pos, slot.get());
+                    MapUtils.computeNested(reservationLookup, incrementReservationCount, entityUuid, pos, slot.get());
+                }
+            }
+            unreservedPredicateItemStacks.removeIf(predicateItemStack -> predicateItemStack.count() == 0);
+            if (unreservedPredicateItemStacks.isEmpty())
+                break;
+        }
+    }
+
+    private void unreserve(Map<BlockPos, Map<Integer, Integer>> reservations, BlockPos pos, int slot, int count) {
+        MapUtils.<Integer>getNested(reservations, pos, slot).ifPresent(reservedCount -> {
+            if (count >= reservedCount) {
+                MapUtils.removeNested(reservations, pos, slot);
+            }
+            else {
+                MapUtils.computeNested(reservations, (ignored, ignored2) -> reservedCount - count, pos, slot);
+            }
+        });
+    }
+
+    void unreserve(UUID entityUuid, BlockPos pos, int slot, int count) {
+        unreserve(reservations, pos, slot, count);
+        Map<BlockPos, Map<Integer, Integer>> blockReservations = reservationLookup.get(entityUuid);
+        unreserve(blockReservations, pos, slot, count);
+        if (blockReservations.isEmpty()) {
+            reservationLookup.remove(entityUuid);
+        }
+    }
+    //#endregion
 
     Optional<BotEntity> getOrSpawnBotFor(BotJob job) {
         Set<BotType> capableBotTypes = AutomataBots.getBotTypesFor(job);
@@ -199,14 +313,19 @@ public class ServerBotNetwork extends BotNetwork {
             return Optional.of(capableBots.getFirst());
         }
 
-        Stream<BlockPos> capableRoboports = roboportMap.values().stream().flatMap(roboportsInChunk -> roboportsInChunk.stream()) //
-                .filter(roboportPos -> serverWorld.getBlockEntity(roboportPos, AutomataEntities.ROBOPORT).map(roboport -> roboport.canSpawnBotFor(job))
-                        .orElse(false));
-        Optional<BlockPos> closestCapableRoboport = capableRoboports.min(Comparator.comparingDouble(pos -> pos.getSquaredDistance(job.pos())));
+        if (!hasStacks(job.getRequiredStacks(serverWorld)))
+            return Optional.empty();
+
+        Optional<RoboportBlockEntity> closestCapableRoboport = roboportMap.values().stream().flatMap(roboportsInChunk -> roboportsInChunk.stream()) //
+                .map(roboportPos -> (RoboportBlockEntity)serverWorld.getBlockEntity(roboportPos)).filter(roboport -> roboport.canSpawnBotFor(job)) //
+                .min(Comparator.comparingDouble(port -> port.getPos().getSquaredDistance(job.pos())));
 
         if (closestCapableRoboport.isEmpty())
             return Optional.empty();
 
-        return serverWorld.getBlockEntity(closestCapableRoboport.get(), AutomataEntities.ROBOPORT).get().spawnBotFor(job);
+        Optional<BotEntity> bot = closestCapableRoboport.get().spawnBotFor(job);
+        reserve(bot.get().getUuid(), job.getPreferredStacks(serverWorld));
+
+        return bot;
     }
 }

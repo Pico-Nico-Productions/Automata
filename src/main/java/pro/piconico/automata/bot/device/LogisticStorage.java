@@ -1,39 +1,33 @@
 package pro.piconico.automata.bot.device;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.ListInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import pro.piconico.automata.inventory.InventoryUtils;
-import pro.piconico.automata.inventory.InventoryUtils.SetStackResult;
+import pro.piconico.automata.inventory.InventoryUtils.ItemStackMutation;
 
 public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
-    public enum Mutation {
-        ADD, REMOVE, REPLACE;
-
-        private static Optional<Mutation> from(SetStackResult setStackResult) {
-            return Optional.ofNullable(switch (setStackResult) {
-                case NONE -> null;
-                case REPLACE -> REPLACE;
-                case ADD -> ADD;
-                case REMOVE -> REMOVE;
-            });
-        }
+    public record SlotStack(int slot, ItemStack stack) {
     }
 
     @FunctionalInterface
     public interface MutateInventoryStack {
-        void onChanged(World world, LogisticStorage<?> logisticStorage, Optional<Integer> slot, Mutation mutation);
+        void onChanged(ServerWorld serverWorld, LogisticStorage<?> logisticStorage, List<SlotStack> oldSlotStacks, ItemStackMutation mutation);
     }
 
     public static final Event<MutateInventoryStack> INVENTORY_STACK_CHANGED = EventFactory.createArrayBacked(MutateInventoryStack.class,
-            callbacks -> (world, logisticStorage, slot, mutation) -> {
+            callbacks -> (serverWorld, logisticStorage, slotStacks, mutation) -> {
                 for (MutateInventoryStack callback : callbacks) {
-                    callback.onChanged(world, logisticStorage, slot, mutation);
+                    callback.onChanged(serverWorld, logisticStorage, slotStacks, mutation);
                 }
             });
 
@@ -46,37 +40,57 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
         if (getFilledSlotCount() == 0)
             return;
 
-        this.getHeldStacks().clear();
+        DefaultedList<ItemStack> heldStacks = getHeldStacks();
+        List<SlotStack> map = IntStream.range(0, heldStacks.size()).filter(i -> !heldStacks.get(i).isEmpty()).boxed() //
+                .map(i -> new SlotStack(i, heldStacks.get(i).copy())).toList();
+
+        getHeldStacks().clear();
         markDirty();
-        INVENTORY_STACK_CHANGED.invoker().onChanged(getWorld(), this, Optional.empty(), Mutation.REMOVE);
+
+        if (!(getWorld() instanceof ServerWorld serverWorld))
+            return;
+
+        INVENTORY_STACK_CHANGED.invoker().onChanged(serverWorld, this, map, ItemStackMutation.REMOVE);
     }
 
     @Override
     default ItemStack removeStack(int slot, int amount) {
-        ItemStack itemStack = Inventories.splitStack(this.getHeldStacks(), slot, amount);
+        DefaultedList<ItemStack> heldStacks = getHeldStacks();
+        ItemStack oldStack = heldStacks.get(slot).copy();
+        ItemStack itemStack = Inventories.splitStack(heldStacks, slot, amount);
 
-        if (!itemStack.isEmpty()) {
-            this.markDirty();
-            INVENTORY_STACK_CHANGED.invoker().onChanged(getWorld(), this, Optional.of(slot), Mutation.REMOVE);
-        }
+        if (itemStack.isEmpty())
+            return ItemStack.EMPTY;
+
+        this.markDirty();
+
+        if (!(getWorld() instanceof ServerWorld serverWorld))
+            return itemStack;
+
+        INVENTORY_STACK_CHANGED.invoker().onChanged(serverWorld, this, List.of(new SlotStack(slot, oldStack)), ItemStackMutation.REMOVE);
 
         return itemStack;
     }
 
     @Override
     default ItemStack removeStack(int slot) {
-        return removeStack(slot, this.getMaxCountPerStack());
+        return removeStack(slot, getMaxCount(getStack(slot)));
     }
 
     @Override
     default void setStack(int slot, ItemStack stack) {
-        Optional<Mutation> mutation = Mutation.from(InventoryUtils.getSetStackResult(this, slot, stack));
+        Optional<ItemStackMutation> mutation = InventoryUtils.getSetStackMutation(this, slot, stack);
 
         if (mutation.isEmpty())
             return;
 
+        ItemStack oldStack = getHeldStacks().get(slot).copy();
         setStackNoMarkDirty(slot, stack);
         this.markDirty();
-        INVENTORY_STACK_CHANGED.invoker().onChanged(getWorld(), this, Optional.of(slot), mutation.get());
+
+        if (!(getWorld() instanceof ServerWorld serverWorld))
+            return;
+
+        INVENTORY_STACK_CHANGED.invoker().onChanged(serverWorld, this, List.of(new SlotStack(slot, oldStack)), mutation.get());
     }
 }

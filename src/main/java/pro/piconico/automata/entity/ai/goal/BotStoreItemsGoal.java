@@ -1,6 +1,7 @@
 package pro.piconico.automata.entity.ai.goal;
 
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 import net.minecraft.util.math.BlockPos;
 import pro.piconico.automata.bot.device.LogisticStorage;
@@ -15,7 +16,12 @@ public class BotStoreItemsGoal extends GoToNearestTargetGoal<BotEntity, Logistic
 
     @Override
     protected Stream<LogisticStorage<?>> streamTargets() {
-        return BotNetworkManager.streamLogisticStoragesNear(getServerWorld(entity), entity.getTeamUuid(), entity.getBlockPos());
+        Optional<UUID> teamUuid = entity.getTeamUuid();
+
+        if (teamUuid.isEmpty())
+            return Stream.empty();
+
+        return BotNetworkManager.streamLogisticStoragesNear(getServerWorld(entity), teamUuid.get(), entity.getBlockPos());
     }
 
     @Override

@@ -11,21 +11,20 @@ import java.util.function.Function;
 public class MapUtils {
     @SuppressWarnings("unchecked")
     public static <ValueT> Optional<ValueT> getNested(Map<?, ?> map, Object... keys) {
-        if (map == null || keys == null || keys.length == 0) {
+        if (map == null || keys == null || keys.length == 0)
             throw new IllegalArgumentException();
-        }
 
         Object current = map;
         for (int i = 0; i < keys.length; i++) {
-            if (!(current instanceof Map)) {
+            if (!(current instanceof Map))
                 throw new IllegalArgumentException();
-            }
+
             Map<?, ?> currentMap = (Map<?, ?>)current;
             Object key = keys[i];
 
-            if (!currentMap.containsKey(key)) {
+            if (!currentMap.containsKey(key))
                 return Optional.empty();
-            }
+
             current = currentMap.get(key);
         }
 
@@ -33,24 +32,68 @@ public class MapUtils {
     }
 
     @SuppressWarnings("unchecked")
-    public static <ValueT> Optional<ValueT> removeNested(Map<?, ?> map, Object... keys) {
-        if (map == null || keys == null || keys.length == 0) {
+    public static <ValueT> ValueT computeNested(Map<?, ?> map, BiFunction<Object, ? super ValueT, ? extends ValueT> remappingFunction, Object... keys) {
+        if (map == null || remappingFunction == null || keys == null || keys.length == 0)
             throw new IllegalArgumentException();
+
+        Map<?, ?>[] maps = new Map[keys.length];
+        Object current = map;
+
+        for (int i = 0; i < keys.length - 1; i++) {
+            if (!(current instanceof Map))
+                throw new IllegalArgumentException();
+
+            Map<Object, Object> currentMap = (Map<Object, Object>)current;
+            Object key = keys[i];
+
+            maps[i] = currentMap;
+            current = currentMap.computeIfAbsent(key, ignored -> new HashMap<>());
         }
+
+        int lastIndex = keys.length - 1;
+
+        if (!(current instanceof Map))
+            throw new IllegalArgumentException();
+
+        Map<Object, Object> deepestMap = (Map<Object, Object>)current;
+        maps[lastIndex] = deepestMap;
+        Object lastKey = keys[lastIndex];
+        ValueT newValue = remappingFunction.apply(lastKey, (ValueT)deepestMap.get(lastKey));
+
+        if (newValue == null) {
+            deepestMap.remove(lastKey);
+            for (int i = lastIndex; i > 0; i--) {
+                if (!maps[i].isEmpty())
+                    break;
+
+                Map<Object, Object> parentMap = (Map<Object, Object>)maps[i - 1];
+                parentMap.remove(keys[i - 1]);
+            }
+
+            return null;
+        }
+
+        deepestMap.put(lastKey, newValue);
+        return newValue;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <ValueT> Optional<ValueT> removeNested(Map<?, ?> map, Object... keys) {
+        if (map == null || keys == null || keys.length == 0)
+            throw new IllegalArgumentException();
 
         Map<?, ?>[] maps = new Map[keys.length];
 
         Object current = map;
         for (int i = 0; i < keys.length; i++) {
-            if (!(current instanceof Map)) {
+            if (!(current instanceof Map))
                 throw new IllegalArgumentException();
-            }
+
             Map<?, ?> currentMap = (Map<?, ?>)current;
             Object key = keys[i];
 
-            if (!currentMap.containsKey(key)) {
+            if (!currentMap.containsKey(key))
                 return Optional.empty();
-            }
 
             maps[i] = currentMap;
             current = currentMap.get(key);
@@ -61,13 +104,11 @@ public class MapUtils {
         Object targetValue = deepestMap.remove(keys[lastIndex]);
 
         for (int i = lastIndex; i > 0; i--) {
-            if (maps[i].isEmpty()) {
-                Map<Object, Object> parentMap = (Map<Object, Object>)maps[i - 1];
-                parentMap.remove(keys[i - 1]);
-            }
-            else {
+            if (!maps[i].isEmpty())
                 break;
-            }
+
+            Map<Object, Object> parentMap = (Map<Object, Object>)maps[i - 1];
+            parentMap.remove(keys[i - 1]);
         }
 
         return Optional.ofNullable((ValueT)targetValue);
@@ -88,6 +129,7 @@ public class MapUtils {
                 targetMap.put(entry.getKey(), Optional.of(innerTransformer.apply(rawValue)));
             }
         }
+
         return targetMap;
     }
 
@@ -106,14 +148,14 @@ public class MapUtils {
                 targetMap.put(entry.getKey(), innerTransformer.apply(optionalValue.get()));
             }
         }
+
         return targetMap;
     }
 
     public static <KeyT, ValueT> Map<KeyT, ValueT> computeMapDelta(Map<KeyT, ValueT> oldMap, Map<KeyT, ValueT> newMap,
             BiFunction<ValueT, ValueT, ValueT> mergeFunction) {
-        if (Objects.equals(oldMap, newMap)) {
+        if (Objects.equals(oldMap, newMap))
             return null;
-        }
 
         Map<KeyT, ValueT> deltaMap = new HashMap<>(newMap);
 

@@ -1,10 +1,11 @@
 package pro.piconico.automata.entity.ai.goal;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.Map.Entry;
 import java.util.stream.Stream;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import pro.piconico.automata.bot.device.LogisticStorage;
@@ -21,39 +22,17 @@ public class BotGrabJobItemsGoal extends GoToNearestTargetGoal<BotEntity, Logist
 
     @Override
     protected Stream<LogisticStorage<?>> streamTargets() {
-        return BotNetworkManager.streamLogisticStoragesNear(getServerWorld(entity), entity.getTeamUuid(), entity.getBlockPos());
-    }
+        Optional<UUID> teamUuid = entity.getTeamUuid();
 
-    private List<PredicateItemStack> getMissingStackPredicates(boolean requiredOnly) {
-        BotJob job = entity.getJob().get();
-        World world = entity.getEntityWorld();
-        List<PredicateItemStack> stacks = requiredOnly ? job.getRequiredStacks(world) : job.getPreferredStacks(world);
+        if (teamUuid.isEmpty())
+            return Stream.empty();
 
-        if (stacks.isEmpty())
-            return List.of();
-
-        List<Integer> missingCounts = InventoryUtils.getMissingCounts(entity, stacks);
-        List<PredicateItemStack> missingStacks = new ArrayList<>();
-
-        for (int i = 0; i < stacks.size(); i++) {
-            int count = missingCounts.get(i);
-
-            if (count == 0)
-                continue;
-
-            missingStacks.add(new PredicateItemStack(stacks.get(i).predicate(), missingCounts.get(i)));
-        }
-
-        return missingStacks;
-    }
-
-    private List<PredicateItemStack> getStackPredicatesToGrab() {
-        return getMissingStackPredicates(false);
+        return BotNetworkManager.streamReservationLogisticStorages(getServerWorld(entity), entity.getTeamUuid().get(), entity.getBlockPos(), entity.getUuid());
     }
 
     @Override
     protected boolean isValidTarget(LogisticStorage<?> target) {
-        return getStackPredicatesToGrab().stream().anyMatch(predicate -> target.containsAny(predicate.predicate()));
+        return true;
     }
 
     @Override
@@ -61,12 +40,23 @@ public class BotGrabJobItemsGoal extends GoToNearestTargetGoal<BotEntity, Logist
         return target.getPos();
     }
 
+    private boolean hasMissingPredicateStackItems() {
+        BotJob job = entity.getJob().get();
+        World world = entity.getEntityWorld();
+        List<PredicateItemStack> stacks = job.getRequiredStacks(world);
+
+        if (stacks.isEmpty())
+            return false;
+
+        return InventoryUtils.getStacks(entity, stacks, false).stream().anyMatch(predicateItemStack -> predicateItemStack.count() != 0);
+    }
+
     @Override
     public boolean canStart() {
         if (!entity.hasEmptyStack() || entity.getJob().isEmpty())
             return false;
 
-        return super.canStart() || !getMissingStackPredicates(true).isEmpty();
+        return super.canStart() || hasMissingPredicateStackItems();
     }
 
     @Override
@@ -81,16 +71,19 @@ public class BotGrabJobItemsGoal extends GoToNearestTargetGoal<BotEntity, Logist
         if (!reachedDesiredDistance())
             return;
 
-        for (PredicateItemStack predicate : getStackPredicatesToGrab()) {
-            if (!entity.hasEmptyStack())
-                break;
+        Map<Integer, Integer> slotReservations = BotNetworkManager
+                .getReservations(getServerWorld(entity), entity.getTeamUuid().get(), entity.getBlockPos(), entity.getUuid()).getOrDefault(target.get().getPos(), null);
 
-            Optional<Integer> slot = InventoryUtils.getSlot(target.get(), predicate.predicate());
-            if (slot.isEmpty())
-                continue;
+        if (slotReservations == null) {
+            target = Optional.empty();
+            return;
+        }
 
-            ItemStack stack = target.get().removeStack(slot.get(), 1);
-            InventoryUtils.add(entity, stack);
+        for (Entry<Integer,Integer> slotCount : slotReservations.entrySet()) {
+            LogisticStorage<?> storage = target.get();
+            int slot = slotCount.getKey(), count = slotCount.getValue();
+            InventoryUtils.add(entity, storage.removeStack(slot, count));
+            BotNetworkManager.unreserve(getServerWorld(entity), entity.getTeamUuid().get(), storage.getPos(), slot, count, entity.getUuid());
         }
         target = Optional.empty();
     }

@@ -21,6 +21,7 @@ import pro.piconico.automata.inventory.InventoryUtils;
 import pro.piconico.automata.item.ItemUtils.PredicateItemStack;
 import pro.piconico.automata.registry.AutomataBotJobs;
 
+// TODO: Add silk touch check to predicate
 public record DeconstructionBotJob(BlockPos pos) implements BotJob {
     public static final MapCodec<DeconstructionBotJob> CODEC = RecordCodecBuilder
             .mapCodec(instance -> instance.group(BlockPos.CODEC.fieldOf("pos").forGetter(job -> job.pos)).apply(instance, DeconstructionBotJob::new));
@@ -31,6 +32,10 @@ public record DeconstructionBotJob(BlockPos pos) implements BotJob {
         return AutomataBotJobs.DECONSTRUCTION;
     }
 
+    private static List<PredicateItemStack> getToolPredicateItemStacks(BlockState state) {
+        return Collections.unmodifiableList(List.of(new PredicateItemStack(stack -> stack.isSuitableFor(state))));
+    }
+
     @Override
     public List<PredicateItemStack> getRequiredStacks(World world) {
         BlockState state = world.getBlockState(pos);
@@ -38,12 +43,12 @@ public record DeconstructionBotJob(BlockPos pos) implements BotJob {
         if (!state.isToolRequired())
             return List.of();
 
-        return Collections.unmodifiableList(List.of(new PredicateItemStack(stack -> stack.isSuitableFor(state))));
+        return getToolPredicateItemStacks(state);
     }
 
     @Override
     public List<PredicateItemStack> getPreferredStacks(World world) {
-        return Collections.unmodifiableList(List.of(new PredicateItemStack(stack -> stack.isSuitableFor(world.getBlockState(pos)))));
+        return getToolPredicateItemStacks(world.getBlockState(pos));
     }
 
     @Override

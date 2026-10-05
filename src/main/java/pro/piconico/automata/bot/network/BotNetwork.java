@@ -17,7 +17,6 @@ import net.minecraft.util.Uuids;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 
-// TODO: Replace map value set generics with bot device ids so they aren't restricted to be blocks
 public class BotNetwork {
     public static final PacketCodec<ByteBuf, BotNetwork> PACKET_CODEC = PacketCodec.tuple( //
             PacketCodecs.collection(ArrayList::new, BlockPos.PACKET_CODEC), BotNetwork::getRoboports, //

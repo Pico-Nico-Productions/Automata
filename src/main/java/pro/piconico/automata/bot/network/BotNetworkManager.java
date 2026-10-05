@@ -39,7 +39,8 @@ import pro.piconico.automata.world.BotTeamPersistentState;
 
 public class BotNetworkManager {
     private static final Map<ServerWorld, Map<UUID, BotNetworkMap<ServerBotNetwork>>> NETWORK_MAP_CACHE = new HashMap<>();
-    private static final Map<ServerWorld, Map<UUID, NetworkLoader>> NETWORK_LOADER_CACHE = new HashMap<>();
+    private static final Map<ServerWorld, Map<UUID, BotNetworkLoader>> NETWORK_LOADER_CACHE = new HashMap<>();
+    private static final int DEFAULT_CHUNK_RADIUS = 0;
 
     public enum Mutation {
         ADD, REMOVE
@@ -84,6 +85,47 @@ public class BotNetworkManager {
         return networks;
     }
 
+    public static Stream<RoboportBlockEntity> streamRoboportsNear(ServerWorld serverWorld, UUID teamUuid, BlockPos blockPos, int chunkRadius) {
+        return ChunkPos.stream(new ChunkPos(blockPos), chunkRadius) //
+                .map(chunkPos -> getNetwork(serverWorld, teamUuid, chunkPos).orElse(null)).filter(net -> net != null).distinct() //
+                .flatMap(ServerBotNetwork::streamRoboports).map(pos -> serverWorld.getBlockEntity(pos, AutomataEntities.ROBOPORT).orElse(null))
+                .filter(port -> port != null);
+    }
+
+    public static Stream<RoboportBlockEntity> streamRoboportsNear(ServerWorld serverWorld, UUID teamUuid, BlockPos blockPos) {
+        return streamRoboportsNear(serverWorld, teamUuid, blockPos, DEFAULT_CHUNK_RADIUS);
+    }
+
+    public static Stream<LogisticStorage<?>> streamLogisticStoragesNear(ServerWorld serverWorld, UUID teamUuid, BlockPos blockPos, int chunkRadius) {
+        return ChunkPos.stream(new ChunkPos(blockPos), chunkRadius) //
+                .map(chunkPos -> getNetwork(serverWorld, teamUuid, chunkPos).orElse(null)).filter(net -> net != null).distinct() //
+                .flatMap(ServerBotNetwork::streamLogisticStorages)
+                .<LogisticStorage<?>>map(pos -> serverWorld.getBlockEntity(pos, AutomataEntities.LOGISTIC_CHEST).orElse(null))
+                .filter(storage -> storage != null);
+    }
+
+    public static Stream<LogisticStorage<?>> streamLogisticStoragesNear(ServerWorld serverWorld, UUID teamUuid, BlockPos blockPos) {
+        return streamLogisticStoragesNear(serverWorld, teamUuid, blockPos, DEFAULT_CHUNK_RADIUS);
+    }
+
+    public static Stream<LogisticStorage<?>> streamReservationLogisticStorages(ServerWorld serverWorld, UUID teamUuid, BlockPos pos, UUID entityUuid) {
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(serverWorld, teamUuid, new ChunkPos(pos));
+
+        if (serverNetwork.isEmpty())
+            return Stream.empty();
+
+        return serverNetwork.get().getReservations(entityUuid).keySet().stream().map(serverNetwork.get()::getLogisticStorage);
+    }
+
+    public static Map<BlockPos, Map<Integer, Integer>> getReservations(ServerWorld serverWorld, UUID teamUuid, BlockPos pos, UUID entityUuid) {
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(serverWorld, teamUuid, new ChunkPos(pos));
+
+        if (serverNetwork.isEmpty())
+            return Map.of();
+
+        return serverNetwork.get().getReservations(entityUuid);
+    }
+
     public static Optional<BotEntity> getOrSpawnBotFor(ServerWorld serverWorld, UUID teamUuid, BotJob job) {
         if (!job.canStart(serverWorld))
             return Optional.empty();
@@ -94,35 +136,6 @@ public class BotNetworkManager {
             return Optional.empty();
 
         return serverNetwork.get().getOrSpawnBotFor(job);
-    }
-
-    public static Stream<LogisticStorage<?>> streamLogisticStoragesNear(ServerWorld serverWorld, Optional<UUID> teamUuid, BlockPos blockPos, int chunkRadius) {
-        if (teamUuid.isEmpty())
-            return Stream.empty();
-
-        return ChunkPos.stream(new ChunkPos(blockPos), chunkRadius) //
-                .map(chunkPos -> getNetwork(serverWorld, teamUuid.get(), chunkPos).orElse(null)).filter(net -> net != null).distinct() //
-                .flatMap(ServerBotNetwork::streamLogisticStorages)
-                .<LogisticStorage<?>>map(pos -> serverWorld.getBlockEntity(pos, AutomataEntities.LOGISTIC_CHEST).orElse(null))
-                .filter(storage -> storage != null);
-    }
-
-    public static Stream<LogisticStorage<?>> streamLogisticStoragesNear(ServerWorld serverWorld, Optional<UUID> teamUuid, BlockPos blockPos) {
-        return streamLogisticStoragesNear(serverWorld, teamUuid, blockPos, 0);
-    }
-
-    public static Stream<RoboportBlockEntity> streamRoboportsNear(ServerWorld serverWorld, Optional<UUID> teamUuid, BlockPos blockPos, int chunkRadius) {
-        if (teamUuid.isEmpty())
-            return Stream.empty();
-
-        return ChunkPos.stream(new ChunkPos(blockPos), chunkRadius) //
-                .map(chunkPos -> getNetwork(serverWorld, teamUuid.get(), chunkPos).orElse(null)).filter(net -> net != null).distinct() //
-                .flatMap(ServerBotNetwork::streamRoboports).map(pos -> serverWorld.getBlockEntity(pos, AutomataEntities.ROBOPORT).orElse(null))
-                .filter(port -> port != null);
-    }
-
-    public static Stream<RoboportBlockEntity> streamRoboportsNear(ServerWorld serverWorld, Optional<UUID> teamUuid, BlockPos blockPos) {
-        return streamRoboportsNear(serverWorld, teamUuid, blockPos, 0);
     }
     //#endregion
 
@@ -137,27 +150,27 @@ public class BotNetworkManager {
     }
 
     private static void loadNetwork(ServerWorld serverWorld, UUID teamUuid, WorldChunk chunk) {
-        Optional<NetworkLoader> networkLoader = MapUtils.getNested(NETWORK_LOADER_CACHE, serverWorld, teamUuid);
+        Optional<BotNetworkLoader> networkLoader = MapUtils.getNested(NETWORK_LOADER_CACHE, serverWorld, teamUuid);
         if (networkLoader.isPresent()) {
             networkLoader.get().load(chunk);
             return;
         }
 
-        NetworkLoader newNetworkLoader = new NetworkLoader(serverWorld, teamUuid, chunk);
+        BotNetworkLoader newNetworkLoader = new BotNetworkLoader(serverWorld, teamUuid, chunk);
         if (newNetworkLoader.isComplete())
             return;
 
-        Map<UUID, NetworkLoader> teamMap = NETWORK_LOADER_CACHE.computeIfAbsent(serverWorld, s -> new HashMap<>());
+        Map<UUID, BotNetworkLoader> teamMap = NETWORK_LOADER_CACHE.computeIfAbsent(serverWorld, s -> new HashMap<>());
         teamMap.put(teamUuid, newNetworkLoader);
     }
 
-    private static void cacheLoadedNetwork(NetworkLoader networkLoader) {
+    private static void cacheLoadedNetwork(BotNetworkLoader networkLoader) {
         Set<ServerBotNetwork> serverNetworks = new ServerBotNetwork(networkLoader.getRoboports(), networkLoader.getLogisticStorages(), networkLoader.teamUuid,
                 networkLoader.serverWorld).getSubnetworks();
         for (ServerBotNetwork serverNetwork : serverNetworks) {
             putNetwork(serverNetwork);
         }
-        MapUtils.<NetworkLoader>removeNested(NETWORK_LOADER_CACHE, networkLoader.serverWorld, networkLoader.teamUuid);
+        MapUtils.<BotNetworkLoader>removeNested(NETWORK_LOADER_CACHE, networkLoader.serverWorld, networkLoader.teamUuid);
 
         NETWORKS_MUTATED.invoker().onMutate(networkLoader.serverWorld, networkLoader.teamUuid, Mutation.ADD);
     }
@@ -267,7 +280,7 @@ public class BotNetworkManager {
             return;
 
         for (UUID teamUuid : BotTeamPersistentState.getTeamUuids()) {
-            Optional<NetworkLoader> networkLoader = MapUtils.getNested(NETWORK_LOADER_CACHE, serverWorld, teamUuid);
+            Optional<BotNetworkLoader> networkLoader = MapUtils.getNested(NETWORK_LOADER_CACHE, serverWorld, teamUuid);
             if (networkLoader.isEmpty())
                 continue;
 
@@ -306,6 +319,15 @@ public class BotNetworkManager {
         default -> {
         }
         }
+    }
+
+    public static void unreserve(ServerWorld serverWorld, UUID teamUuid, BlockPos pos, int slot, int count, UUID entityUuid) {
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(serverWorld, teamUuid, new ChunkPos(pos));
+
+        if (serverNetwork.isEmpty())
+            return;
+
+        serverNetwork.get().unreserve(entityUuid, pos, slot, count);
     }
 
     private static void onTeamsMutated(MinecraftServer server, BotTeam team, BotTeamPersistentState.Mutation mutation) {
