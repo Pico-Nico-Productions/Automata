@@ -7,7 +7,10 @@ import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
@@ -68,11 +71,12 @@ public class AutomatoolItem extends Item {
 
     //#region Actions
     private static ActionResult select(PlayerEntity player, ItemStack stack, BlockPos selection, boolean isSelection2) {
-        if (player.getEntityWorld().isClient())
+        World world = player.getEntityWorld();
+
+        if (world.isClient())
             return ActionResult.SUCCESS;
 
-        SelectionComponent selectionComponent = SelectionComponent.get(stack);
-        stack.set(AutomataComponents.SELECTION, selectionComponent.of(Optional.of(selection), isSelection2));
+        stack.set(AutomataComponents.SELECTION, SelectionComponent.getAndCopyWithOrElse(stack, world, selection, isSelection2));
         player.sendMessage(AutomataTexts.getBlockSelected(isSelection2 ? 2 : 1, selection), true);
 
         return ActionResult.SUCCESS;
@@ -89,10 +93,11 @@ public class AutomatoolItem extends Item {
 
     private static ActionResult dispatchCommand(PlayerEntity player, ItemStack automatoolStack) {
         Optional<UUID> teamUuid = TeamComponent.get(automatoolStack);
-        SelectionComponent selectionComponent = SelectionComponent.get(automatoolStack);
+        Optional<SelectionComponent> selectionComponent = SelectionComponent.get(automatoolStack);
+        boolean hasSelection = selectionComponent.filter(s -> s.hasSelection()).isPresent();
 
         if (!(player instanceof ServerPlayerEntity serverPlayer)) {
-            return teamUuid.isPresent() && selectionComponent.hasSelection() ? ActionResult.SUCCESS : ActionResult.FAIL;
+            return teamUuid.isPresent() && hasSelection ? ActionResult.SUCCESS : ActionResult.FAIL;
         }
 
         if (teamUuid.isEmpty()) {
@@ -111,15 +116,16 @@ public class AutomatoolItem extends Item {
             return ActionResult.FAIL;
         }
 
-        if (!selectionComponent.hasSelection()) {
+        if (!hasSelection) {
             player.sendMessage(AutomataTexts.getDeconstructionFailed(), true);
 
             return ActionResult.FAIL;
         }
 
-        BlockPos selection1 = selectionComponent.selection1().get();
-        BlockPos selection2 = selectionComponent.selection2().get();
-        Optional<Integer> jobCount = BotJobDispatcher.markForDeconstruction(serverPlayer.getEntityWorld(), teamUuid.get(), selection1, selection2);
+        ServerWorld selectionWorld = player.getEntityWorld().getServer().getWorld(RegistryKey.of(RegistryKeys.WORLD, selectionComponent.get().worldId()));
+        BlockPos selection1 = selectionComponent.get().selection1().get();
+        BlockPos selection2 = selectionComponent.get().selection2().get();
+        Optional<Integer> jobCount = BotJobDispatcher.markForDeconstruction(selectionWorld, teamUuid.get(), selection1, selection2);
 
         automatoolStack.remove(AutomataComponents.SELECTION);
         player.sendMessage(AutomataTexts.getJobsAdded(jobCount.get()), true);

@@ -21,7 +21,6 @@ import pro.piconico.automata.client.registry.AutomataClientColors;
 import pro.piconico.automata.client.render.RenderUtils;
 import pro.piconico.automata.component.SelectionComponent;
 import pro.piconico.automata.entity.LivingEntityUtils;
-import pro.piconico.automata.registry.AutomataComponents;
 import pro.piconico.automata.registry.AutomataItems;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
@@ -32,7 +31,7 @@ public class AutomatoolRenderer {
         if (stacks.isEmpty())
             return Optional.empty();
 
-        return Optional.of(stacks.firstEntry().getValue().getOrDefault(AutomataComponents.SELECTION, SelectionComponent.EMPTY));
+        return SelectionComponent.get(stacks.firstEntry().getValue());
     }
 
     private static void renderNetworks(WorldRenderContext context) {
@@ -71,7 +70,10 @@ public class AutomatoolRenderer {
         Optional<SelectionComponent> selectionComponent = getSelectionComponent();
 
         selectionComponent.ifPresent(selection -> {
-            if (selection.hasSelection()) RenderUtils.drawBoxOutline(context, selection.getSelectionBox().get(), AutomataClientColors.SELECTION_BOUNDS);
+            if (!MinecraftClient.getInstance().world.getRegistryKey().getValue().equals(selection.worldId()))
+                return;
+
+            selection.getSelectionBox().ifPresent(box -> RenderUtils.drawBoxOutline(context, box, AutomataClientColors.SELECTION_BOUNDS));
 
             if (selection.selection1().equals(selection.selection2()))
                 return;
