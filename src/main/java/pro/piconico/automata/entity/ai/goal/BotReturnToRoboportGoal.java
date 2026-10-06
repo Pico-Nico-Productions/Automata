@@ -9,6 +9,7 @@ import pro.piconico.automata.bot.network.BotNetworkManager;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.inventory.InventoryUtils;
 
+// TODO: Fix bots trying to return to full port
 public class BotReturnToRoboportGoal extends GoToNearestTargetGoal<BotEntity, RoboportBlockEntity> {
     public BotReturnToRoboportGoal(BotEntity bot, double speed, int interactDistance) {
         super(bot, speed, interactDistance);

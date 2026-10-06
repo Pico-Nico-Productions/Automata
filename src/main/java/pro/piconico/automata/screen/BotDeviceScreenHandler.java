@@ -20,7 +20,7 @@ import pro.piconico.automata.util.function.QuadFunction;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
 public abstract class BotDeviceScreenHandler extends ScreenHandler {
-    public static final int GENERIC_BODY_WIDTH = 176, GENERIC_BODY_HEIGHT = 168, INSET = 6, GAP = 4, DEVICE_INVENTORY_Y = 17, DEVICE_PLAYER_GAP = 14;
+    public static final int GENERIC_BODY_WIDTH = 176, GENERIC_BODY_HEIGHT = 168, GENERIC_ROW_COUNT = 3, INSET = 6, GAP = 4, DEVICE_INVENTORY_Y = 17, DEVICE_PLAYER_GAP = 14;
 
     public final BotDevice<?> device;
     public final List<BotTeam> teams;
@@ -44,6 +44,10 @@ public abstract class BotDeviceScreenHandler extends ScreenHandler {
 
     public int getBodyHeight() {
         return GENERIC_BODY_HEIGHT;
+    }
+
+    protected static int calculateBodyHeight(int rowCount) {
+        return GENERIC_BODY_HEIGHT - (GENERIC_ROW_COUNT - rowCount) * ScreenHandlerUtils.SLOT_DELTA;
     }
 
     public int getInventoryX() {

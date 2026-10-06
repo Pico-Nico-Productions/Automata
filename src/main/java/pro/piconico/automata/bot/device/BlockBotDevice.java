@@ -24,9 +24,9 @@ import pro.piconico.automata.world.BotTeamPersistentState;
 
 // TODO: Make extend LockableContainerBlockEntity
 public abstract class BlockBotDevice extends BlockEntity implements BotDevice<BlockPos> {
-    public record Id(BlockPos pos) implements BotDevice.Id {
-        public static final MapCodec<Id> CODEC = RecordCodecBuilder
-                .mapCodec(instance -> instance.group(BlockPos.CODEC.fieldOf("pos").forGetter(Id::pos)).apply(instance, Id::new));
+    public record BlockId(BlockPos pos) implements BotDevice.Id {
+        public static final MapCodec<BlockId> CODEC = RecordCodecBuilder
+                .mapCodec(instance -> instance.group(BlockPos.CODEC.fieldOf("pos").forGetter(BlockId::pos)).apply(instance, BlockId::new));
 
         @Override
         public BotDeviceType<?, ?> getType() {
@@ -38,7 +38,7 @@ public abstract class BlockBotDevice extends BlockEntity implements BotDevice<Bl
 
     private Optional<UUID> teamUuid = Optional.empty();
 
-    public BlockBotDevice(BlockEntityType<?> type, BlockPos pos, BlockState state) {
+    protected BlockBotDevice(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
     }
 
@@ -83,8 +83,8 @@ public abstract class BlockBotDevice extends BlockEntity implements BotDevice<Bl
     }
 
     @Override
-    public Id getId() {
-        return new Id(pos);
+    public BlockId getDeviceId() {
+        return new BlockId(pos);
     }
 
     @Override
@@ -95,6 +95,7 @@ public abstract class BlockBotDevice extends BlockEntity implements BotDevice<Bl
     @Override
     public boolean setTeamUuid(Optional<UUID> teamUuid) {
         Optional<UUID> oldTeamUuid = this.teamUuid;
+
         if (oldTeamUuid.equals(teamUuid))
             return false;
 
@@ -102,7 +103,7 @@ public abstract class BlockBotDevice extends BlockEntity implements BotDevice<Bl
 
         BotDevice.invokeTeamChanged(world, this, oldTeamUuid);
         if (world instanceof ServerWorld) {
-            AutomataMessages.BOT_DEVICE_CHANNEL.serverHandle(this).send(new BotDeviceTeamChangeMessage(getId(), teamUuid));
+            AutomataMessages.BOT_DEVICE_CHANNEL.serverHandle(this).send(new BotDeviceTeamChangeMessage(getDeviceId(), teamUuid));
         }
 
         markDirty();
@@ -110,7 +111,7 @@ public abstract class BlockBotDevice extends BlockEntity implements BotDevice<Bl
         return true;
     }
 
-    public static Optional<BlockBotDevice> resolve(PlayerEntity player, Id deviceId) {
+    public static Optional<BlockBotDevice> resolve(PlayerEntity player, BlockId deviceId) {
         return Optional.ofNullable((BlockBotDevice)player.getEntityWorld().getBlockEntity(deviceId.pos));
     }
 }

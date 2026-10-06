@@ -49,7 +49,7 @@ public class InventoryUtils {
     public static boolean hasStacks(Inventory inventory, List<Integer> reservations, List<PredicateItemStack> predicateItemStacks) {
         validateReservations(inventory, reservations);
 
-        Integer[] simulatedReservations = reservations.toArray(new Integer[reservations.size()]);
+        Integer[] simulatedReservations = reservations.toArray(Integer[]::new);
         for (PredicateItemStack predicateItemStack : predicateItemStacks) {
             int requiredCount = predicateItemStack.count();
             for (int i = 0; i < inventory.size(); i++) {
@@ -83,7 +83,7 @@ public class InventoryUtils {
 
         List<PredicateItemStack> stacks = new ArrayList<>();
 
-        Integer[] simulatedReservations = reservations.toArray(new Integer[reservations.size()]);
+        Integer[] simulatedReservations = reservations.toArray(Integer[]::new);
         for (PredicateItemStack predicateItemStack : predicateItemStacks) {
             int missingCount = predicateItemStack.count();
             for (int i = 0; i < inventory.size(); i++) {

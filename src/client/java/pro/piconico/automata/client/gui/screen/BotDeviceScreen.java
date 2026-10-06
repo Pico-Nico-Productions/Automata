@@ -1,5 +1,6 @@
 package pro.piconico.automata.client.gui.screen;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import io.wispforest.owo.ui.base.BaseOwoContainerScreen;
@@ -102,6 +103,10 @@ public abstract class BotDeviceScreen<HandlerT extends BotDeviceScreenHandler> e
 
     protected abstract BotDeviceHomeTab getHomeTab();
 
+    protected List<Tab<BotDeviceScreenHandler>> getTabs() {
+        return List.of(getHomeTab(), TeamSelectTab.INSTANCE, TeamSettingsTab.INSTANCE, TeamCreateTab.INSTANCE);
+    }
+
     @Override
     protected void build(FlowLayout rootComponent) {
         rootComponent.surface(Surface.VANILLA_TRANSLUCENT).horizontalAlignment(HorizontalAlignment.CENTER).verticalAlignment(VerticalAlignment.CENTER);
@@ -123,7 +128,7 @@ public abstract class BotDeviceScreen<HandlerT extends BotDeviceScreenHandler> e
         FlowLayout spacingPanel = UIContainers.horizontalFlow(horizontalScreenSizing, verticalIconSizing);
         rootComponent.child(spacingPanel);
 
-        tabManager = new TabManager<>(handler, body, getHomeTab(), TeamSelectTab.INSTANCE, TeamSettingsTab.INSTANCE, TeamCreateTab.INSTANCE);
+        tabManager = new TabManager<>(handler, body, getTabs());
         tabManager.buildButtons(tabPanel);
     }
 

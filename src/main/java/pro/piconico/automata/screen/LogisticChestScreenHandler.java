@@ -6,33 +6,35 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import pro.piconico.automata.block.entity.LogisticChestBlockEntity;
 import pro.piconico.automata.bot.device.BlockBotDevice;
+import pro.piconico.automata.bot.device.BlockBotDevice.BlockId;
 import pro.piconico.automata.registry.AutomataScreenHandlers;
 
 public class LogisticChestScreenHandler extends BotDeviceScreenHandler {
-    private final LogisticChestBlockEntity logisticChest;
-
     public LogisticChestScreenHandler(int syncId, PlayerInventory playerInventory, BlockPos pos) {
-        super(AutomataScreenHandlers.LOGISTIC_CHEST, syncId, ((BlockBotDevice)playerInventory.player.getEntityWorld().getBlockEntity(pos)));
+        super(AutomataScreenHandlers.LOGISTIC_CHEST, syncId, BlockBotDevice.resolve(playerInventory.player, new BlockId(pos)).get());
 
-        logisticChest = (LogisticChestBlockEntity)device;
-        logisticChest.onOpen(playerInventory.player);
+        castLogisticChest().onOpen(playerInventory.player);
 
-        addDeviceAndPlayerSlots(logisticChest, playerInventory);
+        addDeviceAndPlayerSlots(castLogisticChest(), playerInventory);
+    }
+
+    private LogisticChestBlockEntity castLogisticChest() {
+        return (LogisticChestBlockEntity)device;
     }
 
     @Override
     public void onClosed(PlayerEntity player) {
         super.onClosed(player);
-        logisticChest.onClose(player);
+        castLogisticChest().onClose(player);
     }
 
     @Override
     public boolean canUse(PlayerEntity player) {
-        return logisticChest.canPlayerUse(player);
+        return castLogisticChest().canPlayerUse(player);
     }
 
     @Override
     public ItemStack quickMove(PlayerEntity player, int slot) {
-        return ScreenHandlerUtils.quickMove(slots, this::insertItem, player, slot, logisticChest.size());
+        return ScreenHandlerUtils.quickMove(slots, this::insertItem, player, slot, castLogisticChest().size());
     }
 }

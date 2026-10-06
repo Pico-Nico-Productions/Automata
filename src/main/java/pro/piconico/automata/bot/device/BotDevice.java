@@ -34,11 +34,15 @@ public interface BotDevice<T> extends ExtendedScreenHandlerFactory<T> {
 
     public boolean equals(Object obj);
 
-    public Id getId();
+    public Id getDeviceId();
 
     public BlockPos getPos();
 
     public Optional<UUID> getTeamUuid();
+
+    public default boolean isOnTeam(UUID teamUuid) {
+        return getTeamUuid().filter(uuid -> uuid.equals(teamUuid)).isPresent();
+    }
 
     public boolean setTeamUuid(Optional<UUID> teamUuid);
 

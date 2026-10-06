@@ -67,7 +67,7 @@ public class TeamSelectTab implements Tab<BotDeviceScreenHandler> {
                     return false;
 
                 Optional<UUID> newTeamUuid = Optional.ofNullable(isSelectedTeam ? null : team.UUID);
-                AutomataMessages.BOT_DEVICE_CHANNEL.clientHandle().send(new BotDeviceTeamChangeMessage(handler.device.getId(), newTeamUuid));
+                AutomataMessages.BOT_DEVICE_CHANNEL.clientHandle().send(new BotDeviceTeamChangeMessage(handler.device.getDeviceId(), newTeamUuid));
 
                 return true;
             });

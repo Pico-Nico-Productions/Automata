@@ -22,9 +22,9 @@ import pro.piconico.automata.screen.BotDeviceScreenHandler;
 import pro.piconico.automata.screen.ItemBotDeviceScreenHandler;
 
 public class ItemBotDevice implements BotDevice<ItemStack> {
-    public record Id(int slot) implements BotDevice.Id {
-        public static final MapCodec<Id> CODEC = RecordCodecBuilder
-                .mapCodec(instance -> instance.group(Codec.INT.fieldOf("slot").forGetter(Id::slot)).apply(instance, Id::new));
+    public record ItemId(int slot) implements BotDevice.Id {
+        public static final MapCodec<ItemId> CODEC = RecordCodecBuilder
+                .mapCodec(instance -> instance.group(Codec.INT.fieldOf("slot").forGetter(ItemId::slot)).apply(instance, ItemId::new));
 
         @Override
         public BotDeviceType<?, ?> getType() {
@@ -84,8 +84,8 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
     }
 
     @Override
-    public BotDevice.Id getId() {
-        return new Id(slot);
+    public BotDevice.Id getDeviceId() {
+        return new ItemId(slot);
     }
 
     @Override
@@ -96,6 +96,7 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
     @Override
     public boolean setTeamUuid(Optional<UUID> teamUuid) {
         Optional<UUID> oldTeamUuid = getTeamUuid();
+
         if (oldTeamUuid.equals(teamUuid))
             return false;
 
@@ -103,13 +104,13 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
 
         BotDevice.invokeTeamChanged(player.getEntityWorld(), this, oldTeamUuid);
         if (player instanceof ServerPlayerEntity serverPlayer) {
-            AutomataMessages.BOT_DEVICE_CHANNEL.serverHandle(serverPlayer).send(new BotDeviceTeamChangeMessage(getId(), teamUuid));
+            AutomataMessages.BOT_DEVICE_CHANNEL.serverHandle(serverPlayer).send(new BotDeviceTeamChangeMessage(getDeviceId(), teamUuid));
         }
 
         return true;
     }
 
-    public static Optional<ItemBotDevice> resolve(PlayerEntity player, Id deviceId) {
+    public static Optional<ItemBotDevice> resolve(PlayerEntity player, ItemId deviceId) {
         ItemStack stack = player.getInventory().getStack(deviceId.slot);
 
         if (stack.isEmpty())

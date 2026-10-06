@@ -1,5 +1,8 @@
 package pro.piconico.automata.client.ui.tab;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import io.wispforest.owo.ui.component.ButtonComponent;
 import io.wispforest.owo.ui.component.UIComponents;
@@ -15,21 +18,20 @@ import pro.piconico.automata.screen.slot.DisableableSlot;
 public class TabManager<HandlerT extends ScreenHandler, TabT extends Tab<HandlerT>> {
     private final HandlerT handler;
     private final FlowLayout parent;
-    private final TabT[] tabArray;
+    private final List<TabT> tabList;
     public final Set<TabT> tabSet;
     private TabT selectedTab;
 
-    @SafeVarargs
-    public TabManager(HandlerT handler, FlowLayout parent, TabT... tabs) {
-        if (tabs.length == 0)
+    public TabManager(HandlerT handler, FlowLayout parent, List<TabT> tabs) {
+        if (tabs.size() == 0)
             throw new IllegalArgumentException(TabManager.class.getSimpleName() + " needs at least one tab");
 
         this.handler = handler;
         this.parent = parent;
-        tabArray = tabs;
-        tabSet = Set.of(tabs);
+        tabList = new ArrayList<>(tabs);
+        tabSet = new HashSet<>(tabs);
 
-        selectTab(tabs[0]);
+        selectTab(tabs.getFirst());
     }
 
     public void rebuildTab() {
@@ -54,7 +56,7 @@ public class TabManager<HandlerT extends ScreenHandler, TabT extends Tab<Handler
     }
 
     public void buildButtons(FlowLayout buttonParent) {
-        for (TabT tab : tabArray) {
+        for (TabT tab : tabList) {
             ButtonComponent button = UIComponents.button(Text.empty(), ignored -> selectTab(tab));
             button.sizing(Sizing.fixed(ScreenHandlerUtils.SLOT_SIZE));
             button.renderer(tab.getButtonRenderer(handler));

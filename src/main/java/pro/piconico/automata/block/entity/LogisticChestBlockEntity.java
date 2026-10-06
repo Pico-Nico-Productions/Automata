@@ -8,6 +8,7 @@ import net.minecraft.block.entity.ViewerCountManager;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.storage.ReadView;
@@ -101,9 +102,10 @@ public class LogisticChestBlockEntity extends BlockBotDevice implements Logistic
         return inventory;
     }
 
+    // TODO: Replace once extends LockableContainerBlockEntity
     @Override
     public boolean canPlayerUse(PlayerEntity player) {
-        return true;
+        return Inventory.canPlayerUse(this, player);
     }
     //#endregion
 

@@ -4,6 +4,7 @@ import io.wispforest.owo.ui.component.ButtonComponent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import pro.piconico.automata.bot.device.BlockBotDevice;
+import pro.piconico.automata.bot.device.EntityBotDevice;
 import pro.piconico.automata.bot.device.ItemBotDevice;
 import pro.piconico.automata.client.registry.AutomataClientTextures;
 import pro.piconico.automata.client.ui.render.ButtonComponentRenderers;
@@ -16,6 +17,7 @@ public interface BotDeviceHomeTab extends Tab<BotDeviceScreenHandler> {
         return switch (handler.device) {
             case ItemBotDevice itemBotDevice -> itemBotDevice.getDisplayName();
             case BlockBotDevice blockBotDevice -> blockBotDevice.getCachedState().getBlock().getName();
+            case EntityBotDevice entityBotDevice -> entityBotDevice.getName();
             default -> AutomataTexts.getBotDeviceHome();
         };
     }
@@ -25,6 +27,7 @@ public interface BotDeviceHomeTab extends Tab<BotDeviceScreenHandler> {
         return switch (handler.device) {
             case ItemBotDevice itemBotDevice -> ButtonComponentRenderers.item(new ItemStack(itemBotDevice.getItem()));
             case BlockBotDevice blockBotDevice -> ButtonComponentRenderers.block(blockBotDevice.getCachedState());
+            case EntityBotDevice entityBotDevice -> ButtonComponentRenderers.entity(entityBotDevice);
             default -> AutomataClientTextures.BOT_DEVICE_HOME_ICON.getButtonRenderer();
         };
     }

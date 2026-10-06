@@ -160,6 +160,10 @@ Call **Text**.translatable with the translation key and arguments
 1. [Create a block entity](#block-entities) that extends **BlockBotDevice**
 2. [Create a screen](#screens) where the handler (**TScreenHandler** for example) extends **BotDeviceScreenHandler** and the screen extends **BotDeviceScreen\<TScreenHandler\>**
 
+#### Entity Bot Devices
+1. [Create an entity](#entities) that extends **EntityBotDevice**
+2. [Create a screen](#screens) where the handler (**TScreenHandler** for example) extends **BotDeviceScreenHandler** and the screen extends **BotDeviceScreen\<TScreenHandler\>**
+
 #### Bot Device Types
 1. Create a class (**TBotDevice** for example) that implements **BotDevice** [here](/src/main/java/pro/piconico/automata/bot/device/)
 2. Give it a public record (**Id** for example) that implements **BotDevice.Id** and give **Id** a public static final **MapCodec\<Id\>**
@@ -167,6 +171,7 @@ Call **Text**.translatable with the translation key and arguments
 4. Ensure your **TBotDevice** invokes **BotDevice**'s team changed event for synchronization
 5. Register it as a public static final **BotDeviceType\<Id, TBotDevice\>** in [**AutomataBotDevices**](/src/main/java/pro/piconico/automata/registry/AutomataBotDevices.java)
 6. [Create a screen](#screens) where the handler (**TScreenHandler** for example) extends **BotDeviceScreenHandler** and the screen extends **BotDeviceScreen\<TScreenHandler\>**
+7. Optional: Add a custom name and button renderer in [**BotDeviceHomeTab**](/src/client/java/pro/piconico/automata/client/ui/tab/BotDeviceHomeTab.java)
 
 
 ### Bot Jobs

@@ -1,11 +1,12 @@
 package pro.piconico.automata.entity;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
@@ -21,20 +22,21 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.ListInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
 import net.minecraft.util.Uuids;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.TeleportTarget;
 import net.minecraft.world.World;
 import pro.piconico.automata.bot.BotType;
+import pro.piconico.automata.bot.device.EntityBotDevice;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.entity.ai.goal.BotDoJobGoal;
 import pro.piconico.automata.entity.ai.goal.BotGrabJobItemsGoal;
@@ -42,14 +44,14 @@ import pro.piconico.automata.entity.ai.goal.BotHoverGoal;
 import pro.piconico.automata.entity.ai.goal.BotPickUpItemsGoal;
 import pro.piconico.automata.entity.ai.goal.BotStoreItemsGoal;
 import pro.piconico.automata.inventory.InventoryUtils;
+import pro.piconico.automata.screen.BotScreenHandler;
 import pro.piconico.automata.util.math.ChunkUtils;
 import pro.piconico.automata.entity.ai.goal.BotReturnToRoboportGoal;
 import pro.piconico.automata.world.BotJobPersistentState;
-import pro.piconico.automata.world.BotTeamPersistentState;
 
-public abstract class BotEntity extends PathAwareEntity implements ListInventory {
-    private static final String TEAM_UUID_KEY = "team_uuid";
-    public static final int MAX_HEALTH = 10;
+public abstract class BotEntity extends EntityBotDevice implements ListInventory {
+    private static final String ITEMS_TO_PICK_UP_KEY = "items_to_pick_up";
+    public static final double MAX_HEALTH = 1;
     public static final int INVENTORY_SIZE = 3;
     public static final double SPEED = 0.65;
     public static final int INTERACT_DISTANCE = 1;
@@ -66,9 +68,8 @@ public abstract class BotEntity extends PathAwareEntity implements ListInventory
         }
     });
 
-    private Optional<UUID> teamUuid = Optional.empty();
     private final DefaultedList<ItemStack> inventory = DefaultedList.ofSize(INVENTORY_SIZE, ItemStack.EMPTY);
-    private final Set<ItemEntity> itemsToPickUp = new HashSet<>();
+    private final Set<UUID> itemsToPickUp = new HashSet<>();
 
     public BotEntity(EntityType<? extends BotEntity> entityType, World world) {
         super(entityType, world);
@@ -77,27 +78,23 @@ public abstract class BotEntity extends PathAwareEntity implements ListInventory
 
     public static DefaultAttributeContainer.Builder createBotAttributes() {
         return PathAwareEntity.createMobAttributes() //
-                .add(EntityAttributes.MAX_HEALTH, MAX_HEALTH).add(EntityAttributes.MOVEMENT_SPEED, SPEED)//
+                .add(EntityAttributes.MAX_HEALTH, MAX_HEALTH) //
+                .add(EntityAttributes.MOVEMENT_SPEED, SPEED) //
                 .add(EntityAttributes.FLYING_SPEED, SPEED);
     }
 
     public abstract BotType getBotType();
 
-    public boolean isOnTeam(UUID teamUuid) {
-        return this.teamUuid.filter(uuid -> uuid.equals(teamUuid)).isPresent();
-    }
+    @Override
+    public boolean setTeamUuid(Optional<UUID> teamUuid) {
+        if (!super.setTeamUuid(teamUuid))
+            return false;
 
-    public Optional<UUID> getTeamUuid() {
-        return teamUuid;
-    }
+        if (getEntityWorld() instanceof ServerWorld) {
+            endJob(false);
+        }
 
-    public void setTeamUuid(Optional<UUID> teamUuid) {
-        if (this.teamUuid.equals(teamUuid))
-            return;
-
-        endJob(false);
-
-        this.teamUuid = teamUuid;
+        return true;
     }
 
     public Optional<BotJob> getJob() {
@@ -105,7 +102,8 @@ public abstract class BotEntity extends PathAwareEntity implements ListInventory
     }
 
     public boolean canDoJob(BotJob job) {
-        return getJob().isEmpty() && getBotType().supportedJobTypes().contains(job.getType()) && InventoryUtils.hasStacks(this, job.getRequiredStacks(getEntityWorld()));
+        return getJob().isEmpty() && getBotType().supportedJobTypes().contains(job.getType())
+                && InventoryUtils.hasStacks(this, job.getRequiredStacks(getEntityWorld()));
     }
 
     public void endJob(boolean completed) {
@@ -122,18 +120,20 @@ public abstract class BotEntity extends PathAwareEntity implements ListInventory
     }
 
     public Set<ItemEntity> getItemsToPickUp() {
-        return Collections.unmodifiableSet(itemsToPickUp);
+        World world = getEntityWorld();
+        return itemsToPickUp.stream().map(uuid -> (ItemEntity)world.getEntity(uuid)).filter(entity -> entity != null).collect(Collectors.toSet());
     }
 
     public void addItemsToPickUp(Collection<ItemEntity> items) {
-        itemsToPickUp.addAll(items);
+        itemsToPickUp.addAll(items.stream().map(entity -> entity.getUuid()).toList());
     }
 
     public void removeInvalidItemsToPickUp() {
-        itemsToPickUp.removeIf(item -> item.isRemoved());
+        World world = getEntityWorld();
+        itemsToPickUp.removeIf(uuid -> !(world.getEntity(uuid) instanceof ItemEntity entity) || entity.isRemoved());
     }
 
-    //#region PathAwareEntity
+    //#region EntityBotDevice
     @Override
     protected void initGoals() {
         goalSelector.add(0, new BotGrabJobItemsGoal(this, SPEED, INTERACT_DISTANCE));
@@ -158,9 +158,13 @@ public abstract class BotEntity extends PathAwareEntity implements ListInventory
     }
 
     @Override
-    protected ActionResult interactMob(PlayerEntity player, Hand hand) {
-        // TODO: Implement BotDevice
-        return super.interactMob(player, hand);
+    public BlockPos getPos() {
+        return getBlockPos();
+    }
+
+    @Override
+    public @Nullable ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
+        return new BotScreenHandler(syncId, playerInventory, uuid);
     }
 
     @Override
@@ -210,16 +214,16 @@ public abstract class BotEntity extends PathAwareEntity implements ListInventory
     public void readData(ReadView view) {
         super.readData(view);
 
-        teamUuid = view.read(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC).filter(uuid -> BotTeamPersistentState.getTeam(uuid).isPresent());
         Inventories.readData(view, inventory);
+        itemsToPickUp.addAll(view.read(ITEMS_TO_PICK_UP_KEY, Uuids.CODEC.listOf()).orElse(List.of()));
     }
 
     @Override
     public void writeData(WriteView view) {
         super.writeData(view);
 
-        teamUuid.ifPresent(uuid -> view.put(TEAM_UUID_KEY, Uuids.INT_STREAM_CODEC, uuid));
         Inventories.writeData(view, inventory);
+        view.put(ITEMS_TO_PICK_UP_KEY, Uuids.CODEC.listOf(), itemsToPickUp.stream().toList());
     }
     //#endregion
 
@@ -231,7 +235,7 @@ public abstract class BotEntity extends PathAwareEntity implements ListInventory
 
     @Override
     public boolean canPlayerUse(PlayerEntity player) {
-        return true;
+        return isAlive() && player.getEntityPos().isInRange(getEntityPos(), player.getEntityInteractionRange());
     }
 
     @Override

@@ -297,6 +297,7 @@ public class ServerBotNetwork extends BotNetwork {
     }
     //#endregion
 
+    // TODO: Check if job pos is pathable
     Optional<BotEntity> getOrSpawnBotFor(BotJob job) {
         Set<BotType> capableBotTypes = AutomataBots.getBotTypesFor(job);
         if (capableBotTypes.isEmpty())

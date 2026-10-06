@@ -22,6 +22,7 @@ public class AutomataRegistry {
     public static final String BOT_JOB_PERSISTENT_STATE = BOT_JOB + "_persistent_state";
     public static final String BOT_TEAM_PERSISTENT_STATE = BOT_TEAM + "_persistent_state";
     public static final String DECONSTRUCTION_BOT_JOB = "deconstruction_" + BOT_JOB;
+    public static final String ENTITY_BOT_DEVICE = "entity_" + BOT_DEVICE;
     public static final String ITEM_BOT_DEVICE = "item_" + BOT_DEVICE;
 
     public static Identifier id(String path) {
