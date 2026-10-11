@@ -14,9 +14,11 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.control.FlightMoveControl;
 import net.minecraft.entity.ai.pathing.BirdNavigation;
 import net.minecraft.entity.ai.pathing.EntityNavigation;
+import net.minecraft.entity.ai.pathing.Path;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
@@ -38,12 +40,14 @@ import net.minecraft.world.World;
 import pro.piconico.automata.bot.BotType;
 import pro.piconico.automata.bot.device.EntityBotDevice;
 import pro.piconico.automata.bot.job.BotJob;
+import pro.piconico.automata.bot.network.BotNetworkManager;
 import pro.piconico.automata.entity.ai.goal.BotDoJobGoal;
 import pro.piconico.automata.entity.ai.goal.BotGrabJobItemsGoal;
 import pro.piconico.automata.entity.ai.goal.BotHoverGoal;
 import pro.piconico.automata.entity.ai.goal.BotPickUpItemsGoal;
 import pro.piconico.automata.entity.ai.goal.BotStoreItemsGoal;
 import pro.piconico.automata.inventory.InventoryUtils;
+import pro.piconico.automata.item.ItemUtils.PredicateItemStack;
 import pro.piconico.automata.screen.BotScreenHandler;
 import pro.piconico.automata.util.math.ChunkUtils;
 import pro.piconico.automata.entity.ai.goal.BotReturnToRoboportGoal;
@@ -101,9 +105,29 @@ public abstract class BotEntity extends EntityBotDevice implements ListInventory
         return BotJobPersistentState.getJob((ServerWorld)getEntityWorld(), uuid);
     }
 
+    public static boolean couldReach(EntityType<? extends BotEntity> type, ServerWorld world, BlockPos startPos, BlockPos targetPos) {
+        BotEntity bot = type.create(world, SpawnReason.MOB_SUMMONED);
+
+        if (bot == null) {
+            return false;
+        }
+
+        bot.refreshPositionAndAngles(startPos.getX() + .5, startPos.getY() + .5, startPos.getZ() + .5, 0F, 0F);
+        Path path = bot.getNavigation().findPathTo(targetPos, 1);
+        return path != null && path.reachesTarget();
+    }
+
     public boolean canDoJob(BotJob job) {
-        return getJob().isEmpty() && getBotType().supportedJobTypes().contains(job.getType())
-                && InventoryUtils.hasStacks(this, job.getRequiredStacks(getEntityWorld()));
+        if (getTeamUuid().isEmpty() || getJob().isPresent() || !getBotType().supportedJobTypes().contains(job.getType()))
+            return false;
+
+        List<PredicateItemStack> missingStacks = InventoryUtils.getStacks(this, job.getRequiredStacks(getEntityWorld()), false);
+        boolean hasStacks = BotNetworkManager.hasStacks((ServerWorld)getEntityWorld(), getTeamUuid().get(), getBlockPos(), missingStacks);
+        if (!hasStacks)
+            return false;
+
+        Path pathToJob = getNavigation().findPathTo(job.pos(), 1);
+        return pathToJob != null && pathToJob.reachesTarget();
     }
 
     public void endJob(boolean completed) {

@@ -46,7 +46,7 @@ public abstract class GoToNearestTargetGoal<EntityT extends PathAwareEntity, Tar
 
     @Override
     public boolean shouldContinue() {
-        return target.map(this::isValidTarget).isPresent() || canStart();
+        return target.filter(this::isValidTarget).isPresent() || canStart();
     }
 
     @Override

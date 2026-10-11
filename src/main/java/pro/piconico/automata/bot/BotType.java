@@ -2,9 +2,9 @@ package pro.piconico.automata.bot;
 
 import java.util.Set;
 import net.minecraft.entity.EntityType;
-import net.minecraft.item.Item;
 import pro.piconico.automata.bot.job.BotJobType;
 import pro.piconico.automata.entity.BotEntity;
+import pro.piconico.automata.item.BotItem;
 
-public record BotType(Item item, EntityType<? extends BotEntity> entityType, Set<BotJobType<?>> supportedJobTypes) {
+public record BotType(BotItem item, EntityType<? extends BotEntity> entityType, Set<BotJobType<?>> supportedJobTypes) {
 }

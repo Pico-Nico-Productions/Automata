@@ -244,7 +244,7 @@ public class ServerBotNetwork extends BotNetwork {
         return Collections.unmodifiableMap(reservationLookup.get(entityUuid));
     }
 
-    private void reserve(UUID entityUuid, List<PredicateItemStack> predicateItemStacks) {
+    void reserve(UUID entityUuid, List<PredicateItemStack> predicateItemStacks) {
         if (predicateItemStacks.isEmpty())
             return;
 
@@ -297,7 +297,6 @@ public class ServerBotNetwork extends BotNetwork {
     }
     //#endregion
 
-    // TODO: Check if job pos is pathable
     Optional<BotEntity> getOrSpawnBotFor(BotJob job) {
         Set<BotType> capableBotTypes = AutomataBots.getBotTypesFor(job);
         if (capableBotTypes.isEmpty())
@@ -311,7 +310,9 @@ public class ServerBotNetwork extends BotNetwork {
             if (capableBots.isEmpty())
                 continue;
 
-            return Optional.of(capableBots.getFirst());
+            BotEntity bot = capableBots.getFirst();
+            reserve(bot.getUuid(), InventoryUtils.getStacks(bot, job.getPreferredStacks(serverWorld), false));
+            return Optional.of(bot);
         }
 
         if (!hasStacks(job.getRequiredStacks(serverWorld)))
@@ -324,9 +325,9 @@ public class ServerBotNetwork extends BotNetwork {
         if (closestCapableRoboport.isEmpty())
             return Optional.empty();
 
-        Optional<BotEntity> bot = closestCapableRoboport.get().spawnBotFor(job);
-        reserve(bot.get().getUuid(), job.getPreferredStacks(serverWorld));
+        Optional<BotEntity> spawnedBot = closestCapableRoboport.get().spawnBotFor(job);
+        reserve(spawnedBot.get().getUuid(), job.getPreferredStacks(serverWorld));
 
-        return bot;
+        return spawnedBot;
     }
 }

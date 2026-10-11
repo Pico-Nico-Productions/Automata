@@ -2,6 +2,7 @@ package pro.piconico.automata.bot.network;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -32,11 +33,13 @@ import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.event.PointOfInterestCallback;
+import pro.piconico.automata.item.ItemUtils.PredicateItemStack;
 import pro.piconico.automata.registry.AutomataEntities;
 import pro.piconico.automata.util.MapUtils;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
+// TODO: Ensure network merges and splits reuse the or one of the original networks and add a lookup for bots to know which network they're a part of
 public class BotNetworkManager {
     private static final Map<ServerWorld, Map<UUID, BotNetworkMap<ServerBotNetwork>>> NETWORK_MAP_CACHE = new HashMap<>();
     private static final Map<ServerWorld, Map<UUID, BotNetworkLoader>> NETWORK_LOADER_CACHE = new HashMap<>();
@@ -115,6 +118,15 @@ public class BotNetworkManager {
             return Stream.empty();
 
         return serverNetwork.get().getReservations(entityUuid).keySet().stream().map(serverNetwork.get()::getLogisticStorage);
+    }
+
+    public static boolean hasStacks(ServerWorld serverWorld, UUID teamUuid, BlockPos pos, List<PredicateItemStack> predicateItemStacks) {
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(serverWorld, teamUuid, new ChunkPos(pos));
+
+        if (serverNetwork.isEmpty())
+            return false;
+
+        return serverNetwork.get().hasStacks(predicateItemStacks);
     }
 
     public static Map<BlockPos, Map<Integer, Integer>> getReservations(ServerWorld serverWorld, UUID teamUuid, BlockPos pos, UUID entityUuid) {
@@ -248,6 +260,24 @@ public class BotNetworkManager {
 
         NETWORKS_MUTATED.invoker().onMutate(serverWorld, teamUuid, Mutation.REMOVE);
     }
+
+    public static void reserve(ServerWorld serverWorld, UUID teamUuid, BlockPos entityPos, UUID entityUuid, List<PredicateItemStack> predicateItemStacks) {
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(serverWorld, teamUuid, new ChunkPos(entityPos));
+
+        if (serverNetwork.isEmpty())
+            return;
+
+        serverNetwork.get().reserve(entityUuid, predicateItemStacks);
+    }
+
+    public static void unreserve(ServerWorld serverWorld, UUID teamUuid, BlockPos storagePos, int slot, int count, UUID entityUuid) {
+        Optional<ServerBotNetwork> serverNetwork = getNetwork(serverWorld, teamUuid, new ChunkPos(storagePos));
+
+        if (serverNetwork.isEmpty())
+            return;
+
+        serverNetwork.get().unreserve(entityUuid, storagePos, slot, count);
+    }
     //#endregion
 
     //#region Event Listeners
@@ -319,15 +349,6 @@ public class BotNetworkManager {
         default -> {
         }
         }
-    }
-
-    public static void unreserve(ServerWorld serverWorld, UUID teamUuid, BlockPos pos, int slot, int count, UUID entityUuid) {
-        Optional<ServerBotNetwork> serverNetwork = getNetwork(serverWorld, teamUuid, new ChunkPos(pos));
-
-        if (serverNetwork.isEmpty())
-            return;
-
-        serverNetwork.get().unreserve(entityUuid, pos, slot, count);
     }
 
     private static void onTeamsMutated(MinecraftServer server, BotTeam team, BotTeamPersistentState.Mutation mutation) {

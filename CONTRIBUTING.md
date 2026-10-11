@@ -187,3 +187,14 @@ Call **Text**.translatable with the translation key and arguments
 1. [Create an item](#items) that extends **BotItem**
 2. [Create an entity](#living-entities) that extends **BotEntity**
 3. Register a public static final **BotType** in [**AutomataBots**](/src/main/java/pro/piconico/automata/registry/AutomataBots.java)
+
+
+
+## Profiling
+
+### Spark
+1. [Download Spark](https://spark.lucko.me/download) with a compatible version
+2. Place the .jar file [here](/run/mods/)
+3. Run Automata
+4. Type "/spark profiler start" in a test world
+5. Type "/spark profiler stop" to see the results
