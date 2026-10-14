@@ -113,7 +113,7 @@ public abstract class BotEntity extends EntityBotDevice implements ListInventory
         }
 
         bot.refreshPositionAndAngles(startPos.getX() + .5, startPos.getY() + .5, startPos.getZ() + .5, 0F, 0F);
-        Path path = bot.getNavigation().findPathTo(targetPos, 1);
+        Path path = bot.getNavigation().findPathTo(targetPos, INTERACT_DISTANCE);
         return path != null && path.reachesTarget();
     }
 
@@ -126,7 +126,7 @@ public abstract class BotEntity extends EntityBotDevice implements ListInventory
         if (!hasStacks)
             return false;
 
-        Path pathToJob = getNavigation().findPathTo(job.pos(), 1);
+        Path pathToJob = getNavigation().findPathTo(job.pos(), INTERACT_DISTANCE);
         return pathToJob != null && pathToJob.reachesTarget();
     }
 
@@ -228,9 +228,12 @@ public abstract class BotEntity extends EntityBotDevice implements ListInventory
     public void onDeath(DamageSource damageSource) {
         super.onDeath(damageSource);
 
-        if (getEntityWorld().isClient())
+        if (!(getEntityWorld() instanceof ServerWorld serverWorld))
             return;
 
+        getTeamUuid().ifPresent(teamUuid -> {
+            BotNetworkManager.unreserve(serverWorld, teamUuid, uuid);
+        });
         endJob(false);
     }
 
@@ -239,6 +242,7 @@ public abstract class BotEntity extends EntityBotDevice implements ListInventory
         super.readData(view);
 
         Inventories.readData(view, inventory);
+        itemsToPickUp.clear();
         itemsToPickUp.addAll(view.read(ITEMS_TO_PICK_UP_KEY, Uuids.CODEC.listOf()).orElse(List.of()));
     }
 

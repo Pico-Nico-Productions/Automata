@@ -56,12 +56,12 @@ public class AutomatoolRenderer {
     private static void renderJobs(WorldRenderContext context) {
         for (Map<BotJobType<?>,BotJobAssignment> typeMap : BotCache.jobAssignmentMap.values()) {
             for (BotJobAssignment jobAssignment : typeMap.values()) {
-                Optional<Color> jobColor = AutomataClientColors.getJobColor(jobAssignment.JOB);
+                Optional<Color> jobColor = AutomataClientColors.getJobColor(jobAssignment.job);
 
                 if (jobColor.isEmpty())
                     continue;
 
-                RenderUtils.drawBoxOutline(context, new Box(jobAssignment.JOB.pos()), AutomataClientColors.DECONSTRUCTION);
+                RenderUtils.drawBoxOutline(context, new Box(jobAssignment.job.pos()), AutomataClientColors.DECONSTRUCTION);
             }
         }
     }

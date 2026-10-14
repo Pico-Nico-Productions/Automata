@@ -32,7 +32,38 @@ public class MapUtils {
     }
 
     @SuppressWarnings("unchecked")
-    public static <ValueT> ValueT computeNested(Map<?, ?> map, BiFunction<Object, ? super ValueT, ? extends ValueT> remappingFunction, Object... keys) {
+    public static <ValueT> Optional<ValueT> putNested(Map<?, ?> map, ValueT value, Object... keys) {
+        if (map == null || keys == null || keys.length == 0)
+            throw new IllegalArgumentException();
+
+        Map<?, ?>[] maps = new Map[keys.length];
+        Object current = map;
+
+        for (int i = 0; i < keys.length - 1; i++) {
+            if (!(current instanceof Map))
+                throw new IllegalArgumentException();
+
+            Map<Object, Object> currentMap = (Map<Object, Object>)current;
+            Object key = keys[i];
+
+            maps[i] = currentMap;
+            current = currentMap.computeIfAbsent(key, ignored -> new HashMap<>());
+        }
+
+        int lastIndex = keys.length - 1;
+
+        if (!(current instanceof Map))
+            throw new IllegalArgumentException();
+
+        Map<Object, Object> deepestMap = (Map<Object, Object>)current;
+        maps[lastIndex] = deepestMap;
+        Object lastKey = keys[lastIndex];
+
+        return Optional.ofNullable((ValueT)deepestMap.put(lastKey, value));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <ValueT> Optional<ValueT> computeNested(Map<?, ?> map, BiFunction<Object, ? super ValueT, ? extends ValueT> remappingFunction, Object... keys) {
         if (map == null || remappingFunction == null || keys == null || keys.length == 0)
             throw new IllegalArgumentException();
 
@@ -70,11 +101,11 @@ public class MapUtils {
                 parentMap.remove(keys[i - 1]);
             }
 
-            return null;
+            return Optional.empty();
         }
 
         deepestMap.put(lastKey, newValue);
-        return newValue;
+        return Optional.of(newValue);
     }
 
     @SuppressWarnings("unchecked")

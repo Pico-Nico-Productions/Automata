@@ -32,8 +32,8 @@ public class BotJobAssignmentMap extends HashMap<BlockPos, Map<BotJobType<?>, Bo
         super();
 
         for (BotJobAssignment jobAssignment : jobAssignments) {
-            Map<BotJobType<?>, BotJobAssignment> typeMap = computeIfAbsent(jobAssignment.JOB.pos(), pos -> new HashMap<>());
-            typeMap.put(jobAssignment.JOB.getType(), jobAssignment);
+            Map<BotJobType<?>, BotJobAssignment> typeMap = computeIfAbsent(jobAssignment.job.pos(), pos -> new HashMap<>());
+            typeMap.put(jobAssignment.job.getType(), jobAssignment);
         }
     }
 

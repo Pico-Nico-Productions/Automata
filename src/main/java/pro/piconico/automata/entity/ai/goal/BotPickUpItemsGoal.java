@@ -37,7 +37,6 @@ public class BotPickUpItemsGoal extends GoToNearestTargetGoal<BotEntity, ItemEnt
         entity.removeInvalidItemsToPickUp();
     }
 
-    // TODO: Make reservation if items are missing
     @Override
     public void tick() {
         super.tick();

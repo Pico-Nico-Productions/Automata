@@ -1,14 +1,14 @@
 package pro.piconico.automata.entity.ai.goal;
 
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.Map.Entry;
 import java.util.stream.Stream;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import pro.piconico.automata.bot.device.LogisticStorage;
+import pro.piconico.automata.bot.device.LogisticStorage.Reservation;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.network.BotNetworkManager;
 import pro.piconico.automata.entity.BotEntity;
@@ -59,6 +59,7 @@ public class BotGrabJobItemsGoal extends GoToNearestTargetGoal<BotEntity, Logist
         return super.canStart() || hasMissingPredicateStackItems();
     }
 
+    // TODO: Make reservation if items are missing
     @Override
     public void tick() {
         if (target.isEmpty()) {
@@ -71,19 +72,20 @@ public class BotGrabJobItemsGoal extends GoToNearestTargetGoal<BotEntity, Logist
         if (!reachedDesiredDistance())
             return;
 
-        Map<Integer, Integer> slotReservations = BotNetworkManager
-                .getReservations(getServerWorld(entity), entity.getTeamUuid().get(), entity.getBlockPos(), entity.getUuid()).getOrDefault(target.get().getPos(), null);
+        Collection<Reservation> reservations = BotNetworkManager
+                .getReservations(getServerWorld(entity), entity.getTeamUuid().get(), entity.getBlockPos(), entity.getUuid())
+                .getOrDefault(target.get().getPos(), List.of());
 
-        if (slotReservations == null) {
+        if (reservations.isEmpty()) {
             target = Optional.empty();
             return;
         }
 
-        for (Entry<Integer,Integer> slotCount : slotReservations.entrySet()) {
+        for (Reservation reservation : reservations) {
             LogisticStorage<?> storage = target.get();
-            int slot = slotCount.getKey(), count = slotCount.getValue();
-            InventoryUtils.add(entity, storage.removeStack(slot, count));
-            BotNetworkManager.unreserve(getServerWorld(entity), entity.getTeamUuid().get(), storage.getPos(), slot, count, entity.getUuid());
+            int amount = reservation.getCount();
+            BotNetworkManager.unreserve(getServerWorld(entity), entity.getTeamUuid().get(), storage.getPos(), reservation.slot, amount, entity.getUuid());
+            InventoryUtils.add(entity, storage.removeStack(reservation.slot, amount));
         }
         target = Optional.empty();
     }

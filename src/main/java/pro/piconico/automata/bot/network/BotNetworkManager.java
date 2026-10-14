@@ -1,5 +1,6 @@
 package pro.piconico.automata.bot.network;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,6 +30,7 @@ import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.bot.device.BlockBotDevice;
 import pro.piconico.automata.bot.device.BotDevice;
 import pro.piconico.automata.bot.device.LogisticStorage;
+import pro.piconico.automata.bot.device.LogisticStorage.Reservation;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.entity.BotEntity;
@@ -39,11 +41,10 @@ import pro.piconico.automata.util.MapUtils;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
-// TODO: Ensure network merges and splits reuse the or one of the original networks and add a lookup for bots to know which network they're a part of
 public class BotNetworkManager {
     private static final Map<ServerWorld, Map<UUID, BotNetworkMap<ServerBotNetwork>>> NETWORK_MAP_CACHE = new HashMap<>();
     private static final Map<ServerWorld, Map<UUID, BotNetworkLoader>> NETWORK_LOADER_CACHE = new HashMap<>();
-    private static final int DEFAULT_CHUNK_RADIUS = 0;
+    private static final int DEFAULT_CHUNK_RADIUS = 1;
 
     public enum Mutation {
         ADD, REMOVE
@@ -88,9 +89,13 @@ public class BotNetworkManager {
         return networks;
     }
 
+    private static Stream<ServerBotNetwork> streamNetworksNear(ServerWorld serverWorld, UUID teamUuid, BlockPos pos, int chunkRadius) {
+        return ChunkPos.stream(new ChunkPos(pos), chunkRadius) //
+                .map(chunkPos -> getNetwork(serverWorld, teamUuid, chunkPos).orElse(null)).filter(net -> net != null).distinct();
+    }
+
     public static Stream<RoboportBlockEntity> streamRoboportsNear(ServerWorld serverWorld, UUID teamUuid, BlockPos blockPos, int chunkRadius) {
-        return ChunkPos.stream(new ChunkPos(blockPos), chunkRadius) //
-                .map(chunkPos -> getNetwork(serverWorld, teamUuid, chunkPos).orElse(null)).filter(net -> net != null).distinct() //
+        return streamNetworksNear(serverWorld, teamUuid, blockPos, chunkRadius) //
                 .flatMap(ServerBotNetwork::streamRoboports).map(pos -> serverWorld.getBlockEntity(pos, AutomataEntities.ROBOPORT).orElse(null))
                 .filter(port -> port != null);
     }
@@ -100,8 +105,7 @@ public class BotNetworkManager {
     }
 
     public static Stream<LogisticStorage<?>> streamLogisticStoragesNear(ServerWorld serverWorld, UUID teamUuid, BlockPos blockPos, int chunkRadius) {
-        return ChunkPos.stream(new ChunkPos(blockPos), chunkRadius) //
-                .map(chunkPos -> getNetwork(serverWorld, teamUuid, chunkPos).orElse(null)).filter(net -> net != null).distinct() //
+        return streamNetworksNear(serverWorld, teamUuid, blockPos, chunkRadius) //
                 .flatMap(ServerBotNetwork::streamLogisticStorages)
                 .<LogisticStorage<?>>map(pos -> serverWorld.getBlockEntity(pos, AutomataEntities.LOGISTIC_CHEST).orElse(null))
                 .filter(storage -> storage != null);
@@ -129,7 +133,7 @@ public class BotNetworkManager {
         return serverNetwork.get().hasStacks(predicateItemStacks);
     }
 
-    public static Map<BlockPos, Map<Integer, Integer>> getReservations(ServerWorld serverWorld, UUID teamUuid, BlockPos pos, UUID entityUuid) {
+    public static Map<BlockPos, Collection<Reservation>> getReservations(ServerWorld serverWorld, UUID teamUuid, BlockPos pos, UUID entityUuid) {
         Optional<ServerBotNetwork> serverNetwork = getNetwork(serverWorld, teamUuid, new ChunkPos(pos));
 
         if (serverNetwork.isEmpty())
@@ -277,6 +281,17 @@ public class BotNetworkManager {
             return;
 
         serverNetwork.get().unreserve(entityUuid, storagePos, slot, count);
+    }
+
+    public static void unreserve(ServerWorld serverWorld, UUID teamUuid, UUID entityUuid) {
+        Entity entity = serverWorld.getEntity(entityUuid);
+
+        if (entity == null)
+            return;
+
+        for (LogisticStorage<?> storage : streamLogisticStoragesNear(serverWorld, teamUuid, entity.getBlockPos()).toList()) {
+            storage.unreserve(entityUuid);
+        }
     }
     //#endregion
 

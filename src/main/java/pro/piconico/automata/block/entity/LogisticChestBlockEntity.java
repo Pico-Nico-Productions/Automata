@@ -1,5 +1,9 @@
 package pro.piconico.automata.block.entity;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.ChestLidAnimator;
@@ -20,12 +24,16 @@ import pro.piconico.automata.bot.device.BlockBotDevice;
 import pro.piconico.automata.bot.device.LogisticStorage;
 import pro.piconico.automata.registry.AutomataEntities;
 import pro.piconico.automata.screen.LogisticChestScreenHandler;
+import pro.piconico.automata.util.MapUtils;
 
 public class LogisticChestBlockEntity extends BlockBotDevice implements LogisticStorage<BlockPos>, LidOpenable {
+    private static final String RESERVATIONS_KEY = "reservations";
+
     public static final int INVENTORY_SIZE = 27;
     private static final int VIEWER_COUNT_UPDATE_EVENT_TYPE = 1;
 
     private final DefaultedList<ItemStack> inventory = DefaultedList.ofSize(INVENTORY_SIZE, ItemStack.EMPTY);
+    private final Map<UUID, Map<Integer, Reservation>> reservations = new HashMap<>();
     private final ChestLidAnimator lidAnimator = new ChestLidAnimator();
     private final ViewerCountManager viewerCountManager = new ViewerCountManager() {
         @Override
@@ -72,12 +80,18 @@ public class LogisticChestBlockEntity extends BlockBotDevice implements Logistic
     protected void readData(ReadView view) {
         super.readData(view);
         Inventories.readData(view, inventory);
+        reservations.clear();
+        List<Reservation> reservationList = view.getTypedListView(RESERVATIONS_KEY, Reservation.CODEC).stream().toList();
+        for (Reservation reservation : reservationList) {
+            MapUtils.putNested(reservations, reservation, reservation.entityUuid, reservation.slot);
+        }
     }
 
     @Override
     protected void writeData(WriteView view) {
         super.writeData(view);
         Inventories.writeData(view, inventory);
+        view.put(RESERVATIONS_KEY, Reservation.CODEC.listOf(), reservations.values().stream().flatMap(map -> map.values().stream()).toList());
     }
 
     @Override
@@ -106,6 +120,11 @@ public class LogisticChestBlockEntity extends BlockBotDevice implements Logistic
     @Override
     public boolean canPlayerUse(PlayerEntity player) {
         return Inventory.canPlayerUse(this, player);
+    }
+
+    @Override
+    public Map<UUID, Map<Integer, Reservation>> getReservations() {
+        return reservations;
     }
     //#endregion
 

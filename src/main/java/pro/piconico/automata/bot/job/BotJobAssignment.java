@@ -8,24 +8,23 @@ import net.minecraft.util.Uuids;
 
 public class BotJobAssignment {
     public static final Codec<BotJobAssignment> CODEC = RecordCodecBuilder.create(instance -> instance.group( //
-            BotJob.CODEC.fieldOf("job").forGetter(jobAssignment -> jobAssignment.JOB), //
-            Uuids.INT_STREAM_CODEC.fieldOf("team_uuid").forGetter(jobAssignment -> jobAssignment.TEAM_UUID), //
+            BotJob.CODEC.fieldOf("job").forGetter(jobAssignment -> jobAssignment.job), //
+            Uuids.INT_STREAM_CODEC.fieldOf("team_uuid").forGetter(jobAssignment -> jobAssignment.teamUuid), //
             Uuids.INT_STREAM_CODEC.optionalFieldOf("bot_uuid").forGetter(BotJobAssignment::getAssignedBot)) //
             .apply(instance, BotJobAssignment::new));
 
+    public final BotJob job;
+    public final UUID teamUuid;
     private Optional<UUID> assignedBot;
 
-    public final BotJob JOB;
-    public final UUID TEAM_UUID;
-
     public BotJobAssignment(BotJob job, UUID teamUuid, Optional<UUID> assignedBot) {
-        JOB = job;
-        TEAM_UUID = teamUuid;
+        this.job = job;
+        this.teamUuid = teamUuid;
         this.assignedBot = assignedBot;
     }
 
     public BotJobAssignment(BotJobAssignment original) {
-        this(original.JOB, original.TEAM_UUID, original.assignedBot);
+        this(original.job, original.teamUuid, original.assignedBot);
     }
 
     public BotJobAssignment(BotJob job, UUID teamUuid) {
