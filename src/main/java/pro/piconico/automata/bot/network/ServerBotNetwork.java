@@ -257,14 +257,21 @@ public class ServerBotNetwork extends BotNetwork {
             return Optional.empty();
 
         for (ChunkPos chunkPos : roboportMap.keySet()) {
-            Box searchBox = ChunkBounds.of(chunkPos, 0, serverWorld).toBox();
-            List<BotEntity> capableBots = serverWorld.getEntitiesByType(TypeFilter.instanceOf(BotEntity.class), searchBox, //
-                    botEntity -> botEntity.isAlive() && botEntity.isOnTeam(teamUuid) && botEntity.canDoJob(job));
+            BotEntity bot = null;
 
-            if (capableBots.isEmpty())
+            Box searchBox = ChunkBounds.of(chunkPos, 0, serverWorld).toBox();
+            List<BotEntity> teamBots = serverWorld.getEntitiesByType(TypeFilter.instanceOf(BotEntity.class), searchBox, //
+                    botEntity -> botEntity.isAlive() && botEntity.isOnTeam(teamUuid));
+            for (BotEntity botEntity : teamBots) {
+                if (botEntity.canDoJob(job)) {
+                    bot = botEntity;
+                    break;
+                }
+            }
+
+            if (bot == null)
                 continue;
 
-            BotEntity bot = capableBots.getFirst();
             reserve(bot.getUuid(), InventoryUtils.getStacks(bot, job.getPreferredStacks(serverWorld), false));
             return Optional.of(bot);
         }

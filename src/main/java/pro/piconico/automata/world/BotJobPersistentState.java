@@ -2,6 +2,7 @@ package pro.piconico.automata.world;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -11,6 +12,7 @@ import java.util.UUID;
 import com.mojang.serialization.Codec;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.inventory.StackWithSlot;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
@@ -46,16 +48,19 @@ public class BotJobPersistentState extends PersistentState {
             callback.onMutate(teamUuid, serverWorld, mutation);
         }
     });
+    public static final int SHORT_TICK_DELAY = 3, LONG_TICK_DELAY = 5;
 
     public static final Codec<BotJobPersistentState> CODEC = BotJobAssignment.CODEC.listOf().xmap(BotJobPersistentState::new, BotJobPersistentState::flatten)
             .fieldOf("job_assignment_map").codec();
 
     private final Map<UUID, BotJobAssignmentMap> teamJobAssignmentMap;
     private final Map<UUID, BotJob> jobLookup;
+    private final Map<UUID, Integer> teamUuidsToAssignJobs;
 
     public BotJobPersistentState() {
         teamJobAssignmentMap = new HashMap<>();
         jobLookup = new HashMap<>();
+        teamUuidsToAssignJobs = new HashMap<>();
     }
 
     private BotJobPersistentState(List<BotJobAssignment> jobAssignments) {
@@ -65,6 +70,7 @@ public class BotJobPersistentState extends PersistentState {
             Map<BotJobType<?>, BotJobAssignment> typeMap = jobAssignmentMap.computeIfAbsent(jobAssignment.job.pos(), pos -> new HashMap<>());
             typeMap.put(jobAssignment.job.getType(), jobAssignment);
             jobAssignment.getAssignedBot().ifPresent(botUuid -> jobLookup.put(botUuid, jobAssignment.job));
+            teamUuidsToAssignJobs.put(jobAssignment.teamUuid, 0);
         }
     }
 
@@ -107,10 +113,7 @@ public class BotJobPersistentState extends PersistentState {
     //#endregion
 
     //#region Job Assignment
-    private static boolean assignJob(ServerWorld serverWorld, BotJobAssignment jobAssignment, boolean notify) {
-        if (!jobAssignment.job.canStart(serverWorld))
-            return false;
-
+    private static boolean assignJob(ServerWorld serverWorld, BotJobAssignment jobAssignment) {
         Optional<BotEntity> botEntity = BotNetworkManager.getOrSpawnBotFor(serverWorld, jobAssignment.teamUuid, jobAssignment.job);
 
         if (botEntity.isEmpty())
@@ -121,37 +124,39 @@ public class BotJobPersistentState extends PersistentState {
         BotJobPersistentState jobState = getJobState(serverWorld);
         jobState.jobLookup.put(botUuid, jobAssignment.job);
 
-        if (notify) {
-            jobState.markDirty();
-            JOBS_MUTATED.invoker().onMutate(serverWorld, jobAssignment.teamUuid, Mutation.ASSIGN);
-        }
+        jobState.markDirty();
+        JOBS_MUTATED.invoker().onMutate(serverWorld, jobAssignment.teamUuid, Mutation.ASSIGN);
 
         return true;
     }
 
-    private static void assignJobs(ServerWorld serverWorld, UUID teamUuid) {
+    private void markForAssigning(UUID teamUuid, int tickDelay) {
+        if (tickDelay < 0)
+            throw new IllegalArgumentException("Delay can't be negative");
+
+        teamUuidsToAssignJobs.compute(teamUuid, (ignored, oldTickDelay) -> oldTickDelay != null ? Math.min(oldTickDelay, tickDelay) : tickDelay);
+    }
+
+    private void markForAssigning(UUID teamUuid) {
+        markForAssigning(teamUuid, 0);
+    }
+
+    private static void assignFirstJob(ServerWorld serverWorld, UUID teamUuid) {
         BotJobPersistentState jobState = getJobState(serverWorld);
         BotJobAssignmentMap teamMap = jobState.teamJobAssignmentMap.get(teamUuid);
 
         if (teamMap == null)
             return;
 
-        boolean assigned = false;
-
         for (Map<BotJobType<?>, BotJobAssignment> typeMap : teamMap.values()) {
             for (BotJobAssignment jobAssignment : typeMap.values()) {
-                if (jobAssignment.isAssigned() || !assignJob(serverWorld, jobAssignment, false))
+                if (jobAssignment.isAssigned() || !assignJob(serverWorld, jobAssignment))
                     continue;
 
-                assigned = true;
+                jobState.markForAssigning(teamUuid, SHORT_TICK_DELAY);
+                return;
             }
         }
-
-        if (!assigned)
-            return;
-
-        jobState.markDirty();
-        JOBS_MUTATED.invoker().onMutate(serverWorld, teamUuid, Mutation.ASSIGN);
     }
 
     private static void unassignJob(ServerWorld serverWorld, BotJobAssignment jobAssignment, boolean notify) {
@@ -225,7 +230,7 @@ public class BotJobPersistentState extends PersistentState {
         jobState.markDirty();
         JOBS_MUTATED.invoker().onMutate(serverWorld, teamUuid, Mutation.ADD);
 
-        assignJobs(serverWorld, teamUuid);
+        jobState.markForAssigning(teamUuid);
 
         return Optional.of(addedPositions.size());
     }
@@ -304,6 +309,22 @@ public class BotJobPersistentState extends PersistentState {
     //#endregion
 
     //#region Event Listeners
+    private static void onEndWorldTick(ServerWorld serverWorld) {
+        BotJobPersistentState jobState = getJobState(serverWorld);
+        Iterator<Entry<UUID,Integer>> teamUuidIterator = jobState.teamUuidsToAssignJobs.entrySet().iterator();
+        while (teamUuidIterator.hasNext()) {
+            Entry<UUID, Integer> teamUuidTickDelay = teamUuidIterator.next();
+
+            if (teamUuidTickDelay.getValue() > 0) {
+                teamUuidTickDelay.setValue(teamUuidTickDelay.getValue() - 1);
+                continue;
+            }
+
+            teamUuidIterator.remove();
+            assignFirstJob(serverWorld, teamUuidTickDelay.getKey());
+        }
+    }
+
     private static void onTeamsMutated(MinecraftServer server, BotTeam team, BotTeamPersistentState.Mutation mutation) {
         if (mutation != BotTeamPersistentState.Mutation.REMOVE)
             return;
@@ -314,7 +335,7 @@ public class BotJobPersistentState extends PersistentState {
     private static void onNetworksMutated(ServerWorld serverWorld, UUID teamUuid, BotNetworkManager.Mutation mutation) {
         switch (mutation) {
         case BotNetworkManager.Mutation.ADD:
-            assignJobs(serverWorld, teamUuid);
+            getJobState(serverWorld).markForAssigning(teamUuid);
             break;
         case BotNetworkManager.Mutation.REMOVE:
             unassignJobs(serverWorld, teamUuid);
@@ -326,16 +347,17 @@ public class BotJobPersistentState extends PersistentState {
         if (!(roboport.getWorld() instanceof ServerWorld serverWorld) || roboport.getTeamUuid().isEmpty())
             return;
 
-        assignJobs(serverWorld, roboport.getTeamUuid().get());
+        getJobState(serverWorld).markForAssigning(roboport.getTeamUuid().get(), SHORT_TICK_DELAY);
     }
 
-    private static void onInventoryStackChanged(ServerWorld serverWorld, LogisticStorage<?> logisticStorage, List<StackWithSlot> oldStacks, ItemStackMutation mutation) {
+    private static void onInventoryStackChanged(ServerWorld serverWorld, LogisticStorage<?> logisticStorage, List<StackWithSlot> oldStacks,
+            ItemStackMutation mutation) {
         Optional<UUID> teamUuid = logisticStorage.getTeamUuid();
 
         if (teamUuid.isEmpty() || mutation == ItemStackMutation.REMOVE)
             return;
 
-        assignJobs(serverWorld, teamUuid.get());
+        getJobState(serverWorld).markForAssigning(teamUuid.get(), SHORT_TICK_DELAY);
     }
 
     private static void onJobEnded(BotEntity botEntity, BotJob job, boolean completed) {
@@ -343,20 +365,22 @@ public class BotJobPersistentState extends PersistentState {
             return;
 
         Optional<BotJobAssignment> jobAssignment = getJobAssignment(serverWorld, botEntity.getTeamUuid().get(), job.pos(), job.getType());
+
         if (jobAssignment.isEmpty())
             return;
 
         if (completed) {
             removeJob(serverWorld, botEntity.getTeamUuid().get(), job.pos(), job.getType(), true);
-            assignJobs(serverWorld, botEntity.getTeamUuid().get());
         }
-        else if (!assignJob(serverWorld, jobAssignment.get(), true)) {
+        else {
             unassignJob(serverWorld, jobAssignment.get(), true);
         }
+        getJobState(serverWorld).markForAssigning(jobAssignment.get().teamUuid, LONG_TICK_DELAY);
     }
     //#endregion
 
     public static void initialize() {
+        ServerTickEvents.END_WORLD_TICK.register(BotJobPersistentState::onEndWorldTick);
         BotTeamPersistentState.TEAMS_MUTATED.register(BotJobPersistentState::onTeamsMutated);
         BotNetworkManager.NETWORKS_MUTATED.register(BotJobPersistentState::onNetworksMutated);
         RoboportBlockEntity.BOT_ADDED.register(BotJobPersistentState::onBotAdded);

@@ -5,7 +5,7 @@ import pro.piconico.automata.bot.BotType;
 
 public abstract class BotItem extends Item {
     public BotItem(Settings settings) {
-        super(settings.maxCount(16));
+        super(settings.maxCount(8));
     }
 
     public abstract BotType getBotType();
