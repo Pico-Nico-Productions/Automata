@@ -27,12 +27,7 @@ public class BotGrabJobItemsGoal extends GoToNearestTargetGoal<BotEntity, Logist
         if (teamUuid.isEmpty())
             return Stream.empty();
 
-        return BotNetworkManager.streamReservationLogisticStorages(getServerWorld(entity), entity.getTeamUuid().get(), entity.getBlockPos(), entity.getUuid());
-    }
-
-    @Override
-    protected boolean isValidTarget(LogisticStorage<?> target) {
-        return true;
+        return BotNetworkManager.streamReservationLogisticStorages(getServerWorld(entity), teamUuid.get(), entity.getBlockPos(), entity.getUuid());
     }
 
     @Override
@@ -40,15 +35,15 @@ public class BotGrabJobItemsGoal extends GoToNearestTargetGoal<BotEntity, Logist
         return target.getPos();
     }
 
-    private boolean hasMissingPredicateStackItems() {
+    private List<PredicateItemStack> getMissingPredicateStackItems() {
         BotJob job = entity.getJob().get();
         World world = entity.getEntityWorld();
         List<PredicateItemStack> stacks = job.getRequiredStacks(world);
 
         if (stacks.isEmpty())
-            return false;
+            return List.of();
 
-        return InventoryUtils.getStacks(entity, stacks, false).stream().anyMatch(predicateItemStack -> predicateItemStack.count() != 0);
+        return InventoryUtils.getStacks(entity, stacks, false);
     }
 
     @Override
@@ -56,14 +51,14 @@ public class BotGrabJobItemsGoal extends GoToNearestTargetGoal<BotEntity, Logist
         if (!entity.hasEmptyStack() || entity.getJob().isEmpty())
             return false;
 
-        return super.canStart() || hasMissingPredicateStackItems();
+        return super.canStart() || getMissingPredicateStackItems().stream().anyMatch(predicateItemStack -> predicateItemStack.count() > 0);
     }
 
-    // TODO: Make reservation if items are missing
     @Override
     public void tick() {
         if (target.isEmpty()) {
             stop();
+            BotNetworkManager.reserve(getServerWorld(entity), entity.getTeamUuid().get(), entity.getPos(), entity.getUuid(), getMissingPredicateStackItems());
             return;
         }
 

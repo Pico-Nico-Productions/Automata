@@ -23,7 +23,9 @@ public abstract class GoToNearestTargetGoal<EntityT extends PathAwareEntity, Tar
 
     protected abstract Stream<TargetT> streamTargets();
 
-    protected abstract boolean isValidTarget(TargetT target);
+    protected boolean isValidTarget(TargetT target) {
+        return true;
+    }
 
     protected abstract BlockPos getPos(TargetT target);
 

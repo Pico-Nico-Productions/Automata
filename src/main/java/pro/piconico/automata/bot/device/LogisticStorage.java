@@ -94,6 +94,7 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
                 .map(i -> new StackWithSlot(i, heldStacks.get(i).copy())).toList();
 
         getHeldStacks().clear();
+        getReservations().clear();
         markDirty();
 
         if (!(getWorld() instanceof ServerWorld serverWorld))
@@ -106,19 +107,20 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
     public default ItemStack removeStack(int slot, int amount) {
         DefaultedList<ItemStack> heldStacks = getHeldStacks();
         ItemStack oldStack = heldStacks.get(slot).copy();
-        ItemStack itemStack = Inventories.splitStack(heldStacks, slot, amount);
+        ItemStack removedStack = Inventories.splitStack(heldStacks, slot, amount);
 
-        if (itemStack.isEmpty())
+        if (removedStack.isEmpty())
             return ItemStack.EMPTY;
 
+        capReservations(slot, oldStack.getCount() - removedStack.getCount());
         this.markDirty();
 
         if (!(getWorld() instanceof ServerWorld serverWorld))
-            return itemStack;
+            return removedStack;
 
         INVENTORY_STACK_CHANGED.invoker().onChanged(serverWorld, this, List.of(new StackWithSlot(slot, oldStack)), ItemStackMutation.REMOVE);
 
-        return itemStack;
+        return removedStack;
     }
 
     @Override
@@ -133,8 +135,13 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
         if (mutation.isEmpty())
             return;
 
+
         ItemStack oldStack = getHeldStacks().get(slot).copy();
+
         setStackNoMarkDirty(slot, stack);
+        if (mutation.get() == ItemStackMutation.REMOVE || mutation.get() == ItemStackMutation.REPLACE) {
+            capReservations(slot, mutation.get() == ItemStackMutation.REMOVE ? stack.getCount() : 0);
+        }
         this.markDirty();
 
         if (!(getWorld() instanceof ServerWorld serverWorld))
@@ -162,9 +169,13 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
     }
 
     public default void reserve(UUID entityUuid, int slot, int count) {
-        Map<UUID, Map<Integer, Reservation>> reservations = getReservations();
-        MapUtils.<Reservation>computeNested(reservations, (key, reservation) -> {
-            if ((reservation == null ? 0 : reservation.count) + count > getStack(slot).getCount()) {
+        if (count < 0) {
+            Automata.logError("Reservation count was negative", IllegalArgumentException::new);
+            return;
+        }
+
+        MapUtils.<Reservation>computeNested(getReservations(), (key, reservation) -> {
+            if ((reservation != null ? reservation.count : 0) + count > getStack(slot).getCount()) {
                 Automata.logError("Reservation exceeded stack count", IllegalStateException::new);
             }
 
@@ -177,6 +188,11 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
     }
 
     default void unreserve(UUID entityUuid, int slot, int count) {
+        if (count < 0) {
+            Automata.logError("Unreservation count was negative", IllegalArgumentException::new);
+            return;
+        }
+
         Map<UUID, Map<Integer, Reservation>> reservations = getReservations();
         MapUtils.<Reservation>getNested(reservations, entityUuid, slot).ifPresent(reservation -> {
             if (count > reservation.count) {
@@ -194,5 +210,29 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
 
     default void unreserve(UUID entityUuid) {
         getReservations().remove(entityUuid);
+    }
+
+    private void capReservations(int slot, int maxCount) {
+        Collection<Map<Integer, Reservation>> reservations = getReservations().values();
+        int slotReservationSurplusCount = reservations.stream().mapToInt(map -> map.containsKey(slot) ? map.get(slot).count : 0).sum() - maxCount;
+        for (java.util.Iterator<Map<Integer, Reservation>> iterator = reservations.iterator(); iterator.hasNext() && slotReservationSurplusCount > 0;) {
+            Map<Integer, Reservation> entityReservations = iterator.next();
+
+            if (!entityReservations.containsKey(slot))
+                continue;
+
+            Reservation reservation = entityReservations.get(slot);
+            int removeCount = Math.min(reservation.count, slotReservationSurplusCount);
+            if (removeCount == reservation.count) {
+                entityReservations.remove(slot);
+                if (entityReservations.isEmpty()) {
+                    iterator.remove();
+                }
+            }
+            else {
+                reservation.decrementCount(removeCount);
+            }
+            slotReservationSurplusCount -= removeCount;
+        }
     }
 }
