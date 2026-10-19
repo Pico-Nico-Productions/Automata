@@ -17,10 +17,13 @@ import io.wispforest.owo.ui.core.VerticalAlignment;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import net.minecraft.world.World;
 import pro.piconico.automata.bot.device.BotDevice;
+import pro.piconico.automata.bot.device.LogisticStorage;
 import pro.piconico.automata.bot.device.BotDevice.ChangeBotTeam;
+import pro.piconico.automata.client.registry.AutomataClientColors;
 import pro.piconico.automata.client.registry.AutomataClientTextures;
 import pro.piconico.automata.client.ui.tab.BotDeviceHomeTab;
 import pro.piconico.automata.client.ui.tab.Tab;
@@ -56,6 +59,23 @@ public abstract class BotDeviceScreen<HandlerT extends BotDeviceScreenHandler> e
 
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
+    }
+
+    @Override
+    protected void drawSlot(DrawContext context, Slot slot, int mouseX, int mouseY) {
+        super.drawSlot(context, slot, mouseX, mouseY);
+
+        if (!(handler.device instanceof LogisticStorage<?> storage) || storage != slot.inventory)
+            return;
+
+        int reservationCount = storage.getReservationCount(slot.getIndex());
+
+        if (reservationCount == 0)
+            return;
+
+        String countText = Integer.toString(reservationCount);
+        int x = slot.x + ScreenHandlerUtils.SLOT_SIZE - textRenderer.getWidth(countText);
+        context.drawText(textRenderer, countText, x, slot.y, AutomataClientColors.RESERVATION.argb(), true);
     }
 
     protected static void buildSlot(FlowLayout parent, int x, int y) {

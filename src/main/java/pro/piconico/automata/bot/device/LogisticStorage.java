@@ -84,6 +84,10 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
 
     public BlockPos getPos();
 
+    public default void sync() {
+    }
+
+    //#region ListInventory
     @Override
     public default void clear() {
         if (getFilledSlotCount() == 0)
@@ -96,6 +100,7 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
         getHeldStacks().clear();
         getReservations().clear();
         markDirty();
+        sync();
 
         if (!(getWorld() instanceof ServerWorld serverWorld))
             return;
@@ -113,7 +118,8 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
             return ItemStack.EMPTY;
 
         capReservations(slot, oldStack.getCount() - removedStack.getCount());
-        this.markDirty();
+        markDirty();
+        sync();
 
         if (!(getWorld() instanceof ServerWorld serverWorld))
             return removedStack;
@@ -135,21 +141,23 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
         if (mutation.isEmpty())
             return;
 
-
         ItemStack oldStack = getHeldStacks().get(slot).copy();
 
         setStackNoMarkDirty(slot, stack);
         if (mutation.get() == ItemStackMutation.REMOVE || mutation.get() == ItemStackMutation.REPLACE) {
             capReservations(slot, mutation.get() == ItemStackMutation.REMOVE ? stack.getCount() : 0);
         }
-        this.markDirty();
+        markDirty();
+        sync();
 
         if (!(getWorld() instanceof ServerWorld serverWorld))
             return;
 
         INVENTORY_STACK_CHANGED.invoker().onChanged(serverWorld, this, List.of(new StackWithSlot(slot, oldStack)), mutation.get());
     }
+    //#endregion
 
+    //#region Reservations
     public Map<UUID, Map<Integer, Reservation>> getReservations();
 
     public default Collection<Reservation> getReservations(UUID entityUuid) {
@@ -173,10 +181,14 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
             Automata.logError("Reservation count was negative", IllegalArgumentException::new);
             return;
         }
+        if (count == 0)
+            return;
 
-        MapUtils.<Reservation>computeNested(getReservations(), (key, reservation) -> {
+        Map<UUID, Map<Integer, Reservation>> reservations = getReservations();
+        MapUtils.<Reservation>computeNested(reservations, (key, reservation) -> {
             if ((reservation != null ? reservation.count : 0) + count > getStack(slot).getCount()) {
                 Automata.logError("Reservation exceeded stack count", IllegalStateException::new);
+                return reservation;
             }
 
             if (reservation == null)
@@ -185,6 +197,8 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
             reservation.incrementCount(count);
             return reservation;
         }, entityUuid, slot);
+        markDirty();
+        sync();
     }
 
     default void unreserve(UUID entityUuid, int slot, int count) {
@@ -192,6 +206,8 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
             Automata.logError("Unreservation count was negative", IllegalArgumentException::new);
             return;
         }
+        if (count == 0)
+            return;
 
         Map<UUID, Map<Integer, Reservation>> reservations = getReservations();
         MapUtils.<Reservation>getNested(reservations, entityUuid, slot).ifPresent(reservation -> {
@@ -206,15 +222,25 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
                 reservation.decrementCount(count);
             }
         });
+        markDirty();
+        sync();
     }
 
     default void unreserve(UUID entityUuid) {
-        getReservations().remove(entityUuid);
+        if (getReservations().remove(entityUuid) == null)
+            return;
+
+        markDirty();
+        sync();
+    }
+
+    public default int getReservationCount(int slot) {
+        return getReservations().values().stream().mapToInt(map -> map.containsKey(slot) ? map.get(slot).count : 0).sum();
     }
 
     private void capReservations(int slot, int maxCount) {
+        int slotReservationSurplusCount = getReservationCount(slot) - maxCount;
         Collection<Map<Integer, Reservation>> reservations = getReservations().values();
-        int slotReservationSurplusCount = reservations.stream().mapToInt(map -> map.containsKey(slot) ? map.get(slot).count : 0).sum() - maxCount;
         for (java.util.Iterator<Map<Integer, Reservation>> iterator = reservations.iterator(); iterator.hasNext() && slotReservationSurplusCount > 0;) {
             Map<Integer, Reservation> entityReservations = iterator.next();
 
@@ -234,5 +260,7 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
             }
             slotReservationSurplusCount -= removeCount;
         }
+        sync();
     }
+    //#endregion
 }

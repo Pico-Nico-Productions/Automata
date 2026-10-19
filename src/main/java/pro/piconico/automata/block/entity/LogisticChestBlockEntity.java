@@ -15,6 +15,7 @@ import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
 import net.minecraft.util.collection.DefaultedList;
@@ -102,7 +103,7 @@ public class LogisticChestBlockEntity extends BlockBotDevice implements Logistic
     @Override
     public boolean onSyncedBlockEvent(int type, int data) {
         if (type != VIEWER_COUNT_UPDATE_EVENT_TYPE)
-            return super.onSyncedBlockEvent(type, data);
+            return false;
 
         lidAnimator.setOpen(data > 0);
 
@@ -110,7 +111,15 @@ public class LogisticChestBlockEntity extends BlockBotDevice implements Logistic
     }
     //#endregion
 
-    //#region ListInventory
+    //#region LogisticStorage
+    @Override
+    public void sync() {
+        if (!(world instanceof ServerWorld serverWorld))
+            return;
+
+        serverWorld.getChunkManager().markForUpdate(pos);
+    }
+
     @Override
     public DefaultedList<ItemStack> getHeldStacks() {
         return inventory;

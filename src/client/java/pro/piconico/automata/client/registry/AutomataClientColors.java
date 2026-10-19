@@ -22,4 +22,6 @@ public class AutomataClientColors {
     public static final Color ACTIVE = Color.ofRgb(0xFFFFFFFF); // White
     public static final Color HOVERED = Color.ofRgb(0xFF999999); // Light gray
     public static final Color INACTIVE = Color.ofRgb(0xFF666666); // Gray
+
+    public static final Color RESERVATION = Color.ofRgb(0x55FFFF); // Aqua
 }

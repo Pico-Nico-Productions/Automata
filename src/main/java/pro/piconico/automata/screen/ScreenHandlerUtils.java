@@ -26,30 +26,30 @@ public class ScreenHandlerUtils {
         if (screenFactoryInventorySize <= 0 || screenFactoryInventorySize >= slots.size())
             throw new ArgumentIndexOutOfBoundsException(screenFactoryInventorySize);
 
-        ItemStack newStack = ItemStack.EMPTY;
-
         Slot slot = slots.get(slotIndex);
-        if (slot != null && slot.hasStack()) {
-            ItemStack originalStack = slot.getStack();
-            newStack = originalStack.copy();
 
-            if (slotIndex < screenFactoryInventorySize) {
-                if (!insert.apply(originalStack, screenFactoryInventorySize, slots.size(), true)) {
-                    return ItemStack.EMPTY;
-                }
-            }
-            else {
-                if (!insert.apply(originalStack, 0, screenFactoryInventorySize, false)) {
-                    return ItemStack.EMPTY;
-                }
-            }
+        if (slot == null || !slot.hasStack())
+            return ItemStack.EMPTY;
 
-            if (originalStack.isEmpty()) {
-                slot.setStack(ItemStack.EMPTY);
+        ItemStack originalStack = slot.getStack();
+        ItemStack newStack = originalStack.copy();
+
+        if (slotIndex < screenFactoryInventorySize) {
+            if (!insert.apply(originalStack, screenFactoryInventorySize, slots.size(), true)) {
+                return ItemStack.EMPTY;
             }
-            else {
-                slot.markDirty();
+        }
+        else {
+            if (!insert.apply(originalStack, 0, screenFactoryInventorySize, false)) {
+                return ItemStack.EMPTY;
             }
+        }
+
+        if (originalStack.isEmpty()) {
+            slot.setStack(ItemStack.EMPTY);
+        }
+        else {
+            slot.markDirty();
         }
 
         return newStack;
