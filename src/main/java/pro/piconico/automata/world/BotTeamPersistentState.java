@@ -61,6 +61,10 @@ public class BotTeamPersistentState extends PersistentState {
         return Optional.of(teamState.teamMap.get(teamUuid));
     }
 
+    public static boolean teamExistsAndHasMember(UUID teamUuid, UUID playerUuid) {
+        return getTeam(teamUuid).filter(team -> team.getRole(playerUuid).isPresent()).isPresent();
+    }
+
     public static Set<UUID> getTeamUuids() {
         return getTeamState().teamMap.keySet();
     }

@@ -27,7 +27,7 @@ public class BotScreenHandler extends BotDeviceScreenHandler {
 
     @Override
     public boolean canUse(PlayerEntity player) {
-        return castBot().canPlayerUse(player);
+        return castBot().canPlayerUse(player) && castBot().canPlayerOpenScreen(player);
     }
 
     @Override

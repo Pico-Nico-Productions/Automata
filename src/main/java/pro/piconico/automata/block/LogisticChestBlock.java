@@ -70,12 +70,7 @@ public class LogisticChestBlock extends BlockWithEntity {
 
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        if (world.isClient())
-            return ActionResult.SUCCESS;
-
         LogisticChestBlockEntity logisticChest = world.getBlockEntity(pos, AutomataEntities.LOGISTIC_CHEST).get();
-        player.openHandledScreen(logisticChest);
-
-        return ActionResult.SUCCESS;
+        return logisticChest.openScreen(player);
     }
 }

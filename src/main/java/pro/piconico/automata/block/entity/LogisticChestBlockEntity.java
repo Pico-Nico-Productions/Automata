@@ -12,7 +12,6 @@ import net.minecraft.block.entity.ViewerCountManager;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.world.ServerWorld;
@@ -123,12 +122,6 @@ public class LogisticChestBlockEntity extends BlockBotDevice implements Logistic
     @Override
     public DefaultedList<ItemStack> getHeldStacks() {
         return inventory;
-    }
-
-    // TODO: Replace once extends LockableContainerBlockEntity
-    @Override
-    public boolean canPlayerUse(PlayerEntity player) {
-        return Inventory.canPlayerUse(this, player);
     }
 
     @Override

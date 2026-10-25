@@ -8,9 +8,12 @@ import io.wispforest.endec.Endec;
 import io.wispforest.owo.serialization.CodecUtils;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.registry.AutomataRegistries;
+import pro.piconico.automata.world.BotTeamPersistentState;
 
 public interface BotDevice<T> extends ExtendedScreenHandlerFactory<T> {
     public static interface Id {
@@ -45,6 +48,35 @@ public interface BotDevice<T> extends ExtendedScreenHandlerFactory<T> {
     }
 
     public boolean setTeamUuid(Optional<UUID> teamUuid);
+
+    public default boolean canPlayerOpenScreen(PlayerEntity player) {
+        if (player.getEntityWorld().isClient())
+            return true;
+
+        Optional<UUID> teamUuid = getTeamUuid();
+
+        if (teamUuid.isEmpty())
+            return true;
+
+        Optional<BotTeam> team = BotTeamPersistentState.getTeam(teamUuid.get());
+
+        if (team.isEmpty())
+            return true;
+
+        return team.get().hasMember(player.getUuid());
+    }
+
+    public default ActionResult openScreen(PlayerEntity player) {
+        if (!canPlayerOpenScreen(player))
+            return ActionResult.FAIL;
+
+        if (player.getEntityWorld().isClient())
+            return ActionResult.SUCCESS;
+
+        player.openHandledScreen(this);
+
+        return ActionResult.SUCCESS;
+    }
 
     @SuppressWarnings("unchecked")
     public static <IdT extends Id, BotDeviceT extends BotDevice<?>> Optional<BotDeviceT> resolve(PlayerEntity player, IdT deviceId) {

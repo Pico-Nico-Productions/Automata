@@ -28,7 +28,7 @@ public class RoboportScreenHandler extends BotDeviceScreenHandler {
 
     @Override
     public boolean canUse(PlayerEntity player) {
-        return (castRoboport()).canPlayerUse(player);
+        return castRoboport().canPlayerUse(player) && castRoboport().canPlayerOpenScreen(player);
     }
 
     @Override

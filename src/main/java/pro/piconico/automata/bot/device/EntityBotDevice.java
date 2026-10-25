@@ -67,12 +67,7 @@ public abstract class EntityBotDevice extends PathAwareEntity implements BotDevi
 
     @Override
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
-        if (getEntityWorld().isClient())
-            return ActionResult.SUCCESS;
-
-        player.openHandledScreen(this);
-
-        return ActionResult.SUCCESS;
+        return openScreen(player);
     }
     //#endregion
 

@@ -94,7 +94,9 @@ public class BotTeam {
     }
 
     public void setSettings(BotTeamSettings settings) {
-        if (LoaderUtils.isClient() || getSettings().equals(settings))
+        LoaderUtils.assertServer();
+
+        if (getSettings().equals(settings))
             return;
 
         validateName(settings.name);
@@ -105,7 +107,9 @@ public class BotTeam {
     }
 
     public void addMember(PlayerEntity player, BotTeamRole role) {
-        if (LoaderUtils.isClient() || members.containsKey(player.getUuid()))
+        LoaderUtils.assertServer();
+
+        if (members.containsKey(player.getUuid()))
             return;
 
         members.put(player.getUuid(), new BotTeamMember(player, role));
@@ -118,7 +122,9 @@ public class BotTeam {
     }
 
     public void removeMember(UUID playerUuid) {
-        if (LoaderUtils.isClient() || !members.containsKey(playerUuid))
+        LoaderUtils.assertServer();
+
+        if (!members.containsKey(playerUuid))
             return;
 
         members.remove(playerUuid);
@@ -133,12 +139,20 @@ public class BotTeam {
         return Optional.of(members.get(playerUuid).getRole());
     }
 
-    public void setRole(UUID playerUuid, BotTeamRole role) {
-        if (LoaderUtils.isClient() || !members.containsKey(playerUuid) || members.get(playerUuid).getRole() == role)
-            return;
+    public boolean setRole(UUID playerUuid, BotTeamRole role) {
+        LoaderUtils.assertServer();
+
+        if (!members.containsKey(playerUuid) || members.get(playerUuid).getRole() == role)
+            return false;
 
         members.get(playerUuid).setRole(role);
 
         MUTATED.invoker().onMutate(this);
+
+        return true;
+    }
+
+    public boolean hasMember(UUID playerUuid) {
+        return getRole(playerUuid).isPresent();
     }
 }

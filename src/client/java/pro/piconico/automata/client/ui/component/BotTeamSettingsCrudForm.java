@@ -51,11 +51,11 @@ public class BotTeamSettingsCrudForm {
         }
     }
 
-    public static void build(BotDeviceScreenHandler handler, FlowLayout parent, Text headerText, Mutation... actions) {
+    public static void build(BotDeviceScreenHandler handler, FlowLayout parent, Text headerText, Mutation... mutations) {
         parent.child(AutomataUIComponents.centerHeader(headerText));
 
         Optional<BotTeam> team = handler.getTeam();
-        boolean requiresTeam = Arrays.stream(actions).noneMatch(Mutation.CREATE::equals);
+        boolean requiresTeam = Arrays.stream(mutations).noneMatch(Mutation.CREATE::equals);
 
         if (team.isEmpty() && requiresTeam) {
             parent.child(AutomataUIComponents.centerHeader(AutomataTexts.getTeamEmpty()));
@@ -69,13 +69,13 @@ public class BotTeamSettingsCrudForm {
         nameRow.child(nameTextBox);
         parent.child(nameRow);
 
-        if (actions.length == 0)
+        if (mutations.length == 0)
             return;
 
         FlowLayout actionsRow = UIContainers.horizontalFlow(Sizing.fill(), Sizing.content());
         actionsRow.horizontalAlignment(HorizontalAlignment.CENTER);
         actionsRow.gap(BotDeviceScreenHandler.GAP);
-        for (Mutation mutation : actions) {
+        for (Mutation mutation : mutations) {
             actionsRow.child(UIComponents.button(mutation.name, (ignored) -> {
                 BotTeamSettings settings = new BotTeamSettings(nameTextBox.getText());
                 mutation.mutate.accept(handler.player().getUuid(), team, settings);

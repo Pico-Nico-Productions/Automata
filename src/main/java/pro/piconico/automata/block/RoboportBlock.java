@@ -32,12 +32,7 @@ public class RoboportBlock extends BlockWithEntity {
 
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        if (world.isClient())
-            return ActionResult.SUCCESS;
-
         RoboportBlockEntity roboport = world.getBlockEntity(pos, AutomataEntities.ROBOPORT).get();
-        player.openHandledScreen(roboport);
-
-        return ActionResult.SUCCESS;
+        return roboport.openScreen(player);
     }
 }

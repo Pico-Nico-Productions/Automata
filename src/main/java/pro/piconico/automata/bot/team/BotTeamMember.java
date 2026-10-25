@@ -10,13 +10,13 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Uuids;
 
 public class BotTeamMember {
-    private enum BotTeamPermission {
-        READ, UPDATE, DELETE;
+    public enum BotTeamPermission {
+        UPDATE, DELETE;
     }
 
     public enum BotTeamRole {
-        USER(EnumSet.of(BotTeamPermission.READ)),
-        ADMIN(EnumSet.of(BotTeamPermission.READ, BotTeamPermission.UPDATE)),
+        USER(EnumSet.noneOf(BotTeamPermission.class)), //
+        ADMIN(EnumSet.of(BotTeamPermission.UPDATE)), //
         OWNER(EnumSet.allOf(BotTeamPermission.class));
 
         public static final Codec<BotTeamRole> CODEC = Codec.INT.xmap(ordinal -> BotTeamRole.values()[ordinal], role -> role.ordinal());
@@ -29,10 +29,10 @@ public class BotTeamMember {
     }
 
     public static final Codec<BotTeamMember> CODEC = RecordCodecBuilder.create(instance -> instance.group( //
-        Uuids.INT_STREAM_CODEC.fieldOf("uuid").forGetter(member -> member.uuid), //
-        Codec.STRING.fieldOf("cachedName").forGetter(BotTeamMember::getCachedName), //
-        BotTeamRole.CODEC.fieldOf("role").forGetter(member -> member.role) //
-        ).apply(instance, BotTeamMember::new));
+            Uuids.INT_STREAM_CODEC.fieldOf("uuid").forGetter(member -> member.uuid), //
+            Codec.STRING.fieldOf("cachedName").forGetter(BotTeamMember::getCachedName), //
+            BotTeamRole.CODEC.fieldOf("role").forGetter(member -> member.role) //
+    ).apply(instance, BotTeamMember::new));
 
     private String cachedName;
     private BotTeamRole role;

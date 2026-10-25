@@ -17,7 +17,7 @@ public class ItemBotDeviceScreenHandler extends BotDeviceScreenHandler {
 
     @Override
     public boolean canUse(PlayerEntity player) {
-        return castItem().player.equals(player);
+        return castItem().player == player && castItem().canPlayerOpenScreen(player);
     }
 
     @Override

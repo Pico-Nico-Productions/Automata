@@ -9,6 +9,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
@@ -26,7 +27,6 @@ import pro.piconico.automata.registry.AutomataBotDevices;
 import pro.piconico.automata.registry.AutomataMessages;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
-// TODO: Make extend LockableContainerBlockEntity
 public abstract class BlockBotDevice extends BlockEntity implements BotDevice<BlockPos> {
     public record BlockId(BlockPos pos) implements BotDevice.Id {
         public static final MapCodec<BlockId> CODEC = RecordCodecBuilder
@@ -46,7 +46,22 @@ public abstract class BlockBotDevice extends BlockEntity implements BotDevice<Bl
         super(type, pos, state);
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (!(obj instanceof BlockBotDevice blockDevice))
+            return false;
+
+        return world == blockDevice.world && pos.equals(blockDevice.pos);
+    }
+
     //#region BlockEntity
+    public boolean canPlayerUse(PlayerEntity player) {
+        return Inventory.canPlayerUse(this, player);
+    }
+
     @Override
     protected void readData(ReadView view) {
         super.readData(view);
@@ -70,6 +85,7 @@ public abstract class BlockBotDevice extends BlockEntity implements BotDevice<Bl
     }
     //#endregion
 
+    //#region BotDevice
     @Override
     public Text getDisplayName() {
         return getCachedState().getBlock().getName();
@@ -78,17 +94,6 @@ public abstract class BlockBotDevice extends BlockEntity implements BotDevice<Bl
     @Override
     public BlockPos getScreenOpeningData(ServerPlayerEntity player) {
         return pos;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-
-        if (!(obj instanceof BlockBotDevice blockDevice))
-            return false;
-
-        return world == blockDevice.world && pos.equals(blockDevice.pos);
     }
 
     @Override
@@ -119,6 +124,7 @@ public abstract class BlockBotDevice extends BlockEntity implements BotDevice<Bl
 
         return true;
     }
+    //#endregion
 
     public static Optional<BlockBotDevice> resolve(PlayerEntity player, BlockId deviceId) {
         return Optional.ofNullable((BlockBotDevice)player.getEntityWorld().getBlockEntity(deviceId.pos));

@@ -37,13 +37,11 @@ public class AutomatoolItem extends Item {
 
     //#region Sync Subscription
     private static void onHoldStarted(PlayerEntity player, Hand hand, ItemStack stack) {
-        if (!stack.isOf(AutomataItems.AUTOMATOOL))
+        if (!stack.isOf(AutomataItems.AUTOMATOOL) || !(player instanceof ServerPlayerEntity serverPlayer))
             return;
 
-        if (!(player instanceof ServerPlayerEntity serverPlayer))
-            return;
-
-        BotSyncManager.updateSubscription(serverPlayer, TeamComponent.get(stack));
+        Optional<UUID> teamUuid = TeamComponent.get(stack).filter(uuid -> BotTeamPersistentState.teamExistsAndHasMember(uuid, player.getUuid()));
+        BotSyncManager.updateSubscription(serverPlayer, teamUuid);
     }
 
     private static void onHoldEnded(PlayerEntity player, Hand hand, ItemStack stack) {
@@ -78,15 +76,6 @@ public class AutomatoolItem extends Item {
 
         stack.set(AutomataComponents.SELECTION, SelectionComponent.getAndCopyWithOrElse(stack, world, selection, isSelection2));
         player.sendMessage(AutomataTexts.getBlockSelected(isSelection2 ? 2 : 1, selection), true);
-
-        return ActionResult.SUCCESS;
-    }
-
-    private static ActionResult openScreen(World world, PlayerEntity player, ItemStack automatoolStack) {
-        if (world.isClient())
-            return ActionResult.SUCCESS;
-
-        player.openHandledScreen(new ItemBotDevice(player, automatoolStack));
 
         return ActionResult.SUCCESS;
     }
@@ -149,7 +138,7 @@ public class AutomatoolItem extends Item {
         ItemStack stack = player.getStackInHand(hand);
 
         if (!player.isSneaking())
-            return openScreen(world, player, stack);
+            return new ItemBotDevice(player, stack).openScreen(player);
 
         return dispatchCommand(player, stack);
     }

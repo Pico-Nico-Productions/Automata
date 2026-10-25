@@ -11,7 +11,6 @@ import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.ListInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -155,12 +154,6 @@ public class RoboportBlockEntity extends BlockBotDevice implements ListInventory
     @Override
     public boolean isValid(int slot, ItemStack stack) {
         return stack.getItem() instanceof BotItem;
-    }
-
-    // TODO: Replace once extends LockableContainerBlockEntity
-    @Override
-    public boolean canPlayerUse(PlayerEntity player) {
-        return Inventory.canPlayerUse(this, player);
     }
 
     @Override

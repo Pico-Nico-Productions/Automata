@@ -30,7 +30,7 @@ public class LogisticChestScreenHandler extends BotDeviceScreenHandler {
 
     @Override
     public boolean canUse(PlayerEntity player) {
-        return castLogisticChest().canPlayerUse(player);
+        return castLogisticChest().canPlayerUse(player) && castLogisticChest().canPlayerOpenScreen(player);
     }
 
     @Override
