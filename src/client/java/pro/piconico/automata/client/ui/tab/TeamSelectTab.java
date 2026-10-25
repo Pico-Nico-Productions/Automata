@@ -55,7 +55,7 @@ public class TeamSelectTab implements Tab<BotDeviceScreenHandler> {
         FlowLayout listContainer = UIContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         listContainer.gap(BotDeviceScreenHandler.GAP);
         for (BotTeam team : handler.teams) {
-            boolean isSelectedTeam = teamUuid.isPresent() && teamUuid.get().equals(team.UUID);
+            boolean isSelectedTeam = teamUuid.isPresent() && teamUuid.get().equals(team.uuid);
 
             FlowLayout teamRow = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.fixed(12));
             teamRow.verticalAlignment(VerticalAlignment.CENTER);
@@ -66,7 +66,7 @@ public class TeamSelectTab implements Tab<BotDeviceScreenHandler> {
                 if (click.button() != 0)
                     return false;
 
-                Optional<UUID> newTeamUuid = Optional.ofNullable(isSelectedTeam ? null : team.UUID);
+                Optional<UUID> newTeamUuid = Optional.ofNullable(isSelectedTeam ? null : team.uuid);
                 AutomataMessages.BOT_DEVICE_CHANNEL.clientHandle().send(new BotDeviceTeamChangeMessage(handler.device.getDeviceId(), newTeamUuid));
 
                 return true;
@@ -78,7 +78,7 @@ public class TeamSelectTab implements Tab<BotDeviceScreenHandler> {
             nameLabel.cursorStyle(CursorStyle.HAND);
             teamRow.child(nameLabel);
 
-            LabelComponent uuidLabel = UIComponents.label(Text.literal(team.UUID.toString().substring(0, 8)));
+            LabelComponent uuidLabel = UIComponents.label(Text.literal(team.uuid.toString().substring(0, 8)));
             uuidLabel.horizontalSizing(Sizing.fill(35));
             uuidLabel.horizontalTextAlignment(HorizontalAlignment.RIGHT);
             uuidLabel.cursorStyle(CursorStyle.HAND);

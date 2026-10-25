@@ -25,7 +25,6 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.poi.PointOfInterestType;
-import pro.piconico.automata.Automata;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.bot.device.BlockBotDevice;
 import pro.piconico.automata.bot.device.BotDevice;
@@ -36,6 +35,7 @@ import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.event.PointOfInterestCallback;
 import pro.piconico.automata.item.ItemUtils.PredicateItemStack;
+import pro.piconico.automata.loader.LoaderUtils;
 import pro.piconico.automata.registry.AutomataEntities;
 import pro.piconico.automata.util.MapUtils;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
@@ -371,7 +371,7 @@ public class BotNetworkManager {
             return;
 
         for (ServerWorld serverWorld : Set.copyOf(NETWORK_MAP_CACHE.keySet())) {
-            Optional<BotNetworkMap<ServerBotNetwork>> networkMap = MapUtils.removeNested(NETWORK_MAP_CACHE, serverWorld, team.UUID);
+            Optional<BotNetworkMap<ServerBotNetwork>> networkMap = MapUtils.removeNested(NETWORK_MAP_CACHE, serverWorld, team.uuid);
 
             if (networkMap.isEmpty())
                 return;
@@ -381,7 +381,7 @@ public class BotNetworkManager {
                     Optional<RoboportBlockEntity> roboport = serverWorld.getBlockEntity(pos, AutomataEntities.ROBOPORT);
 
                     if (roboport.isEmpty()) {
-                        Automata.logError(BotNetworkManager.class.getSimpleName() + " had an invalid roboport " + BlockPos.class.getSimpleName(),
+                        LoaderUtils.logError(BotNetworkManager.class.getSimpleName() + " had an invalid roboport " + BlockPos.class.getSimpleName(),
                                 IllegalStateException::new);
                         return;
                     }
@@ -393,7 +393,7 @@ public class BotNetworkManager {
                     BlockEntity blockEntity = serverWorld.getBlockEntity(pos);
 
                     if (!(blockEntity instanceof LogisticStorage<?> logisticStorage)) {
-                        Automata.logError(BotNetworkManager.class.getSimpleName() + " had an invalid logistic storage " + BlockPos.class.getSimpleName(),
+                        LoaderUtils.logError(BotNetworkManager.class.getSimpleName() + " had an invalid logistic storage " + BlockPos.class.getSimpleName(),
                                 IllegalStateException::new);
                         return;
                     }
@@ -403,13 +403,13 @@ public class BotNetworkManager {
             }
 
             for (Entity entity : serverWorld.iterateEntities()) {
-                if (!(entity instanceof BotEntity botEntity) || botEntity.getTeamUuid().filter(team.UUID::equals).isEmpty())
+                if (!(entity instanceof BotEntity botEntity) || botEntity.getTeamUuid().filter(team.uuid::equals).isEmpty())
                     continue;
 
                 botEntity.setTeamUuid(Optional.empty());
             }
 
-            NETWORKS_MUTATED.invoker().onMutate(serverWorld, team.UUID, Mutation.REMOVE);
+            NETWORKS_MUTATED.invoker().onMutate(serverWorld, team.uuid, Mutation.REMOVE);
         }
     }
 

@@ -19,6 +19,6 @@ public class SortedBotTeamMap extends LinkedHashMap<UUID, BotTeam> {
     }
 
     private static SortedBotTeamMap map(Collection<BotTeam> teams) {
-        return (SortedBotTeamMap)teams.stream().collect(Collectors.toMap(team -> team.UUID, team -> team, (existing, replacement) -> existing, SortedBotTeamMap::new));
+        return (SortedBotTeamMap)teams.stream().collect(Collectors.toMap(team -> team.uuid, team -> team, (existing, replacement) -> existing, SortedBotTeamMap::new));
     }
 }

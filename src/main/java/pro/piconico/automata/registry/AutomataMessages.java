@@ -5,6 +5,8 @@ import pro.piconico.automata.network.message.BotTeamCreateC2SMessage;
 import pro.piconico.automata.network.message.BotTeamDeleteC2SMessage;
 import pro.piconico.automata.network.message.BotTeamUpdateC2SMessage;
 import pro.piconico.automata.bot.device.BotDevice;
+import pro.piconico.automata.bot.team.BotTeam;
+import pro.piconico.automata.bot.team.BotTeam.BotTeamSettings;
 import pro.piconico.automata.network.message.BotDeviceTeamChangeMessage;
 import pro.piconico.automata.network.message.BotTeamsSyncC2SMessage;
 
@@ -12,7 +14,11 @@ public class AutomataMessages {
     public static final OwoNetChannel BOT_DEVICE_CHANNEL = OwoNetChannel.create(AutomataRegistry.id(AutomataRegistry.BOT_DEVICE));
 
     public static void initialize() {
-        BOT_DEVICE_CHANNEL.addEndecs(builder -> builder.register(BotDevice.Id.ENDEC, BotDevice.Id.class));
+        BOT_DEVICE_CHANNEL.addEndecs(builder -> {
+            builder.register(BotDevice.Id.ENDEC, BotDevice.Id.class);
+            builder.register(BotTeam.ENDEC, BotTeam.class);
+            builder.register(BotTeamSettings.ENDEC, BotTeamSettings.class);
+        });
 
         BOT_DEVICE_CHANNEL.registerServerbound(BotTeamCreateC2SMessage.class, BotTeamCreateC2SMessage::handle);
         BOT_DEVICE_CHANNEL.registerServerbound(BotTeamDeleteC2SMessage.class, BotTeamDeleteC2SMessage::handle);

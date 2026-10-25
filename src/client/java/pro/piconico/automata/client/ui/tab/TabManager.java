@@ -11,7 +11,7 @@ import io.wispforest.owo.ui.core.Sizing;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
-import pro.piconico.automata.Automata;
+import pro.piconico.automata.loader.LoaderUtils;
 import pro.piconico.automata.screen.ScreenHandlerUtils;
 import pro.piconico.automata.screen.slot.DisableableSlot;
 
@@ -44,7 +44,7 @@ public class TabManager<HandlerT extends ScreenHandler, TabT extends Tab<Handler
 
     public void selectTab(TabT tab) {
         if (!tabSet.contains(tab)) {
-            Automata.logError("This " + TabManager.class.getSimpleName() + " doesn't have " + tab.getName(handler).getString(), IllegalArgumentException::new);
+            LoaderUtils.logError("This " + TabManager.class.getSimpleName() + " doesn't have " + tab.getName(handler).getString(), IllegalArgumentException::new);
             return;
         }
 

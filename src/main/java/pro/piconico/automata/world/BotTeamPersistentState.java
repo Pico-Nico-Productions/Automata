@@ -1,21 +1,20 @@
 package pro.piconico.automata.world;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import com.mojang.serialization.Codec;
-import net.fabricmc.api.EnvType;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.PersistentState;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.bot.team.SortedBotTeamMap;
-import pro.piconico.automata.network.message.BotTeamUpdateC2SMessage;
-import pro.piconico.automata.registry.AutomataMessages;
+import pro.piconico.automata.bot.team.BotTeam.BotTeamSettings;
 import pro.piconico.automata.registry.AutomataPersistentStates;
 
 public class BotTeamPersistentState extends PersistentState {
@@ -67,15 +66,21 @@ public class BotTeamPersistentState extends PersistentState {
     }
 
     public static Collection<BotTeam> getTeams() {
-        return getTeamState().teamMap.values();
+        return Collections.unmodifiableCollection(getTeamState().teamMap.values());
     }
 
-    public static Optional<BotTeam> addTeam(BotTeam team) {
-        if (getTeam(team.UUID).isPresent())
+    public static Optional<BotTeam> addTeam(BotTeamSettings settings, UUID ownerUuid) {
+        if (!BotTeam.isValidName(settings.name()))
+            return Optional.empty();
+
+        ServerPlayerEntity serverPlayer = server.getPlayerManager().getPlayer(ownerUuid);
+
+        if (serverPlayer == null)
             return Optional.empty();
 
         BotTeamPersistentState teamState = getTeamState();
-        teamState.teamMap.put(team.UUID, team);
+        BotTeam team = new BotTeam(settings, serverPlayer);
+        teamState.teamMap.put(team.uuid, team);
 
         teamState.markDirty();
         TEAMS_MUTATED.invoker().onMutate(server, team, Mutation.ADD);
@@ -83,20 +88,13 @@ public class BotTeamPersistentState extends PersistentState {
         return Optional.of(team);
     }
 
-    public static Optional<BotTeam> addTeam(String name) {
-        if (!BotTeam.isValidName(name))
-            return Optional.empty();
-
-        return addTeam(new BotTeam(name));
-    }
-
-    public static Optional<BotTeam> updateTeam(BotTeam team) {
-        Optional<BotTeam> existingTeam = getTeam(team.UUID);
+    public static Optional<BotTeam> updateTeam(UUID teamUuid, BotTeamSettings settings) {
+        Optional<BotTeam> existingTeam = getTeam(teamUuid);
 
         if (existingTeam.isEmpty())
             return Optional.empty();
 
-        existingTeam.get().set(team);
+        existingTeam.get().setSettings(settings);
 
         return existingTeam;
     }
@@ -116,11 +114,6 @@ public class BotTeamPersistentState extends PersistentState {
     }
 
     private static void onBotTeamMutated(BotTeam team) {
-        if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
-            AutomataMessages.BOT_DEVICE_CHANNEL.clientHandle().send(new BotTeamUpdateC2SMessage(team));
-            return;
-        }
-
         getTeamState().markDirty();
         TEAMS_MUTATED.invoker().onMutate(server, team, Mutation.UPDATE);
     }

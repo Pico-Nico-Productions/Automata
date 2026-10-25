@@ -34,6 +34,8 @@ import pro.piconico.automata.util.MapUtils;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
 public class BotJobPersistentState extends PersistentState {
+    public static final int SHORT_TICK_DELAY = 3, LONG_TICK_DELAY = 5;
+
     public enum Mutation {
         ADD, REMOVE, ASSIGN, UNASSIGN
     }
@@ -48,7 +50,6 @@ public class BotJobPersistentState extends PersistentState {
             callback.onMutate(teamUuid, serverWorld, mutation);
         }
     });
-    public static final int SHORT_TICK_DELAY = 3, LONG_TICK_DELAY = 5;
 
     public static final Codec<BotJobPersistentState> CODEC = BotJobAssignment.CODEC.listOf().xmap(BotJobPersistentState::new, BotJobPersistentState::flatten)
             .fieldOf("job_assignment_map").codec();
@@ -329,7 +330,7 @@ public class BotJobPersistentState extends PersistentState {
         if (mutation != BotTeamPersistentState.Mutation.REMOVE)
             return;
 
-        removeJobs(server, team.UUID);
+        removeJobs(server, team.uuid);
     }
 
     private static void onNetworksMutated(ServerWorld serverWorld, UUID teamUuid, BotNetworkManager.Mutation mutation) {

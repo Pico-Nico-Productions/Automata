@@ -60,7 +60,7 @@ public abstract class BotDeviceScreenHandler extends ScreenHandler {
         if (teamUuid.isEmpty())
             return Optional.empty();
 
-        return teams.stream().filter(t -> t.UUID.equals(teamUuid.get())).findAny();
+        return teams.stream().filter(t -> t.uuid.equals(teamUuid.get())).findAny();
     }
 
     protected void addDeviceAndPlayerSlots(Inventory deviceInventory, QuadFunction<Inventory, Integer, Integer, Integer, DisableableSlot> deviceSlotFactory,

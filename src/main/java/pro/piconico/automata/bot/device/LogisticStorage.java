@@ -19,9 +19,9 @@ import net.minecraft.util.Uuids;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import pro.piconico.automata.Automata;
 import pro.piconico.automata.inventory.InventoryUtils;
 import pro.piconico.automata.inventory.InventoryUtils.ItemStackMutation;
+import pro.piconico.automata.loader.LoaderUtils;
 import pro.piconico.automata.util.MapUtils;
 
 public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
@@ -84,8 +84,8 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
 
     public BlockPos getPos();
 
-    public default void sync() {
-    }
+    // TODO: Replace with screen handler syncing to match slot syncing
+    public void sync();
 
     //#region ListInventory
     @Override
@@ -178,7 +178,7 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
 
     public default void reserve(UUID entityUuid, int slot, int count) {
         if (count < 0) {
-            Automata.logError("Reservation count was negative", IllegalArgumentException::new);
+            LoaderUtils.logError("Reservation count was negative", IllegalArgumentException::new);
             return;
         }
         if (count == 0)
@@ -187,7 +187,7 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
         Map<UUID, Map<Integer, Reservation>> reservations = getReservations();
         MapUtils.<Reservation>computeNested(reservations, (key, reservation) -> {
             if ((reservation != null ? reservation.count : 0) + count > getStack(slot).getCount()) {
-                Automata.logError("Reservation exceeded stack count", IllegalStateException::new);
+                LoaderUtils.logError("Reservation exceeded stack count", IllegalStateException::new);
                 return reservation;
             }
 
@@ -203,7 +203,7 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
 
     default void unreserve(UUID entityUuid, int slot, int count) {
         if (count < 0) {
-            Automata.logError("Unreservation count was negative", IllegalArgumentException::new);
+            LoaderUtils.logError("Unreservation count was negative", IllegalArgumentException::new);
             return;
         }
         if (count == 0)
@@ -212,7 +212,7 @@ public interface LogisticStorage<T> extends BotDevice<T>, ListInventory {
         Map<UUID, Map<Integer, Reservation>> reservations = getReservations();
         MapUtils.<Reservation>getNested(reservations, entityUuid, slot).ifPresent(reservation -> {
             if (count > reservation.count) {
-                Automata.logError("Reservation went below 0", IllegalStateException::new);
+                LoaderUtils.logError("Reservation went below 0", IllegalStateException::new);
             }
 
             if (count >= reservation.count) {

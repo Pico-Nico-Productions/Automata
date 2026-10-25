@@ -1,14 +1,54 @@
 package pro.piconico.automata.bot.team;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import io.wispforest.endec.Endec;
+import io.wispforest.owo.serialization.CodecUtils;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Uuids;
+import pro.piconico.automata.bot.team.BotTeamMember.BotTeamRole;
+import pro.piconico.automata.loader.LoaderUtils;
 
 public class BotTeam {
     public static final int MAX_NAME_LENGTH = 16;
+
+    public static boolean isValidName(String name) {
+        return !name.strip().isEmpty() && name.length() <= MAX_NAME_LENGTH;
+    }
+
+    private static void validateName(String name) {
+        if (!isValidName(name))
+            throw new IllegalArgumentException("\"" + name + "\" is an invalid " + BotTeam.class.getSimpleName() + " name");
+    }
+
+    public static record BotTeamSettings(String name) {
+        public static final Endec<BotTeamSettings> ENDEC = CodecUtils.toEndec(RecordCodecBuilder.create(instance -> instance.group( //
+                Codec.STRING.fieldOf("name").forGetter(BotTeamSettings::name) //
+        ).apply(instance, BotTeamSettings::new)));
+
+        public BotTeamSettings {
+            validateName(name);
+        }
+
+        @Override
+        public final boolean equals(Object object) {
+            if (this == object)
+                return true;
+
+            if (!(object instanceof BotTeamSettings settings))
+                return false;
+
+            return name.equals(settings.name);
+        }
+    }
 
     @FunctionalInterface
     public interface Mutate {
@@ -21,56 +61,83 @@ public class BotTeam {
         }
     });
 
-    public static final Codec<BotTeam> CODEC = RecordCodecBuilder.create(instance -> instance
-            .group(Codec.STRING.fieldOf("name").forGetter(BotTeam::getName), Uuids.INT_STREAM_CODEC.fieldOf("uuid").forGetter(team -> team.UUID))
-            .apply(instance, BotTeam::new));
+    public static final Codec<BotTeam> CODEC = RecordCodecBuilder.create(instance -> instance.group( //
+            Uuids.INT_STREAM_CODEC.fieldOf("uuid").forGetter(team -> team.uuid), //
+            Codec.STRING.fieldOf("name").forGetter(BotTeam::getName), //
+            BotTeamMember.CODEC.listOf().fieldOf("members").forGetter(team -> List.copyOf(team.members.values())) //
+    ).apply(instance, BotTeam::new));
+    public static final Endec<BotTeam> ENDEC = CodecUtils.toEndec(CODEC);
 
     private String name;
+    private final Map<UUID, BotTeamMember> members;
 
-    public final UUID UUID;
+    public final UUID uuid;
 
-    public static boolean isValidName(String name) {
-        return !name.strip().isEmpty() && name.length() <= MAX_NAME_LENGTH;
-    }
-
-    private static void validateName(String name) {
-        if (!isValidName(name))
-            throw new IllegalArgumentException("\"" + name + "\" is an invalid " + BotTeam.class.getSimpleName() + " name");
-    }
-
-    public BotTeam(String name, UUID UUID) {
+    private BotTeam(UUID uuid, String name, List<BotTeamMember> members) {
         validateName(name);
 
+        this.uuid = uuid;
         this.name = name;
-        this.UUID = UUID;
+        this.members = members.stream().collect(Collectors.toMap(member -> member.uuid, member -> member));
     }
 
-    public BotTeam(String name) {
-        this(name, java.util.UUID.randomUUID());
-    }
-
-    public void set(BotTeam team) {
-        validateName(team.name);
-
-        if (!this.UUID.equals(team.UUID) || this.equals(team))
-            return;
-
-        name = team.name;
-
-        MUTATED.invoker().onMutate(this);
+    public BotTeam(BotTeamSettings settings, ServerPlayerEntity owner) {
+        this(java.util.UUID.randomUUID(), settings.name, List.of(new BotTeamMember(owner, BotTeamRole.OWNER)));
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        validateName(name);
+    public BotTeamSettings getSettings() {
+        return new BotTeamSettings(name);
+    }
 
-        if (this.name.equals(name))
+    public void setSettings(BotTeamSettings settings) {
+        if (LoaderUtils.isClient() || getSettings().equals(settings))
             return;
 
-        this.name = name;
+        validateName(settings.name);
+
+        name = settings.name;
+
+        MUTATED.invoker().onMutate(this);
+    }
+
+    public void addMember(PlayerEntity player, BotTeamRole role) {
+        if (LoaderUtils.isClient() || members.containsKey(player.getUuid()))
+            return;
+
+        members.put(player.getUuid(), new BotTeamMember(player, role));
+
+        MUTATED.invoker().onMutate(this);
+    }
+
+    public void addMember(PlayerEntity player) {
+        addMember(player, BotTeamRole.USER);
+    }
+
+    public void removeMember(UUID playerUuid) {
+        if (LoaderUtils.isClient() || !members.containsKey(playerUuid))
+            return;
+
+        members.remove(playerUuid);
+
+        MUTATED.invoker().onMutate(this);
+    }
+
+    public Optional<BotTeamRole> getRole(UUID playerUuid) {
+        if (!members.containsKey(playerUuid))
+            return Optional.empty();
+
+        return Optional.of(members.get(playerUuid).getRole());
+    }
+
+    public void setRole(UUID playerUuid, BotTeamRole role) {
+        if (LoaderUtils.isClient() || !members.containsKey(playerUuid) || members.get(playerUuid).getRole() == role)
+            return;
+
+        members.get(playerUuid).setRole(role);
 
         MUTATED.invoker().onMutate(this);
     }

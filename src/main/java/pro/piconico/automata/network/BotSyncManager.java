@@ -134,7 +134,7 @@ public class BotSyncManager {
         Iterator<Entry<UUID, SyncState>> subscriberIterator = subscribers.entrySet().iterator();
         while (subscriberIterator.hasNext()) {
             Entry<UUID, SyncState> subscriber = subscriberIterator.next();
-            if (!subscriber.getValue().teamUuid.equals(team.UUID))
+            if (!subscriber.getValue().teamUuid.equals(team.uuid))
                 continue;
 
             ServerPlayerEntity serverPlayer = server.getPlayerManager().getPlayer(subscriber.getKey());

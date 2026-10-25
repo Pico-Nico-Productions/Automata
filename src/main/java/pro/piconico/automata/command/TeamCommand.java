@@ -8,7 +8,9 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
 import pro.piconico.automata.bot.team.BotTeam;
+import pro.piconico.automata.bot.team.BotTeam.BotTeamSettings;
 import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.util.UUIDUtils;
 import pro.piconico.automata.world.BotTeamPersistentState;
@@ -24,15 +26,21 @@ public class TeamCommand {
     private static final String UUID_ARGUMENT = "uuid";
 
     private static int addTeam(CommandContext<ServerCommandSource> context) {
+        ServerPlayerEntity serverPlayer = context.getSource().getPlayer();
+
+        if (serverPlayer == null)
+            return 0;
+
         String name = StringArgumentType.getString(context, NAME_ARGUMENT);
-        Optional<BotTeam> team = BotTeamPersistentState.addTeam(name);
+        BotTeamSettings settings = new BotTeamSettings(name);
+        Optional<BotTeam> team = BotTeamPersistentState.addTeam(settings, serverPlayer.getUuid());
 
         if (team.isEmpty()) {
             context.getSource().sendMessage(AutomataTexts.getTeamNameInvalid(name));
             return 0;
         }
 
-        context.getSource().sendMessage(AutomataTexts.getTeamAdded(name, team.get().UUID));
+        context.getSource().sendMessage(AutomataTexts.getTeamAdded(name, team.get().uuid));
 
         return 1;
     }
@@ -56,7 +64,7 @@ public class TeamCommand {
     private static int listTeams(CommandContext<ServerCommandSource> context) {
         Collection<BotTeam> teams = BotTeamPersistentState.getTeams();
         for (BotTeam team : teams) {
-            context.getSource().sendMessage(AutomataTexts.getTeam(team.getName(), team.UUID));
+            context.getSource().sendMessage(AutomataTexts.getTeam(team.getName(), team.uuid));
         }
         if (teams.isEmpty()) {
             context.getSource().sendMessage(AutomataTexts.getTeamsEmpty());
