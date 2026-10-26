@@ -8,7 +8,6 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.bot.team.BotTeam.BotTeamSettings;
 import pro.piconico.automata.registry.AutomataTexts;
@@ -26,14 +25,9 @@ public class TeamCommand {
     private static final String UUID_ARGUMENT = "uuid";
 
     private static int addTeam(CommandContext<ServerCommandSource> context) {
-        ServerPlayerEntity serverPlayer = context.getSource().getPlayer();
-
-        if (serverPlayer == null)
-            return 0;
-
         String name = StringArgumentType.getString(context, NAME_ARGUMENT);
         BotTeamSettings settings = new BotTeamSettings(name);
-        Optional<BotTeam> team = BotTeamPersistentState.addTeam(settings, serverPlayer.getUuid());
+        Optional<BotTeam> team = BotTeamPersistentState.addTeam(settings, Optional.ofNullable(context.getSource().getPlayer()).map(owner -> owner.getUuid()));
 
         if (team.isEmpty()) {
             context.getSource().sendMessage(AutomataTexts.getTeamNameInvalid(name));

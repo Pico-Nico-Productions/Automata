@@ -10,7 +10,6 @@ import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.PersistentState;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.bot.team.SortedBotTeamMap;
@@ -73,17 +72,12 @@ public class BotTeamPersistentState extends PersistentState {
         return Collections.unmodifiableCollection(getTeamState().teamMap.values());
     }
 
-    public static Optional<BotTeam> addTeam(BotTeamSettings settings, UUID ownerUuid) {
+    public static Optional<BotTeam> addTeam(BotTeamSettings settings, Optional<UUID> ownerUuid) {
         if (!BotTeam.isValidName(settings.name()))
             return Optional.empty();
 
-        ServerPlayerEntity serverPlayer = server.getPlayerManager().getPlayer(ownerUuid);
-
-        if (serverPlayer == null)
-            return Optional.empty();
-
         BotTeamPersistentState teamState = getTeamState();
-        BotTeam team = new BotTeam(settings, serverPlayer);
+        BotTeam team = new BotTeam(settings, ownerUuid.map(uuid -> server.getPlayerManager().getPlayer(uuid)));
         teamState.teamMap.put(team.uuid, team);
 
         teamState.markDirty();

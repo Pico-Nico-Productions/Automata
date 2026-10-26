@@ -81,8 +81,8 @@ public class BotTeam {
         this.members = members.stream().collect(Collectors.toMap(member -> member.uuid, member -> member));
     }
 
-    public BotTeam(BotTeamSettings settings, ServerPlayerEntity owner) {
-        this(java.util.UUID.randomUUID(), settings.name, List.of(new BotTeamMember(owner, BotTeamRole.OWNER)));
+    public BotTeam(BotTeamSettings settings, Optional<ServerPlayerEntity> owner) {
+        this(UUID.randomUUID(), settings.name, owner.map(own -> List.of(new BotTeamMember(own, BotTeamRole.OWNER))).orElse(List.of()));
     }
 
     public String getName() {
