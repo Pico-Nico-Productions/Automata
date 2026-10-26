@@ -13,6 +13,6 @@ public record BotTeamDeleteC2SMessage(UUID uuid) {
         if (team.isEmpty())
             return;
 
-        BotTeamsSyncS2CMessage.syncToPlayersUsingTeams(serverAccess.runtime());
+        BotTeamsSyncS2CMessage.syncToPlayersUsingTeam(serverAccess.runtime(), team.get());
     }
 }

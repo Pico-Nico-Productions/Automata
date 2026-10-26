@@ -15,7 +15,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Uuids;
 import pro.piconico.automata.bot.team.BotTeamMember.BotTeamRole;
-import pro.piconico.automata.loader.LoaderUtils;
 
 public class BotTeam {
     public static final int MAX_NAME_LENGTH = 16;
@@ -94,8 +93,6 @@ public class BotTeam {
     }
 
     public void setSettings(BotTeamSettings settings) {
-        LoaderUtils.assertServer();
-
         if (getSettings().equals(settings))
             return;
 
@@ -107,10 +104,10 @@ public class BotTeam {
     }
 
     public void addMember(PlayerEntity player, BotTeamRole role) {
-        LoaderUtils.assertServer();
-
-        if (members.containsKey(player.getUuid()))
+        if (members.containsKey(player.getUuid())) {
+            setRole(player.getUuid(), role);
             return;
+        }
 
         members.put(player.getUuid(), new BotTeamMember(player, role));
 
@@ -122,8 +119,6 @@ public class BotTeam {
     }
 
     public void removeMember(UUID playerUuid) {
-        LoaderUtils.assertServer();
-
         if (!members.containsKey(playerUuid))
             return;
 
@@ -139,17 +134,13 @@ public class BotTeam {
         return Optional.of(members.get(playerUuid).getRole());
     }
 
-    public boolean setRole(UUID playerUuid, BotTeamRole role) {
-        LoaderUtils.assertServer();
-
+    public void setRole(UUID playerUuid, BotTeamRole role) {
         if (!members.containsKey(playerUuid) || members.get(playerUuid).getRole() == role)
-            return false;
+            return;
 
         members.get(playerUuid).setRole(role);
 
         MUTATED.invoker().onMutate(this);
-
-        return true;
     }
 
     public boolean hasMember(UUID playerUuid) {

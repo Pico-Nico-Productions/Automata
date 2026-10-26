@@ -37,7 +37,7 @@ public class JobCommand {
         Optional<UUID> teamUuid = UUIDUtils.fromString(uuidArgument);
 
         if (teamUuid.isEmpty() || BotTeamPersistentState.getTeam(teamUuid.get()).isEmpty()) {
-            context.getSource().sendMessage(AutomataTexts.getTeamMissing(uuidArgument));
+            context.getSource().sendMessage(AutomataTexts.format("Selected team \"%1$s\"", uuidArgument));
             return 0;
         }
 

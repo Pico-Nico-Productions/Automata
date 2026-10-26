@@ -84,7 +84,7 @@ public class RoboportBlockEntity extends BlockBotDevice implements ListInventory
             return false;
 
         BotItem botItem = (BotItem)getStack(botSlot.get()).getItem();
-        return BotEntity.couldReach(botItem.getBotType().entityType(), (ServerWorld)getWorld(), getSpawnPos(), job.pos());
+        return BotEntity.couldReach(botItem.getBotType().entityType(), getWorld(), getSpawnPos(), job.pos());
     }
 
     public Optional<BotEntity> spawnBotFor(BotJob job) {
@@ -92,6 +92,7 @@ public class RoboportBlockEntity extends BlockBotDevice implements ListInventory
             return Optional.empty();
 
         Optional<Integer> botSlot = getBotSlotFor(job);
+
         if (botSlot.isEmpty())
             return Optional.empty();
 
@@ -99,8 +100,7 @@ public class RoboportBlockEntity extends BlockBotDevice implements ListInventory
         markDirty();
 
         EntityType<? extends BotEntity> botEntityType = botItem.getBotType().entityType();
-        BotEntity newBotEntity = botEntityType.spawn((ServerWorld)getWorld(), getSpawnPos(), SpawnReason.MOB_SUMMONED);
-        newBotEntity.setTeamUuid(getTeamUuid());
+        BotEntity newBotEntity = BotEntity.spawnWithTeam(botEntityType, (ServerWorld)getWorld(), getSpawnPos(), SpawnReason.MOB_SUMMONED, getTeamUuid().get());
 
         return Optional.of(newBotEntity);
     }

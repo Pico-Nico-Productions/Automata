@@ -23,8 +23,11 @@ public record BotTeamsSyncS2CMessage(List<BotTeam> teams) {
         return serverPlayers.stream().filter(BotTeamsSyncS2CMessage::isUsingTeams).toList();
     }
 
-    public static void syncToPlayersUsingTeams(MinecraftServer server) {
+    public static void syncToPlayersUsingTeam(MinecraftServer server, BotTeam team) {
         for (ServerPlayerEntity serverPlayer : getPlayersUsingTeams(server)) {
+            if (!team.hasMember(serverPlayer.getUuid()))
+                continue;
+
             AutomataMessages.BOT_DEVICE_CHANNEL.serverHandle(serverPlayer).send(new BotTeamsSyncS2CMessage(serverPlayer.getUuid()));
         }
     }

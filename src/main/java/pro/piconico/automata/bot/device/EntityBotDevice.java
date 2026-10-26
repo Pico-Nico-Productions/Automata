@@ -35,7 +35,7 @@ public abstract class EntityBotDevice extends PathAwareEntity implements BotDevi
 
     private static final String TEAM_UUID_KEY = "team_uuid";
 
-    private Optional<UUID> teamUuid = Optional.empty();
+    protected Optional<UUID> teamUuid = Optional.empty();
 
     protected EntityBotDevice(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);

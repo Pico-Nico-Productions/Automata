@@ -1,6 +1,5 @@
 package pro.piconico.automata.registry;
 
-import java.util.UUID;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
@@ -84,52 +83,10 @@ public class AutomataTexts {
         return Text.translatable(NAME_KEY);
     }
 
-    /** Expected arguments: team name and team uuid */
-    public static final String TEAM_KEY = AutomataRegistry.toTextTranslationKey("team");
-
-    public static final MutableText getTeam(String teamName, UUID teamUuid) {
-        return Text.translatable(TEAM_KEY, teamName, getCopyableText(teamUuid.toString()));
-    }
-
-    /** Expected arguments: team name and team uuid */
-    public static final String TEAM_ADDED_KEY = AutomataRegistry.toTextTranslationKey("team_added");
-
-    public static final MutableText getTeamAdded(String teamName, UUID teamUuid) {
-        return Text.translatable(TEAM_ADDED_KEY, teamName, getCopyableText(teamUuid.toString()));
-    }
-
     public static final String TEAM_EMPTY_KEY = AutomataRegistry.toTextTranslationKey("team_empty");
 
     public static final MutableText getTeamEmpty() {
         return Text.translatable(TEAM_EMPTY_KEY);
-    }
-
-    /** Expected arguments: team name and team uuid */
-    public static final String TEAM_REMOVED_KEY = AutomataRegistry.toTextTranslationKey("team_removed");
-
-    public static final MutableText getTeamRemoved(String teamName, UUID teamUuid) {
-        return Text.translatable(TEAM_REMOVED_KEY, teamName, getCopyableText(teamUuid.toString()));
-    }
-
-    /** Expected argument: team uuid */
-    public static final String TEAM_MISSING_KEY = AutomataRegistry.toTextTranslationKey("team_missing");
-
-    public static final MutableText getTeamMissing(String teamUuid) {
-        return Text.translatable(TEAM_MISSING_KEY, teamUuid.toString());
-    }
-
-    /** Expected argument: team name */
-    public static final String TEAM_NAME_INVALID_KEY = AutomataRegistry.toTextTranslationKey("team_name_invalid");
-
-    public static final MutableText getTeamNameInvalid(String teamName) {
-        return Text.translatable(TEAM_NAME_INVALID_KEY, teamName);
-    }
-
-    /** Expected argument: team name */
-    public static final String TEAM_SELECTED_KEY = AutomataRegistry.toTextTranslationKey("team_selected");
-
-    public static final MutableText getTeamSelected(String teamName) {
-        return Text.translatable(TEAM_SELECTED_KEY, teamName);
     }
 
     public static final String TEAMS_EMPTY_KEY = AutomataRegistry.toTextTranslationKey("teams_empty");
@@ -142,6 +99,10 @@ public class AutomataTexts {
 
     public static final MutableText getUpdate() {
         return Text.translatable(UPDATE_KEY);
+    }
+
+    public static MutableText format(String format, Object... args) {
+        return Text.literal(String.format(format, args));
     }
 
     public static void initialize() {

@@ -105,7 +105,7 @@ public abstract class BotEntity extends EntityBotDevice implements ListInventory
         return BotJobPersistentState.getJob((ServerWorld)getEntityWorld(), uuid);
     }
 
-    public static boolean couldReach(EntityType<? extends BotEntity> type, ServerWorld world, BlockPos startPos, BlockPos targetPos) {
+    public static boolean couldReach(EntityType<? extends BotEntity> type, World world, BlockPos startPos, BlockPos targetPos) {
         BotEntity bot = type.create(world, SpawnReason.MOB_SUMMONED);
 
         if (bot == null) {
@@ -270,4 +270,15 @@ public abstract class BotEntity extends EntityBotDevice implements ListInventory
     public void markDirty() {
     }
     //#endregion
+
+    public static BotEntity spawnWithTeam(EntityType<? extends BotEntity> botEntityType, ServerWorld serverWorld, BlockPos pos, SpawnReason reason, UUID teamUuid) {
+        BotEntity bot = botEntityType.create(serverWorld, reason);
+        bot.refreshPositionAndAngles(pos, 0F, 0F);
+        bot.initialize(serverWorld, serverWorld.getLocalDifficulty(pos), reason, null);
+        bot.teamUuid = Optional.of(teamUuid);
+
+        serverWorld.spawnEntity(bot);
+
+        return bot;
+    }
 }

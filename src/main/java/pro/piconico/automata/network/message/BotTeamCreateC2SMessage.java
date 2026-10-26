@@ -14,6 +14,6 @@ public record BotTeamCreateC2SMessage(BotTeamSettings settings, UUID ownerUuid) 
         if (team.isEmpty())
             return;
 
-        BotTeamsSyncS2CMessage.syncToPlayersUsingTeams(serverAccess.runtime());
+        BotTeamsSyncS2CMessage.syncToPlayersUsingTeam(serverAccess.runtime(), team.get());
     }
 }

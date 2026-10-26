@@ -27,13 +27,7 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
         translationBuilder.add(AutomataTexts.JOBS_ADDED_KEY, "Added %1$s job(s)");
         translationBuilder.add(AutomataTexts.JOBS_REMOVED_KEY, "Removed %1$s job(s)");
         translationBuilder.add(AutomataTexts.NAME_KEY, "Name");
-        translationBuilder.add(AutomataTexts.TEAM_KEY, "Team \"%1$s\" (%2$s)");
-        translationBuilder.add(AutomataTexts.TEAM_ADDED_KEY, "Added team \"%1$s\" (%2$s)");
         translationBuilder.add(AutomataTexts.TEAM_EMPTY_KEY, "No team selected");
-        translationBuilder.add(AutomataTexts.TEAM_REMOVED_KEY, "Removed team \"%1$s\" (%2$s)");
-        translationBuilder.add(AutomataTexts.TEAM_MISSING_KEY, "No such team \"%1$s\"");
-        translationBuilder.add(AutomataTexts.TEAM_NAME_INVALID_KEY, "Invalid team name \"%1$s\"");
-        translationBuilder.add(AutomataTexts.TEAM_SELECTED_KEY, "Selected team \"%1$s\"");
         translationBuilder.add(AutomataTexts.TEAMS_EMPTY_KEY, "No teams");
         translationBuilder.add(AutomataTexts.UPDATE_KEY, "Update");
 
