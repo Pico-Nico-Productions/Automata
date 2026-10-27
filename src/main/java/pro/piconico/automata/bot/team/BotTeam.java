@@ -103,47 +103,44 @@ public class BotTeam {
         MUTATED.invoker().onMutate(this);
     }
 
-    public void addMember(PlayerEntity player, BotTeamRole role) {
-        if (members.containsKey(player.getUuid())) {
-            setRole(player.getUuid(), role);
+    public void addMember(ServerPlayerEntity serverPlayer, BotTeamRole role) {
+        if (members.containsKey(serverPlayer.getUuid())) {
+            setRole(serverPlayer, role);
             return;
         }
 
-        members.put(player.getUuid(), new BotTeamMember(player, role));
+        members.put(serverPlayer.getUuid(), new BotTeamMember(serverPlayer, role));
 
         MUTATED.invoker().onMutate(this);
     }
 
-    public void addMember(PlayerEntity player) {
-        addMember(player, BotTeamRole.USER);
+    public void addMember(ServerPlayerEntity serverPlayer) {
+        addMember(serverPlayer, BotTeamRole.USER);
     }
 
-    public void removeMember(UUID playerUuid) {
-        if (!members.containsKey(playerUuid))
+    public void removeMember(ServerPlayerEntity serverPlayer) {
+        if (!members.containsKey(serverPlayer.getUuid()))
             return;
 
-        members.remove(playerUuid);
+        members.remove(serverPlayer.getUuid());
 
         MUTATED.invoker().onMutate(this);
     }
 
-    public Optional<BotTeamRole> getRole(UUID playerUuid) {
-        if (!members.containsKey(playerUuid))
-            return Optional.empty();
-
-        return Optional.of(members.get(playerUuid).getRole());
+    public Optional<BotTeamRole> getRole(PlayerEntity player) {
+        return Optional.ofNullable(members.getOrDefault(player.getUuid(), null)).map(member -> member.getRole());
     }
 
-    public void setRole(UUID playerUuid, BotTeamRole role) {
-        if (!members.containsKey(playerUuid) || members.get(playerUuid).getRole() == role)
+    public void setRole(ServerPlayerEntity serverPlayer, BotTeamRole role) {
+        if (!members.containsKey(serverPlayer.getUuid()) || members.get(serverPlayer.getUuid()).getRole() == role)
             return;
 
-        members.get(playerUuid).setRole(role);
+        members.get(serverPlayer.getUuid()).setRole(role);
 
         MUTATED.invoker().onMutate(this);
     }
 
-    public boolean hasMember(UUID playerUuid) {
-        return getRole(playerUuid).isPresent();
+    public boolean hasMember(PlayerEntity playerEntity) {
+        return getRole(playerEntity).isPresent();
     }
 }

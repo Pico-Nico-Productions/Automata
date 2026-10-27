@@ -5,10 +5,14 @@ import java.util.UUID;
 import io.wispforest.owo.network.ServerAccess;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.bot.team.BotTeam.BotTeamSettings;
+import pro.piconico.automata.bot.team.BotTeamMember.BotTeamPermission;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
 public record BotTeamUpdateC2SMessage(UUID teamUuid, BotTeamSettings settings) {
     public static void handle(BotTeamUpdateC2SMessage message, ServerAccess serverAccess) {
+        if (!BotTeamPersistentState.teamHasMemberWith(message.teamUuid, serverAccess.player(), BotTeamPermission.UPDATE))
+            return;
+
         Optional<BotTeam> team = BotTeamPersistentState.updateTeam(message.teamUuid, message.settings);
 
         if (team.isEmpty())

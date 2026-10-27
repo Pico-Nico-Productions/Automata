@@ -7,6 +7,6 @@ import pro.piconico.automata.registry.AutomataMessages;
 public record BotTeamsSyncC2SMessage() {
     public static void handle(BotTeamsSyncC2SMessage message, ServerAccess serverAccess) {
         ServerPlayerEntity serverPlayer = serverAccess.player();
-        AutomataMessages.BOT_DEVICE_CHANNEL.serverHandle(serverPlayer).send(new BotTeamsSyncS2CMessage(serverPlayer.getUuid()));
+        AutomataMessages.BOT_DEVICE_CHANNEL.serverHandle(serverPlayer).send(new BotTeamsSyncS2CMessage(serverPlayer));
     }
 }

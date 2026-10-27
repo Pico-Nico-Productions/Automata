@@ -10,10 +10,12 @@ import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.PersistentState;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.bot.team.SortedBotTeamMap;
 import pro.piconico.automata.bot.team.BotTeam.BotTeamSettings;
+import pro.piconico.automata.bot.team.BotTeamMember.BotTeamPermission;
 import pro.piconico.automata.registry.AutomataPersistentStates;
 
 public class BotTeamPersistentState extends PersistentState {
@@ -60,8 +62,12 @@ public class BotTeamPersistentState extends PersistentState {
         return Optional.of(teamState.teamMap.get(teamUuid));
     }
 
-    public static boolean teamExistsAndHasMember(UUID teamUuid, UUID playerUuid) {
-        return getTeam(teamUuid).filter(team -> team.getRole(playerUuid).isPresent()).isPresent();
+    public static boolean teamHasMemberWith(UUID teamUuid, ServerPlayerEntity serverPlayer, BotTeamPermission permission) {
+        return getTeam(teamUuid).filter(team -> team.getRole(serverPlayer).filter(role -> role.permissions.contains(permission)).isPresent()).isPresent();
+    }
+
+    public static boolean teamHasMember(UUID teamUuid, ServerPlayerEntity serverPlayer) {
+        return getTeam(teamUuid).filter(team -> team.getRole(serverPlayer).isPresent()).isPresent();
     }
 
     public static Set<UUID> getTeamUuids() {

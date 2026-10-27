@@ -40,7 +40,7 @@ public class AutomatoolItem extends Item {
         if (!stack.isOf(AutomataItems.AUTOMATOOL) || !(player instanceof ServerPlayerEntity serverPlayer))
             return;
 
-        Optional<UUID> teamUuid = TeamComponent.get(stack).filter(uuid -> BotTeamPersistentState.teamExistsAndHasMember(uuid, player.getUuid()));
+        Optional<UUID> teamUuid = TeamComponent.get(stack).filter(uuid -> BotTeamPersistentState.teamHasMember(uuid, serverPlayer));
         BotSyncManager.updateSubscription(serverPlayer, teamUuid);
     }
 
@@ -51,7 +51,7 @@ public class AutomatoolItem extends Item {
         if (!(player instanceof ServerPlayerEntity serverPlayer))
             return;
 
-        Collection<ItemStack> heldStacks = LivingEntityUtils.getHeldStacks(player, AutomataItems.AUTOMATOOL).values();
+        Collection<ItemStack> heldStacks = LivingEntityUtils.getHeldStacks(player, s -> s.isOf(AutomataItems.AUTOMATOOL)).values();
         Optional<UUID> teamUuid = heldStacks.stream().map(heldStack -> TeamComponent.get(heldStack).orElse(null)).filter(uuid -> uuid != null).findFirst();
         BotSyncManager.updateSubscription(serverPlayer, teamUuid);
     }

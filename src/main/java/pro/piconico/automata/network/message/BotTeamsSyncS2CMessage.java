@@ -1,7 +1,6 @@
 package pro.piconico.automata.network.message;
 
 import java.util.List;
-import java.util.UUID;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import pro.piconico.automata.bot.team.BotTeam;
@@ -10,8 +9,8 @@ import pro.piconico.automata.screen.BotDeviceScreenHandler;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
 public record BotTeamsSyncS2CMessage(List<BotTeam> teams) {
-    public BotTeamsSyncS2CMessage(UUID playerUuid) {
-        this(BotTeamPersistentState.getTeams().stream().filter(team -> team.hasMember(playerUuid)).toList());
+    public BotTeamsSyncS2CMessage(ServerPlayerEntity serverPlayer) {
+        this(BotTeamPersistentState.getTeams().stream().filter(team -> team.hasMember(serverPlayer)).toList());
     }
 
     public static boolean isUsingTeams(ServerPlayerEntity serverPlayer) {
@@ -25,10 +24,10 @@ public record BotTeamsSyncS2CMessage(List<BotTeam> teams) {
 
     public static void syncToPlayersUsingTeam(MinecraftServer server, BotTeam team) {
         for (ServerPlayerEntity serverPlayer : getPlayersUsingTeams(server)) {
-            if (!team.hasMember(serverPlayer.getUuid()))
+            if (!team.hasMember(serverPlayer))
                 continue;
 
-            AutomataMessages.BOT_DEVICE_CHANNEL.serverHandle(serverPlayer).send(new BotTeamsSyncS2CMessage(serverPlayer.getUuid()));
+            AutomataMessages.BOT_DEVICE_CHANNEL.serverHandle(serverPlayer).send(new BotTeamsSyncS2CMessage(serverPlayer));
         }
     }
 }

@@ -25,15 +25,6 @@ import pro.piconico.automata.registry.AutomataItems;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 
 public class AutomatoolRenderer {
-    private static Optional<SelectionComponent> getSelectionComponent() {
-        SequencedMap<Hand, ItemStack> stacks = LivingEntityUtils.getHeldStacks(MinecraftClient.getInstance().player, AutomataItems.AUTOMATOOL);
-
-        if (stacks.isEmpty())
-            return Optional.empty();
-
-        return SelectionComponent.get(stacks.firstEntry().getValue());
-    }
-
     private static void renderNetworks(WorldRenderContext context) {
         for (ChunkPos chunkPos : BotCache.networkMap.keySet()) {
             RenderUtils.drawBox(context, ChunkBounds.of(chunkPos, 0, MinecraftClient.getInstance().world).toBox(), AutomataClientColors.NETWORK);
@@ -54,7 +45,7 @@ public class AutomatoolRenderer {
     }
 
     private static void renderJobs(WorldRenderContext context) {
-        for (Map<BotJobType<?>,BotJobAssignment> typeMap : BotCache.jobAssignmentMap.values()) {
+        for (Map<BotJobType<?>, BotJobAssignment> typeMap : BotCache.jobAssignmentMap.values()) {
             for (BotJobAssignment jobAssignment : typeMap.values()) {
                 Optional<Color> jobColor = AutomataClientColors.getJobColor(jobAssignment.job);
 
@@ -67,20 +58,24 @@ public class AutomatoolRenderer {
     }
 
     private static void renderSelectionOutline(WorldRenderContext context) {
-        Optional<SelectionComponent> selectionComponent = getSelectionComponent();
+        SequencedMap<Hand, ItemStack> stacks = LivingEntityUtils.getHeldStacks(MinecraftClient.getInstance().player,
+                stack -> stack.isOf(AutomataItems.AUTOMATOOL) && SelectionComponent.get(stack).isPresent());
 
-        selectionComponent.ifPresent(selection -> {
-            if (!MinecraftClient.getInstance().world.getRegistryKey().getValue().equals(selection.worldId()))
-                return;
+        if (stacks.isEmpty())
+            return;
 
-            selection.getSelectionBox().ifPresent(box -> RenderUtils.drawBoxOutline(context, box, AutomataClientColors.SELECTION_BOUNDS));
+        SelectionComponent selection = SelectionComponent.get(stacks.firstEntry().getValue()).get();
 
-            if (selection.selection1().equals(selection.selection2()))
-                return;
+        if (!MinecraftClient.getInstance().world.getRegistryKey().getValue().equals(selection.worldId()))
+            return;
 
-            selection.selection1().ifPresent(selection1 -> RenderUtils.drawBoxOutline(context, new Box(selection1), AutomataClientColors.SELECTION1));
-            selection.selection2().ifPresent(selection2 -> RenderUtils.drawBoxOutline(context, new Box(selection2), AutomataClientColors.SELECTION2));
-        });
+        selection.getSelectionBox().ifPresent(box -> RenderUtils.drawBoxOutline(context, box, AutomataClientColors.SELECTION_BOUNDS));
+
+        if (selection.selection1().equals(selection.selection2()))
+            return;
+
+        selection.selection1().ifPresent(selection1 -> RenderUtils.drawBoxOutline(context, new Box(selection1), AutomataClientColors.SELECTION1));
+        selection.selection2().ifPresent(selection2 -> RenderUtils.drawBoxOutline(context, new Box(selection2), AutomataClientColors.SELECTION2));
     }
 
     public static void initialize() {
