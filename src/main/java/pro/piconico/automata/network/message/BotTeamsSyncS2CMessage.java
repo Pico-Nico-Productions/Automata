@@ -10,7 +10,7 @@ import pro.piconico.automata.world.BotTeamPersistentState;
 
 public record BotTeamsSyncS2CMessage(List<BotTeam> teams) {
     public BotTeamsSyncS2CMessage(ServerPlayerEntity serverPlayer) {
-        this(BotTeamPersistentState.getTeams().stream().filter(team -> team.hasMember(serverPlayer)).toList());
+        this(BotTeamPersistentState.getTeams().stream().filter(team -> team.hasMemberWithRead(serverPlayer)).toList());
     }
 
     public static boolean isUsingTeams(ServerPlayerEntity serverPlayer) {
@@ -24,7 +24,7 @@ public record BotTeamsSyncS2CMessage(List<BotTeam> teams) {
 
     public static void syncToPlayersUsingTeam(MinecraftServer server, BotTeam team) {
         for (ServerPlayerEntity serverPlayer : getPlayersUsingTeams(server)) {
-            if (!team.hasMember(serverPlayer))
+            if (!team.hasMemberWithRead(serverPlayer))
                 continue;
 
             AutomataMessages.BOT_DEVICE_CHANNEL.serverHandle(serverPlayer).send(new BotTeamsSyncS2CMessage(serverPlayer));

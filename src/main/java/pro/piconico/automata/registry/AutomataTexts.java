@@ -6,6 +6,7 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
+import pro.piconico.automata.bot.team.BotTeam;
 
 public class AutomataTexts {
     public static final Style LINK_STYLE = Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true);
@@ -89,6 +90,13 @@ public class AutomataTexts {
         return Text.translatable(TEAM_EMPTY_KEY);
     }
 
+    /** Expected arguments: player name, team name, and team uuid (truncated) */
+    public static final String TEAM_PERMISSION_MISSING_KEY = AutomataRegistry.toTextTranslationKey("team_permission_missing");
+
+    public static final MutableText getTeamPermissionMissing(String playerName, BotTeam team) {
+        return Text.translatable(TEAM_PERMISSION_MISSING_KEY, playerName, team.getName(), team.uuid.toString().substring(0, BotTeam.TRUNCATED_UUID_LENGTH));
+    }
+
     public static final String TEAMS_EMPTY_KEY = AutomataRegistry.toTextTranslationKey("teams_empty");
 
     public static final MutableText getTeamsEmpty() {
@@ -99,10 +107,6 @@ public class AutomataTexts {
 
     public static final MutableText getUpdate() {
         return Text.translatable(UPDATE_KEY);
-    }
-
-    public static MutableText format(String format, Object... args) {
-        return Text.literal(String.format(format, args));
     }
 
     public static void initialize() {

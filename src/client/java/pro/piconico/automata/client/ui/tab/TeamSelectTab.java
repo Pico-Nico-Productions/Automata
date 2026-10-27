@@ -78,7 +78,7 @@ public class TeamSelectTab implements Tab<BotDeviceScreenHandler> {
             nameLabel.cursorStyle(CursorStyle.HAND);
             teamRow.child(nameLabel);
 
-            LabelComponent uuidLabel = UIComponents.label(Text.literal(team.uuid.toString().substring(0, 8)));
+            LabelComponent uuidLabel = UIComponents.label(Text.literal(team.uuid.toString().substring(0, BotTeam.TRUNCATED_UUID_LENGTH)));
             uuidLabel.horizontalSizing(Sizing.fill(35));
             uuidLabel.horizontalTextAlignment(HorizontalAlignment.RIGHT);
             uuidLabel.cursorStyle(CursorStyle.HAND);

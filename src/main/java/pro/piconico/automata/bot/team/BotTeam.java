@@ -18,7 +18,7 @@ import pro.piconico.automata.bot.team.BotTeamMember.BotTeamPermission;
 import pro.piconico.automata.bot.team.BotTeamMember.BotTeamRole;
 
 public class BotTeam {
-    public static final int MAX_NAME_LENGTH = 16;
+    public static final int MAX_NAME_LENGTH = 16, TRUNCATED_UUID_LENGTH = 8;
 
     public static boolean isValidName(String name) {
         return !name.strip().isEmpty() && name.length() <= MAX_NAME_LENGTH;
@@ -149,7 +149,7 @@ public class BotTeam {
         return getRole(playerEntity).filter(role -> role.permissions.contains(permission)).isPresent();
     }
 
-    public boolean hasMember(PlayerEntity playerEntity) {
-        return getRole(playerEntity).isPresent();
+    public boolean hasMemberWithRead(PlayerEntity playerEntity) {
+        return hasMemberWith(playerEntity, BotTeamPermission.READ);
     }
 }

@@ -3,7 +3,6 @@ package pro.piconico.automata.command;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.BiConsumer;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -40,27 +39,27 @@ public class TeamCommand {
         Optional<BotTeam> team = UUIDUtils.fromString(uuidArgument).map(teamUuid -> BotTeamPersistentState.getTeam(teamUuid).orElse(null));
 
         if (team.isEmpty()) {
-            context.getSource().sendMessage(AutomataTexts.format("No such team \"%1$s\"", uuidArgument));
+            context.getSource().sendMessage(Text.literal(String.format("No such team \"%1$s\"", uuidArgument)));
         }
 
         return team;
     }
 
-    private static MutableText appendTeamText(String string, String teamName, UUID teamUuid) {
-        return Text.literal(string).append(" \"" + teamName + "\" (").append(AutomataTexts.getCopyableText(teamUuid.toString())).append(")");
+    private static MutableText appendTeamText(String string, BotTeam team) {
+        return Text.literal(string).append(" \"" + team.getName() + "\" (").append(AutomataTexts.getCopyableText(team.uuid.toString())).append(")");
     }
 
     private static int addTeam(CommandContext<ServerCommandSource> context) {
         String name = StringArgumentType.getString(context, NAME_ARGUMENT);
 
         if (BotTeam.isValidName(name)) {
-            context.getSource().sendMessage(AutomataTexts.format("Invalid team name \"%1$s\"", name));
+            context.getSource().sendMessage(Text.literal(String.format("Invalid team name \"%1$s\"", name)));
             return 0;
         }
 
         BotTeamSettings settings = new BotTeamSettings(name);
         Optional<BotTeam> team = BotTeamPersistentState.addTeam(settings, Optional.ofNullable(context.getSource().getPlayer()).map(owner -> owner.getUuid()));
-        context.getSource().sendMessage(appendTeamText("Added team", name, team.get().uuid));
+        context.getSource().sendMessage(appendTeamText("Added team", team.get()));
 
         return 1;
     }
@@ -72,7 +71,7 @@ public class TeamCommand {
             return 0;
 
         BotTeamPersistentState.removeTeam(team.get().uuid).get();
-        context.getSource().sendMessage(appendTeamText("Removed team", team.get().getName(), team.get().uuid));
+        context.getSource().sendMessage(appendTeamText("Removed team", team.get()));
 
         return 1;
     }
@@ -104,7 +103,7 @@ public class TeamCommand {
 
         for (ServerPlayerEntity serverPlayer : targets) {
             action.accept(team.get(), serverPlayer);
-            context.getSource().sendMessage(appendTeamText(serverPlayer.getStringifiedName() + " " + actionVerb + " team", team.get().getName(), team.get().uuid));
+            context.getSource().sendMessage(appendTeamText(serverPlayer.getStringifiedName() + " " + actionVerb + " team", team.get()));
         }
 
         return targets.size();
@@ -121,7 +120,7 @@ public class TeamCommand {
     private static int listTeams(CommandContext<ServerCommandSource> context) {
         Collection<BotTeam> teams = BotTeamPersistentState.getTeams();
         for (BotTeam team : teams) {
-            context.getSource().sendMessage(appendTeamText("Team", team.getName(), team.uuid));
+            context.getSource().sendMessage(appendTeamText("Team", team));
         }
         if (teams.isEmpty()) {
             context.getSource().sendMessage(AutomataTexts.getTeamsEmpty());

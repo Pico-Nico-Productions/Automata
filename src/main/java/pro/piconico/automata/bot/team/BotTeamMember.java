@@ -11,12 +11,12 @@ import net.minecraft.util.Uuids;
 
 public class BotTeamMember {
     public enum BotTeamPermission {
-        UPDATE, DELETE;
+        READ, CHANGE_DEVICE_TEAM, SELECT, DISPATCH, UPDATE, DELETE;
     }
 
     public enum BotTeamRole {
-        USER(EnumSet.noneOf(BotTeamPermission.class)), //
-        ADMIN(EnumSet.of(BotTeamPermission.UPDATE)), //
+        USER(EnumSet.range(BotTeamPermission.READ, BotTeamPermission.DISPATCH)), //
+        ADMIN(EnumSet.range(BotTeamPermission.READ, BotTeamPermission.UPDATE)), //
         OWNER(EnumSet.allOf(BotTeamPermission.class));
 
         public static final Codec<BotTeamRole> CODEC = Codec.INT.xmap(ordinal -> BotTeamRole.values()[ordinal], role -> role.ordinal());

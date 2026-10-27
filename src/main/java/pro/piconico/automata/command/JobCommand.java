@@ -8,6 +8,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.text.Text;
 import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.util.UUIDUtils;
 import pro.piconico.automata.world.BotJobPersistentState;
@@ -37,7 +38,7 @@ public class JobCommand {
         Optional<UUID> teamUuid = UUIDUtils.fromString(uuidArgument);
 
         if (teamUuid.isEmpty() || BotTeamPersistentState.getTeam(teamUuid.get()).isEmpty()) {
-            context.getSource().sendMessage(AutomataTexts.format("Selected team \"%1$s\"", uuidArgument));
+            context.getSource().sendMessage(Text.literal(String.format("Selected team \"%1$s\"", uuidArgument)));
             return 0;
         }
 

@@ -63,7 +63,7 @@ public interface BotDevice<T> extends ExtendedScreenHandlerFactory<T> {
         if (team.isEmpty())
             return true;
 
-        return team.get().hasMember(player);
+        return team.get().hasMemberWithRead(player);
     }
 
     public default ActionResult openScreen(PlayerEntity player) {

@@ -14,12 +14,16 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import pro.piconico.automata.bot.team.BotTeam;
+import pro.piconico.automata.bot.team.BotTeamMember.BotTeamPermission;
 import pro.piconico.automata.component.TeamComponent;
 import pro.piconico.automata.network.message.BotDeviceTeamChangeMessage;
 import pro.piconico.automata.registry.AutomataBotDevices;
 import pro.piconico.automata.registry.AutomataMessages;
+import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.screen.BotDeviceScreenHandler;
 import pro.piconico.automata.screen.ItemBotDeviceScreenHandler;
+import pro.piconico.automata.world.BotTeamPersistentState;
 
 public class ItemBotDevice implements BotDevice<ItemStack> {
     public record ItemId(int slot) implements BotDevice.Id {
@@ -110,6 +114,33 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
         BotDevice.invokeTeamChanged(player.getEntityWorld(), this, oldTeamUuid);
         if (player instanceof ServerPlayerEntity serverPlayer) {
             AutomataMessages.BOT_DEVICE_CHANNEL.serverHandle(serverPlayer).send(new BotDeviceTeamChangeMessage(getDeviceId(), teamUuid));
+        }
+
+        return true;
+    }
+
+    public boolean hasPermission(BotTeamPermission permission, boolean sendMessage) {
+        if (player.getEntityWorld().isClient())
+            return true;
+
+        ItemStack stack = getStack();
+        Optional<BotTeam> team = TeamComponent.get(stack).map(uuid -> BotTeamPersistentState.getTeam(uuid).orElse(null));
+
+        if (team.isEmpty()) {
+            TeamComponent.set(stack, Optional.empty());
+            if (sendMessage) {
+                player.sendMessage(AutomataTexts.getTeamEmpty(), true);
+            }
+
+            return false;
+        }
+
+        if (!team.get().hasMemberWith(player, BotTeamPermission.DISPATCH)) {
+            if (sendMessage) {
+                player.sendMessage(AutomataTexts.getTeamPermissionMissing(player.getStringifiedName(), team.get()), true);
+            }
+
+            return false;
         }
 
         return true;

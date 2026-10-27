@@ -74,8 +74,8 @@ public class BotTeamPersistentState extends PersistentState {
         return getTeam(teamUuid).filter(team -> team.hasMemberWith(serverPlayer, permission)).isPresent();
     }
 
-    public static boolean teamExistsAndHasMember(UUID teamUuid, ServerPlayerEntity serverPlayer) {
-        return getTeam(teamUuid).filter(team -> team.hasMember(serverPlayer)).isPresent();
+    public static boolean teamExistsAndHasMemberWithRead(UUID teamUuid, ServerPlayerEntity serverPlayer) {
+        return getTeam(teamUuid).filter(team -> team.hasMemberWithRead(serverPlayer)).isPresent();
     }
 
     public static Set<UUID> getTeamUuids() {

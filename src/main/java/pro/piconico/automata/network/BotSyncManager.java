@@ -93,7 +93,7 @@ public class BotSyncManager {
     }
 
     private static void updateSubscription(ServerPlayerEntity serverPlayer, Optional<UUID> teamUuid) {
-        if (teamUuid.isEmpty()) {
+        if (teamUuid.filter(uuid -> BotTeamPersistentState.teamExistsAndHasMemberWithRead(uuid, serverPlayer)).isEmpty()) {
             unsubscribe(serverPlayer);
             return;
         }
@@ -141,12 +141,7 @@ public class BotSyncManager {
             return;
 
         for (ServerPlayerEntity serverPlayer : server.getPlayerManager().getPlayerList()) {
-            if (BotTeamPersistentState.teamExistsAndHasMember(team.uuid, serverPlayer)) {
-                subscribe(serverPlayer, team.uuid);
-            }
-            else {
-                unsubscribe(serverPlayer);
-            }
+            updateSubscription(serverPlayer, Optional.of(team.uuid));
         }
     }
 
@@ -154,7 +149,7 @@ public class BotSyncManager {
         if (!(player instanceof ServerPlayerEntity serverPlayer))
             return;
 
-        Optional<UUID> teamUuid = TeamComponent.get(stack).filter(uuid -> BotTeamPersistentState.teamExistsAndHasMember(uuid, serverPlayer));
+        Optional<UUID> teamUuid = TeamComponent.get(stack).filter(uuid -> BotTeamPersistentState.teamExistsAndHasMemberWithRead(uuid, serverPlayer));
 
         if (teamUuid.isEmpty())
             return;

@@ -28,6 +28,7 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
         translationBuilder.add(AutomataTexts.JOBS_REMOVED_KEY, "Removed %1$s job(s)");
         translationBuilder.add(AutomataTexts.NAME_KEY, "Name");
         translationBuilder.add(AutomataTexts.TEAM_EMPTY_KEY, "No team selected");
+        translationBuilder.add(AutomataTexts.TEAM_PERMISSION_MISSING_KEY, "%1$s doesn't have permission to do that on \"%2$s\" (%3$s)");
         translationBuilder.add(AutomataTexts.TEAMS_EMPTY_KEY, "No teams");
         translationBuilder.add(AutomataTexts.UPDATE_KEY, "Update");
 

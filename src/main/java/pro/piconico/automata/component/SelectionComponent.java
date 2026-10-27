@@ -43,12 +43,7 @@ public record SelectionComponent(Identifier worldId, Optional<BlockPos> selectio
     }
 
     public static SelectionComponent getAndCopyWithOrElse(ItemStack stack, World world, BlockPos selection, boolean isSelection2) {
-        Optional<SelectionComponent> original = get(stack);
-
-        if (original.isPresent())
-            return original.get().copyWith(selection, isSelection2);
-
-        return new SelectionComponent(world, selection, isSelection2);
+        return get(stack).map(original -> original.copyWith(selection, isSelection2)).orElse(new SelectionComponent(world, selection, isSelection2));
     }
 
     public boolean hasSelection() {

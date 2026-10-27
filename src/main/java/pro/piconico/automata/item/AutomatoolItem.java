@@ -20,10 +20,9 @@ import pro.piconico.automata.component.TeamComponent;
 import pro.piconico.automata.registry.AutomataComponents;
 import pro.piconico.automata.registry.AutomataItems;
 import pro.piconico.automata.registry.AutomataTexts;
-import pro.piconico.automata.world.BotTeamPersistentState;
 import pro.piconico.automata.bot.device.ItemBotDevice;
 import pro.piconico.automata.bot.job.BotJobDispatcher;
-import pro.piconico.automata.bot.team.BotTeam;
+import pro.piconico.automata.bot.team.BotTeamMember.BotTeamPermission;
 
 public class AutomatoolItem extends Item {
     public AutomatoolItem(Settings settings) {
@@ -31,19 +30,22 @@ public class AutomatoolItem extends Item {
     }
 
     //#region Actions
-    private static ActionResult select(PlayerEntity player, ItemStack stack, BlockPos selection, boolean isSelection2) {
+    private static ActionResult select(PlayerEntity player, ItemStack automatoolStack, BlockPos selection, boolean isSelection2) {
         World world = player.getEntityWorld();
 
         if (world.isClient())
             return ActionResult.SUCCESS;
 
-        stack.set(AutomataComponents.SELECTION, SelectionComponent.getAndCopyWithOrElse(stack, world, selection, isSelection2));
+        if (!new ItemBotDevice(player, automatoolStack).hasPermission(BotTeamPermission.SELECT, true))
+            return ActionResult.FAIL;
+
+        automatoolStack.set(AutomataComponents.SELECTION, SelectionComponent.getAndCopyWithOrElse(automatoolStack, world, selection, isSelection2));
         player.sendMessage(AutomataTexts.getBlockSelected(isSelection2 ? 2 : 1, selection), true);
 
         return ActionResult.SUCCESS;
     }
 
-    private static ActionResult dispatchCommand(PlayerEntity player, ItemStack automatoolStack) {
+    private static ActionResult dispatch(PlayerEntity player, ItemStack automatoolStack) {
         Optional<UUID> teamUuid = TeamComponent.get(automatoolStack);
         Optional<SelectionComponent> selectionComponent = SelectionComponent.get(automatoolStack);
         boolean hasSelection = selectionComponent.filter(s -> s.hasSelection()).isPresent();
@@ -52,19 +54,8 @@ public class AutomatoolItem extends Item {
             return teamUuid.isPresent() && hasSelection ? ActionResult.SUCCESS : ActionResult.FAIL;
         }
 
-        if (teamUuid.isEmpty()) {
-            player.sendMessage(AutomataTexts.getTeamEmpty(), true);
-
+        if (!new ItemBotDevice(player, automatoolStack).hasPermission(BotTeamPermission.DISPATCH, true))
             return ActionResult.FAIL;
-        }
-
-        Optional<BotTeam> team = BotTeamPersistentState.getTeam(teamUuid.get());
-        if (team.isEmpty()) {
-            TeamComponent.set(automatoolStack, Optional.empty());
-            player.sendMessage(AutomataTexts.getTeamEmpty(), true);
-
-            return ActionResult.FAIL;
-        }
 
         if (!hasSelection) {
             player.sendMessage(AutomataTexts.getDeconstructionFailed(), true);
@@ -101,7 +92,7 @@ public class AutomatoolItem extends Item {
         if (!player.isSneaking())
             return new ItemBotDevice(player, stack).openScreen(player);
 
-        return dispatchCommand(player, stack);
+        return dispatch(player, stack);
     }
     //#endregion
 
