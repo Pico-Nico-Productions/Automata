@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.screen.ScreenHandler;
@@ -36,6 +37,11 @@ public abstract class BotDeviceScreenHandler extends ScreenHandler {
         else {
             teams = new ArrayList<>(BotTeamPersistentState.getTeams());
         }
+    }
+
+    @Override
+    public boolean canUse(PlayerEntity player) {
+        return device.canUse(player);
     }
 
     public int getBodyWidth() {

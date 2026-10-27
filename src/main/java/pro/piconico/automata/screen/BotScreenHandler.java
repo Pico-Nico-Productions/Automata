@@ -26,11 +26,6 @@ public class BotScreenHandler extends BotDeviceScreenHandler {
     }
 
     @Override
-    public boolean canUse(PlayerEntity player) {
-        return castBot().canPlayerUse(player) && castBot().canPlayerOpenScreen(player);
-    }
-
-    @Override
     public ItemStack quickMove(PlayerEntity player, int slot) {
         return ScreenHandlerUtils.quickMove(slots, this::insertItem, player, slot, castBot().size());
     }

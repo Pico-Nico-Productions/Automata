@@ -1,6 +1,5 @@
 package pro.piconico.automata.item;
 
-import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
@@ -18,14 +17,10 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import pro.piconico.automata.component.SelectionComponent;
 import pro.piconico.automata.component.TeamComponent;
-import pro.piconico.automata.entity.LivingEntityUtils;
-import pro.piconico.automata.event.HoldItemCallback;
-import pro.piconico.automata.network.BotSyncManager;
 import pro.piconico.automata.registry.AutomataComponents;
 import pro.piconico.automata.registry.AutomataItems;
 import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.world.BotTeamPersistentState;
-import pro.piconico.automata.bot.device.BotDevice;
 import pro.piconico.automata.bot.device.ItemBotDevice;
 import pro.piconico.automata.bot.job.BotJobDispatcher;
 import pro.piconico.automata.bot.team.BotTeam;
@@ -34,38 +29,6 @@ public class AutomatoolItem extends Item {
     public AutomatoolItem(Settings settings) {
         super(settings.maxCount(1));
     }
-
-    //#region Sync Subscription
-    private static void onHoldStarted(PlayerEntity player, Hand hand, ItemStack stack) {
-        if (!stack.isOf(AutomataItems.AUTOMATOOL) || !(player instanceof ServerPlayerEntity serverPlayer))
-            return;
-
-        Optional<UUID> teamUuid = TeamComponent.get(stack).filter(uuid -> BotTeamPersistentState.teamHasMember(uuid, serverPlayer));
-        BotSyncManager.updateSubscription(serverPlayer, teamUuid);
-    }
-
-    private static void onHoldEnded(PlayerEntity player, Hand hand, ItemStack stack) {
-        if (!stack.isOf(AutomataItems.AUTOMATOOL))
-            return;
-
-        if (!(player instanceof ServerPlayerEntity serverPlayer))
-            return;
-
-        Collection<ItemStack> heldStacks = LivingEntityUtils.getHeldStacks(player, s -> s.isOf(AutomataItems.AUTOMATOOL)).values();
-        Optional<UUID> teamUuid = heldStacks.stream().map(heldStack -> TeamComponent.get(heldStack).orElse(null)).filter(uuid -> uuid != null).findFirst();
-        BotSyncManager.updateSubscription(serverPlayer, teamUuid);
-    }
-
-    private static void onTeamChanged(World world, BotDevice<?> device, Optional<UUID> oldTeamUuid) {
-        if (!(device instanceof ItemBotDevice itemDevice) || itemDevice.getItem() != AutomataItems.AUTOMATOOL)
-            return;
-
-        if (!(itemDevice.player instanceof ServerPlayerEntity serverPlayer))
-            return;
-
-        BotSyncManager.updateSubscription(serverPlayer, device.getTeamUuid());
-    }
-    //#endregion
 
     //#region Actions
     private static ActionResult select(PlayerEntity player, ItemStack stack, BlockPos selection, boolean isSelection2) {
@@ -85,7 +48,7 @@ public class AutomatoolItem extends Item {
         Optional<SelectionComponent> selectionComponent = SelectionComponent.get(automatoolStack);
         boolean hasSelection = selectionComponent.filter(s -> s.hasSelection()).isPresent();
 
-        if (!(player instanceof ServerPlayerEntity serverPlayer)) {
+        if (!(player instanceof ServerPlayerEntity)) {
             return teamUuid.isPresent() && hasSelection ? ActionResult.SUCCESS : ActionResult.FAIL;
         }
 
@@ -97,9 +60,7 @@ public class AutomatoolItem extends Item {
 
         Optional<BotTeam> team = BotTeamPersistentState.getTeam(teamUuid.get());
         if (team.isEmpty()) {
-            if (TeamComponent.set(automatoolStack, Optional.empty())) {
-                BotSyncManager.unsubscribe(serverPlayer);
-            }
+            TeamComponent.set(automatoolStack, Optional.empty());
             player.sendMessage(AutomataTexts.getTeamEmpty(), true);
 
             return ActionResult.FAIL;
@@ -130,7 +91,7 @@ public class AutomatoolItem extends Item {
         if (!(stack.isOf(AutomataItems.AUTOMATOOL)))
             return ActionResult.PASS;
 
-        return select(player, player.getStackInHand(hand), blockPos, player.isSneaking());
+        return select(player, stack, blockPos, player.isSneaking());
     }
 
     @Override
@@ -145,9 +106,6 @@ public class AutomatoolItem extends Item {
     //#endregion
 
     public static void initialize() {
-        HoldItemCallback.HOLD_STARTED.register(AutomatoolItem::onHoldStarted);
-        HoldItemCallback.HOLD_ENDED.register(AutomatoolItem::onHoldEnded);
         AttackBlockCallback.EVENT.register(AutomatoolItem::onAttackBlock);
-        BotDevice.TEAM_CHANGED_CALLBACKS.add(AutomatoolItem::onTeamChanged);
     }
 }

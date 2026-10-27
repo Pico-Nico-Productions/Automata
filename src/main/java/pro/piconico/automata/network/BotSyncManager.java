@@ -1,22 +1,31 @@
 package pro.piconico.automata.network;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.Map.Entry;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Hand;
+import net.minecraft.world.World;
+import pro.piconico.automata.bot.device.BotDevice;
+import pro.piconico.automata.bot.device.ItemBotDevice;
 import pro.piconico.automata.bot.job.BotJobAssignmentMap;
 import pro.piconico.automata.bot.network.BotNetwork;
 import pro.piconico.automata.bot.network.BotNetworkManager;
 import pro.piconico.automata.bot.network.BotNetworkMap;
 import pro.piconico.automata.bot.team.BotTeam;
+import pro.piconico.automata.component.TeamComponent;
+import pro.piconico.automata.entity.LivingEntityUtils;
+import pro.piconico.automata.event.HoldItemCallback;
 import pro.piconico.automata.network.packet.BotSyncS2CPacket;
 import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
 import pro.piconico.automata.world.BotJobPersistentState;
@@ -54,15 +63,15 @@ public class BotSyncManager {
 
     private static final Map<UUID, SyncState> subscribers = new HashMap<>();
 
-    public static boolean isSubscribed(ServerPlayerEntity serverPlayer) {
+    private static boolean isSubscribed(ServerPlayerEntity serverPlayer) {
         return subscribers.containsKey(serverPlayer.getUuid());
     }
 
-    public static boolean isSubscribed(ServerPlayerEntity serverPlayer, UUID teamUuid) {
+    private static boolean isSubscribed(ServerPlayerEntity serverPlayer, UUID teamUuid) {
         return isSubscribed(serverPlayer) && subscribers.get(serverPlayer.getUuid()).teamUuid.equals(teamUuid);
     }
 
-    public static void subscribe(ServerPlayerEntity serverPlayer, UUID teamUuid) {
+    private static void subscribe(ServerPlayerEntity serverPlayer, UUID teamUuid) {
         UUID playerUuid = serverPlayer.getUuid();
 
         if (isSubscribed(serverPlayer, teamUuid))
@@ -74,7 +83,7 @@ public class BotSyncManager {
         ServerPlayNetworking.send(serverPlayer, new BotSyncS2CPacket(true, currentState.networkMap, currentState.jobAssignmentMap));
     }
 
-    public static void unsubscribe(ServerPlayerEntity serverPlayer) {
+    private static void unsubscribe(ServerPlayerEntity serverPlayer) {
         if (!subscribers.containsKey(serverPlayer.getUuid()))
             return;
 
@@ -83,7 +92,7 @@ public class BotSyncManager {
         ServerPlayNetworking.send(serverPlayer, BotSyncS2CPacket.CLEAR);
     }
 
-    public static void updateSubscription(ServerPlayerEntity serverPlayer, Optional<UUID> teamUuid) {
+    private static void updateSubscription(ServerPlayerEntity serverPlayer, Optional<UUID> teamUuid) {
         if (teamUuid.isEmpty()) {
             unsubscribe(serverPlayer);
             return;
@@ -128,22 +137,45 @@ public class BotSyncManager {
     }
 
     private static void onTeamsMutated(MinecraftServer server, BotTeam team, Mutation mutation) {
-        if (mutation != BotTeamPersistentState.Mutation.REMOVE)
+        if (!(mutation == Mutation.MEMBERS || mutation == Mutation.REMOVE))
             return;
 
-        Iterator<Entry<UUID, SyncState>> subscriberIterator = subscribers.entrySet().iterator();
-        while (subscriberIterator.hasNext()) {
-            Entry<UUID, SyncState> subscriber = subscriberIterator.next();
-            if (!subscriber.getValue().teamUuid.equals(team.uuid))
-                continue;
-
-            ServerPlayerEntity serverPlayer = server.getPlayerManager().getPlayer(subscriber.getKey());
-            if (serverPlayer != null) {
-                ServerPlayNetworking.send(serverPlayer, BotSyncS2CPacket.CLEAR);
+        for (ServerPlayerEntity serverPlayer : server.getPlayerManager().getPlayerList()) {
+            if (BotTeamPersistentState.teamExistsAndHasMember(team.uuid, serverPlayer)) {
+                subscribe(serverPlayer, team.uuid);
             }
-
-            subscriberIterator.remove();
+            else {
+                unsubscribe(serverPlayer);
+            }
         }
+    }
+
+    private static void onHoldStarted(PlayerEntity player, Hand hand, ItemStack stack) {
+        if (!(player instanceof ServerPlayerEntity serverPlayer))
+            return;
+
+        Optional<UUID> teamUuid = TeamComponent.get(stack).filter(uuid -> BotTeamPersistentState.teamExistsAndHasMember(uuid, serverPlayer));
+
+        if (teamUuid.isEmpty())
+            return;
+
+        updateSubscription(serverPlayer, teamUuid);
+    }
+
+    private static void onHoldEnded(PlayerEntity player, Hand hand, ItemStack stack) {
+        if (!(player instanceof ServerPlayerEntity serverPlayer) || TeamComponent.get(stack).isEmpty())
+            return;
+
+        Collection<ItemStack> heldStacks = LivingEntityUtils.getHeldStacks(player, s -> TeamComponent.get(s).isPresent()).values();
+        Optional<UUID> teamUuid = heldStacks.stream().map(heldStack -> TeamComponent.get(heldStack).orElse(null)).filter(uuid -> uuid != null).findFirst();
+        updateSubscription(serverPlayer, teamUuid);
+    }
+
+    private static void onTeamChanged(World world, BotDevice<?> device, Optional<UUID> oldTeamUuid) {
+        if (!(device instanceof ItemBotDevice itemDevice) || !(itemDevice.player instanceof ServerPlayerEntity serverPlayer))
+            return;
+
+        updateSubscription(serverPlayer, device.getTeamUuid());
     }
 
     public static void initialize() {
@@ -152,5 +184,8 @@ public class BotSyncManager {
         BotTeamPersistentState.TEAMS_MUTATED.register(BotSyncManager::onTeamsMutated);
         BotNetworkManager.NETWORKS_MUTATED.register((serverWorld, teamUuid, mutation) -> syncToSubscribers(serverWorld, teamUuid));
         BotJobPersistentState.JOBS_MUTATED.register((serverWorld, teamUuid, mutation) -> syncToSubscribers(serverWorld, teamUuid));
+        HoldItemCallback.HOLD_STARTED.register(BotSyncManager::onHoldStarted);
+        HoldItemCallback.HOLD_ENDED.register(BotSyncManager::onHoldEnded);
+        BotDevice.TEAM_CHANGED_CALLBACKS.add(BotSyncManager::onTeamChanged);
     }
 }

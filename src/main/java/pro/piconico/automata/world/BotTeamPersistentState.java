@@ -20,7 +20,15 @@ import pro.piconico.automata.registry.AutomataPersistentStates;
 
 public class BotTeamPersistentState extends PersistentState {
     public enum Mutation {
-        ADD, UPDATE, REMOVE
+        ADD, SETTINGS, MEMBERS, ROLES, REMOVE;
+
+        public static Mutation from(BotTeam.Mutation mutation) {
+            return switch (mutation) {
+            case BotTeam.Mutation.SETTINGS -> SETTINGS;
+            case BotTeam.Mutation.MEMBERS -> MEMBERS;
+            case BotTeam.Mutation.ROLES -> ROLES;
+            };
+        }
     }
 
     @FunctionalInterface
@@ -62,12 +70,12 @@ public class BotTeamPersistentState extends PersistentState {
         return Optional.of(teamState.teamMap.get(teamUuid));
     }
 
-    public static boolean teamHasMemberWith(UUID teamUuid, ServerPlayerEntity serverPlayer, BotTeamPermission permission) {
-        return getTeam(teamUuid).filter(team -> team.getRole(serverPlayer).filter(role -> role.permissions.contains(permission)).isPresent()).isPresent();
+    public static boolean teamExistsAndHasMemberWith(UUID teamUuid, ServerPlayerEntity serverPlayer, BotTeamPermission permission) {
+        return getTeam(teamUuid).filter(team -> team.hasMemberWith(serverPlayer, permission)).isPresent();
     }
 
-    public static boolean teamHasMember(UUID teamUuid, ServerPlayerEntity serverPlayer) {
-        return getTeam(teamUuid).filter(team -> team.getRole(serverPlayer).isPresent()).isPresent();
+    public static boolean teamExistsAndHasMember(UUID teamUuid, ServerPlayerEntity serverPlayer) {
+        return getTeam(teamUuid).filter(team -> team.hasMember(serverPlayer)).isPresent();
     }
 
     public static Set<UUID> getTeamUuids() {
@@ -117,9 +125,9 @@ public class BotTeamPersistentState extends PersistentState {
         return Optional.of(team);
     }
 
-    private static void onBotTeamMutated(BotTeam team) {
+    private static void onBotTeamMutated(BotTeam team, BotTeam.Mutation mutation) {
         getTeamState().markDirty();
-        TEAMS_MUTATED.invoker().onMutate(server, team, Mutation.UPDATE);
+        TEAMS_MUTATED.invoker().onMutate(server, team, Mutation.from(mutation));
     }
 
     public static void initialize() {

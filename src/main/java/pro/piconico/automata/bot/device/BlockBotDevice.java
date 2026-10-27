@@ -102,6 +102,11 @@ public abstract class BlockBotDevice extends BlockEntity implements BotDevice<Bl
     }
 
     @Override
+    public boolean canUse(PlayerEntity player) {
+        return canPlayerUse(player) && BotDevice.super.canUse(player);
+    }
+
+    @Override
     public Optional<UUID> getTeamUuid() {
         return teamUuid;
     }

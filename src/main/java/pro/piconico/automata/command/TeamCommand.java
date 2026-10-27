@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -27,6 +28,7 @@ public class TeamCommand {
     private static final String ADD_ARGUMENT = "add";
     private static final String REMOVE_ARGUMENT = "remove";
     private static final String JOIN_ARGUMENT = "join";
+    private static final String LEAVE_ARGUMENT = "leave";
     private static final String LIST_ARGUMENT = "list";
 
     private static final String NAME_ARGUMENT = "name";
@@ -75,7 +77,7 @@ public class TeamCommand {
         return 1;
     }
 
-    private static int joinTeam(CommandContext<ServerCommandSource> context) {
+    private static int doActionToTargets(CommandContext<ServerCommandSource> context, BiConsumer<BotTeam, ServerPlayerEntity> action, String actionVerb) {
         Optional<BotTeam> team = parseTeam(context);
 
         if (team.isEmpty())
@@ -100,12 +102,20 @@ public class TeamCommand {
             return 0;
         }
 
-        for (ServerPlayerEntity player : targets) {
-            team.get().addMember(player, BotTeamRole.OWNER);
-            context.getSource().sendMessage(appendTeamText(player.getStringifiedName() + " joined team", team.get().getName(), team.get().uuid));
+        for (ServerPlayerEntity serverPlayer : targets) {
+            action.accept(team.get(), serverPlayer);
+            context.getSource().sendMessage(appendTeamText(serverPlayer.getStringifiedName() + " " + actionVerb + " team", team.get().getName(), team.get().uuid));
         }
 
         return targets.size();
+    }
+
+    private static int joinTeam(CommandContext<ServerCommandSource> context) {
+        return doActionToTargets(context, (team, serverPlayer) -> team.addMember(serverPlayer, BotTeamRole.OWNER), "joined");
+    }
+
+    private static int leaveTeam(CommandContext<ServerCommandSource> context) {
+        return doActionToTargets(context, (team, serverPlayer) -> team.removeMember(serverPlayer), "left");
     }
 
     private static int listTeams(CommandContext<ServerCommandSource> context) {
@@ -135,6 +145,11 @@ public class TeamCommand {
         joinArgument.then(CommandManager.argument(UUID_ARGUMENT, StringArgumentType.word()).executes(TeamCommand::joinTeam) //
                 .then(CommandManager.argument(TARGETS_ARGUMENT, EntityArgumentType.players()).executes(TeamCommand::joinTeam)));
         teamCommand.then(joinArgument);
+
+        LiteralArgumentBuilder<ServerCommandSource> leaveArgument = CommandManager.literal(LEAVE_ARGUMENT);
+        leaveArgument.then(CommandManager.argument(UUID_ARGUMENT, StringArgumentType.word()).executes(TeamCommand::leaveTeam) //
+                .then(CommandManager.argument(TARGETS_ARGUMENT, EntityArgumentType.players()).executes(TeamCommand::leaveTeam)));
+        teamCommand.then(leaveArgument);
 
         LiteralArgumentBuilder<ServerCommandSource> listArgument = CommandManager.literal(LIST_ARGUMENT);
         listArgument.executes(TeamCommand::listTeams);

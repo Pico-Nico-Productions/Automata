@@ -49,7 +49,7 @@ public interface BotDevice<T> extends ExtendedScreenHandlerFactory<T> {
 
     public boolean setTeamUuid(Optional<UUID> teamUuid);
 
-    public default boolean canPlayerOpenScreen(PlayerEntity player) {
+    public default boolean canUse(PlayerEntity player) {
         if (player.getEntityWorld().isClient())
             return true;
 
@@ -67,7 +67,7 @@ public interface BotDevice<T> extends ExtendedScreenHandlerFactory<T> {
     }
 
     public default ActionResult openScreen(PlayerEntity player) {
-        if (!canPlayerOpenScreen(player))
+        if (!canUse(player))
             return ActionResult.FAIL;
 
         if (player.getEntityWorld().isClient())

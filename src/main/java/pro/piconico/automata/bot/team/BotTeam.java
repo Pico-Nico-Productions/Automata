@@ -14,6 +14,7 @@ import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Uuids;
+import pro.piconico.automata.bot.team.BotTeamMember.BotTeamPermission;
 import pro.piconico.automata.bot.team.BotTeamMember.BotTeamRole;
 
 public class BotTeam {
@@ -49,14 +50,18 @@ public class BotTeam {
         }
     }
 
-    @FunctionalInterface
-    public interface Mutate {
-        void onMutate(BotTeam team);
+    public enum Mutation {
+        SETTINGS, MEMBERS, ROLES
     }
 
-    public static final Event<Mutate> MUTATED = EventFactory.createArrayBacked(Mutate.class, callbacks -> (team) -> {
+    @FunctionalInterface
+    public interface Mutate {
+        void onMutate(BotTeam team, Mutation mutation);
+    }
+
+    public static final Event<Mutate> MUTATED = EventFactory.createArrayBacked(Mutate.class, callbacks -> (team, mutation) -> {
         for (Mutate callback : callbacks) {
-            callback.onMutate(team);
+            callback.onMutate(team, mutation);
         }
     });
 
@@ -100,7 +105,7 @@ public class BotTeam {
 
         name = settings.name;
 
-        MUTATED.invoker().onMutate(this);
+        MUTATED.invoker().onMutate(this, Mutation.SETTINGS);
     }
 
     public void addMember(ServerPlayerEntity serverPlayer, BotTeamRole role) {
@@ -111,7 +116,7 @@ public class BotTeam {
 
         members.put(serverPlayer.getUuid(), new BotTeamMember(serverPlayer, role));
 
-        MUTATED.invoker().onMutate(this);
+        MUTATED.invoker().onMutate(this, Mutation.MEMBERS);
     }
 
     public void addMember(ServerPlayerEntity serverPlayer) {
@@ -124,7 +129,7 @@ public class BotTeam {
 
         members.remove(serverPlayer.getUuid());
 
-        MUTATED.invoker().onMutate(this);
+        MUTATED.invoker().onMutate(this, Mutation.MEMBERS);
     }
 
     public Optional<BotTeamRole> getRole(PlayerEntity player) {
@@ -137,7 +142,11 @@ public class BotTeam {
 
         members.get(serverPlayer.getUuid()).setRole(role);
 
-        MUTATED.invoker().onMutate(this);
+        MUTATED.invoker().onMutate(this, Mutation.ROLES);
+    }
+
+    public boolean hasMemberWith(PlayerEntity playerEntity, BotTeamPermission permission) {
+        return getRole(playerEntity).filter(role -> role.permissions.contains(permission)).isPresent();
     }
 
     public boolean hasMember(PlayerEntity playerEntity) {

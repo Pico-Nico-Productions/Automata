@@ -29,11 +29,6 @@ public class LogisticChestScreenHandler extends BotDeviceScreenHandler {
     }
 
     @Override
-    public boolean canUse(PlayerEntity player) {
-        return castLogisticChest().canPlayerUse(player) && castLogisticChest().canPlayerOpenScreen(player);
-    }
-
-    @Override
     public ItemStack quickMove(PlayerEntity player, int slot) {
         return ScreenHandlerUtils.quickMove(slots, this::insertItem, player, slot, castLogisticChest().size());
     }

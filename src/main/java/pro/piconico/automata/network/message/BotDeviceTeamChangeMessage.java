@@ -20,7 +20,7 @@ public record BotDeviceTeamChangeMessage(BotDevice.Id deviceId, Optional<UUID> t
         if (deviceTeam.isPresent() && !deviceTeam.get().hasMember(serverPlayer))
             return;
 
-        if (message.teamUuid().isPresent() && !BotTeamPersistentState.teamHasMember(message.teamUuid.get(), serverPlayer))
+        if (message.teamUuid().isPresent() && !BotTeamPersistentState.teamExistsAndHasMember(message.teamUuid.get(), serverPlayer))
             return;
 
         device.get().setTeamUuid(message.teamUuid());

@@ -9,7 +9,7 @@ import pro.piconico.automata.world.BotTeamPersistentState;
 
 public record BotTeamDeleteC2SMessage(UUID teamUuid) {
     public static void handle(BotTeamDeleteC2SMessage message, ServerAccess serverAccess) {
-        if (!BotTeamPersistentState.teamHasMemberWith(message.teamUuid, serverAccess.player(), BotTeamPermission.DELETE))
+        if (!BotTeamPersistentState.teamExistsAndHasMemberWith(message.teamUuid, serverAccess.player(), BotTeamPermission.DELETE))
             return;
 
         Optional<BotTeam> team = BotTeamPersistentState.removeTeam(message.teamUuid);

@@ -89,6 +89,11 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
     }
 
     @Override
+    public boolean canUse(PlayerEntity player) {
+        return this.player == player && BotDevice.super.canUse(player);
+    }
+
+    @Override
     public Optional<UUID> getTeamUuid() {
         return TeamComponent.get(getStack());
     }

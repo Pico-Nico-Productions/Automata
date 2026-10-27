@@ -11,15 +11,6 @@ public class ItemBotDeviceScreenHandler extends BotDeviceScreenHandler {
         super(AutomataScreenHandlers.ITEM_BOT_DEVICE, syncId, new ItemBotDevice(playerInventory.player, automatoolStack));
     }
 
-    private ItemBotDevice castItem() {
-        return (ItemBotDevice)device;
-    }
-
-    @Override
-    public boolean canUse(PlayerEntity player) {
-        return castItem().player == player && castItem().canPlayerOpenScreen(player);
-    }
-
     @Override
     public ItemStack quickMove(PlayerEntity player, int slot) {
         return ItemStack.EMPTY;

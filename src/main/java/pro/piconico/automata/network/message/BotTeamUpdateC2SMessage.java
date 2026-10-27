@@ -10,7 +10,7 @@ import pro.piconico.automata.world.BotTeamPersistentState;
 
 public record BotTeamUpdateC2SMessage(UUID teamUuid, BotTeamSettings settings) {
     public static void handle(BotTeamUpdateC2SMessage message, ServerAccess serverAccess) {
-        if (!BotTeamPersistentState.teamHasMemberWith(message.teamUuid, serverAccess.player(), BotTeamPermission.UPDATE))
+        if (!BotTeamPersistentState.teamExistsAndHasMemberWith(message.teamUuid, serverAccess.player(), BotTeamPermission.UPDATE))
             return;
 
         Optional<BotTeam> team = BotTeamPersistentState.updateTeam(message.teamUuid, message.settings);
