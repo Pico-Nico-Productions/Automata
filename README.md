@@ -10,7 +10,11 @@
 
 ## Running The Mod
 
-1. Clone repo
-2. Open in VS Code ([/Automata Workflow.bat](/Automata%20Workflow.bat) opens the relevant programs for development)
-4. Run **Data Generation** launch task (generated data is git ignored)
-5. Run **Minecraft Client** launch task
+1. Open repository in VS Code ([Automata Workflow.bat](/Automata%20Workflow.bat) opens the relevant programs for development)
+2. Install a version of Java compatible with the [gradle build](/build.gradle)
+3. Install the [Extension Pack for Java](vscode:extension/vscjava.vscode-java-pack)
+4. Open the Gradle tab and run the *ide/vscode* task (installs isolated Fabric development environment)
+5. Open [generated launch profiles](/.vscode/launch.json), remove all *"projectName"* properties, and make *Data Generation*'s *"cwd"* the same as the others (fixes known bug)
+6. Run [Java: Clean Java Language Server Workspace](command:java.clean.workspace) in the command palette
+7. Run the [Data Generation](command:workbench.action.debug.selectandstart) launch task (because generated data is git ignored)
+8. Run the [Minecraft Client](command:workbench.action.debug.selectandstart) launch task
