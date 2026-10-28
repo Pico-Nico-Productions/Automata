@@ -52,7 +52,7 @@ public class TeamCommand {
     private static int addTeam(CommandContext<ServerCommandSource> context) {
         String name = StringArgumentType.getString(context, NAME_ARGUMENT);
 
-        if (BotTeam.isValidName(name)) {
+        if (!BotTeam.isValidName(name)) {
             context.getSource().sendMessage(Text.literal(String.format("Invalid team name \"%1$s\"", name)));
             return 0;
         }

@@ -92,7 +92,9 @@ public class BotSyncManager {
         ServerPlayNetworking.send(serverPlayer, BotSyncS2CPacket.CLEAR);
     }
 
-    private static void updateSubscription(ServerPlayerEntity serverPlayer, Optional<UUID> teamUuid) {
+    private static void updateSubscription(ServerPlayerEntity serverPlayer) {
+        Collection<ItemStack> heldStacks = LivingEntityUtils.getHeldStacks(serverPlayer, stack -> TeamComponent.get(stack).isPresent()).values();
+        Optional<UUID> teamUuid = heldStacks.stream().map(heldStack -> TeamComponent.get(heldStack).orElse(null)).filter(uuid -> uuid != null).findFirst();
         if (teamUuid.filter(uuid -> BotTeamPersistentState.teamExistsAndHasMemberWithRead(uuid, serverPlayer)).isEmpty()) {
             unsubscribe(serverPlayer);
             return;
@@ -141,7 +143,7 @@ public class BotSyncManager {
             return;
 
         for (ServerPlayerEntity serverPlayer : server.getPlayerManager().getPlayerList()) {
-            updateSubscription(serverPlayer, Optional.of(team.uuid));
+            updateSubscription(serverPlayer);
         }
     }
 
@@ -149,28 +151,21 @@ public class BotSyncManager {
         if (!(player instanceof ServerPlayerEntity serverPlayer))
             return;
 
-        Optional<UUID> teamUuid = TeamComponent.get(stack).filter(uuid -> BotTeamPersistentState.teamExistsAndHasMemberWithRead(uuid, serverPlayer));
-
-        if (teamUuid.isEmpty())
-            return;
-
-        updateSubscription(serverPlayer, teamUuid);
+        updateSubscription(serverPlayer);
     }
 
     private static void onHoldEnded(PlayerEntity player, Hand hand, ItemStack stack) {
-        if (!(player instanceof ServerPlayerEntity serverPlayer) || TeamComponent.get(stack).isEmpty())
+        if (!(player instanceof ServerPlayerEntity serverPlayer))
             return;
 
-        Collection<ItemStack> heldStacks = LivingEntityUtils.getHeldStacks(player, s -> TeamComponent.get(s).isPresent()).values();
-        Optional<UUID> teamUuid = heldStacks.stream().map(heldStack -> TeamComponent.get(heldStack).orElse(null)).filter(uuid -> uuid != null).findFirst();
-        updateSubscription(serverPlayer, teamUuid);
+        updateSubscription(serverPlayer);
     }
 
     private static void onTeamChanged(World world, BotDevice<?> device, Optional<UUID> oldTeamUuid) {
         if (!(device instanceof ItemBotDevice itemDevice) || !(itemDevice.player instanceof ServerPlayerEntity serverPlayer))
             return;
 
-        updateSubscription(serverPlayer, device.getTeamUuid());
+        updateSubscription(serverPlayer);
     }
 
     public static void initialize() {

@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
@@ -22,9 +23,11 @@ import net.minecraft.storage.WriteView;
 import net.minecraft.text.Text;
 import net.minecraft.util.Uuids;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import pro.piconico.automata.network.message.BotDeviceTeamChangeMessage;
 import pro.piconico.automata.registry.AutomataBotDevices;
 import pro.piconico.automata.registry.AutomataMessages;
+import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
 public abstract class BlockBotDevice extends BlockEntity implements BotDevice<BlockPos> {
@@ -131,7 +134,26 @@ public abstract class BlockBotDevice extends BlockEntity implements BotDevice<Bl
     }
     //#endregion
 
+    private static boolean onBeforeBlockBreak(World world, PlayerEntity player, BlockPos pos, BlockState state, BlockEntity blockEntity) {
+        if (!(blockEntity instanceof BlockBotDevice device))
+            return true;
+
+        boolean canBreak = device.canUse(player);
+
+        if (!world.isClient() && !canBreak) {
+            device.getTeamUuid().map(teamUuid -> BotTeamPersistentState.getTeam(teamUuid).orElse(null)).ifPresent(team -> {
+                player.sendMessage(AutomataTexts.getTeamPermissionMissing(player.getStringifiedName(), team), true);
+            });
+        }
+
+        return canBreak;
+    }
+
     public static Optional<BlockBotDevice> resolve(PlayerEntity player, BlockId deviceId) {
         return Optional.ofNullable((BlockBotDevice)player.getEntityWorld().getBlockEntity(deviceId.pos));
+    }
+
+    public static void initialize() {
+        PlayerBlockBreakEvents.BEFORE.register(BlockBotDevice::onBeforeBlockBreak);
     }
 }

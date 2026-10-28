@@ -2,9 +2,10 @@ package pro.piconico.automata.client.registry;
 
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.client.render.entity.EntityRendererFactories;
+import pro.piconico.automata.client.render.BotCacheRenderer;
+import pro.piconico.automata.client.render.SelectionRenderer;
 import pro.piconico.automata.client.render.block.entity.LogisticChestBlockEntityRenderer;
 import pro.piconico.automata.client.render.entity.ConstructionBotEntityRenderer;
-import pro.piconico.automata.client.render.item.AutomatoolRenderer;
 import pro.piconico.automata.registry.AutomataEntities;
 
 public class AutomataClientRenderers {
@@ -13,6 +14,7 @@ public class AutomataClientRenderers {
 
         BlockEntityRendererFactories.register(AutomataEntities.LOGISTIC_CHEST, LogisticChestBlockEntityRenderer::new);
 
-		AutomatoolRenderer.initialize();
+        BotCacheRenderer.initialize();
+		SelectionRenderer.initialize();
     }
 }

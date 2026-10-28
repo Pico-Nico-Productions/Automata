@@ -26,5 +26,6 @@ public class AutomataBotDevices {
     }
 
     public static void initialize() {
+        BlockBotDevice.initialize();
     }
 }

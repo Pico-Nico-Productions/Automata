@@ -1,8 +1,10 @@
 package pro.piconico.automata.bot.team;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import com.mojang.serialization.Codec;
@@ -106,6 +108,10 @@ public class BotTeam {
         name = settings.name;
 
         MUTATED.invoker().onMutate(this, Mutation.SETTINGS);
+    }
+
+    public Set<UUID> getMemberUuids() {
+        return Collections.unmodifiableSet(members.keySet());
     }
 
     public void addMember(ServerPlayerEntity serverPlayer, BotTeamRole role) {

@@ -13,6 +13,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.registry.AutomataRegistries;
+import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
 public interface BotDevice<T> extends ExtendedScreenHandlerFactory<T> {
@@ -67,11 +68,15 @@ public interface BotDevice<T> extends ExtendedScreenHandlerFactory<T> {
     }
 
     public default ActionResult openScreen(PlayerEntity player) {
-        if (!canUse(player))
-            return ActionResult.FAIL;
-
         if (player.getEntityWorld().isClient())
             return ActionResult.SUCCESS;
+
+        if (!canUse(player)) {
+            getTeamUuid().map(teamUuid -> BotTeamPersistentState.getTeam(teamUuid).orElse(null)).ifPresent(team -> {
+                player.sendMessage(AutomataTexts.getTeamPermissionMissing(player.getStringifiedName(), team), true);
+            });
+            return ActionResult.FAIL;
+        }
 
         player.openHandledScreen(this);
 
