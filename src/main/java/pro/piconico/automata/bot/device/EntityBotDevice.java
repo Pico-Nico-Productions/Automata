@@ -6,6 +6,7 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -69,6 +70,18 @@ public abstract class EntityBotDevice extends PathAwareEntity implements BotDevi
     protected ActionResult interactMob(PlayerEntity player, Hand hand) {
         return openScreen(player);
     }
+
+    @Override
+    public boolean damage(ServerWorld serverWorld, DamageSource source, float amount) {
+        if (source.getAttacker() instanceof ServerPlayerEntity serverPlayer) {
+            if (!canUse(serverPlayer, true))
+                return false;
+
+            return super.damage(serverWorld, source, Float.MAX_VALUE);
+        }
+
+        return super.damage(serverWorld, source, amount);
+    }
     //#endregion
 
     @Override
@@ -82,8 +95,8 @@ public abstract class EntityBotDevice extends PathAwareEntity implements BotDevi
     }
 
     @Override
-    public boolean canUse(PlayerEntity player) {
-        return isAlive() && player.canInteractWithEntity(this, 0) && BotDevice.super.canUse(player);
+    public boolean canUse(PlayerEntity player, boolean sendMessage) {
+        return isAlive() && player.canInteractWithEntity(this, 0) && BotDevice.super.canUse(player, sendMessage);
     }
 
     @Override

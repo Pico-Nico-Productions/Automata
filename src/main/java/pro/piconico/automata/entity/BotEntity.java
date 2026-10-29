@@ -55,7 +55,7 @@ import pro.piconico.automata.world.BotJobPersistentState;
 
 public abstract class BotEntity extends EntityBotDevice implements ListInventory {
     private static final String ITEMS_TO_PICK_UP_KEY = "items_to_pick_up";
-    public static final double MAX_HEALTH = 1;
+    public static final double MAX_HEALTH = 10;
     public static final int INVENTORY_SIZE = 3;
     public static final double SPEED = 0.65;
     public static final int INTERACT_DISTANCE = 1;

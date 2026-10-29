@@ -27,7 +27,6 @@ import net.minecraft.world.World;
 import pro.piconico.automata.network.message.BotDeviceTeamChangeMessage;
 import pro.piconico.automata.registry.AutomataBotDevices;
 import pro.piconico.automata.registry.AutomataMessages;
-import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
 public abstract class BlockBotDevice extends BlockEntity implements BotDevice<BlockPos> {
@@ -105,8 +104,8 @@ public abstract class BlockBotDevice extends BlockEntity implements BotDevice<Bl
     }
 
     @Override
-    public boolean canUse(PlayerEntity player) {
-        return canPlayerUse(player) && BotDevice.super.canUse(player);
+    public boolean canUse(PlayerEntity player, boolean sendMessage) {
+        return canPlayerUse(player) && BotDevice.super.canUse(player, sendMessage);
     }
 
     @Override
@@ -138,15 +137,7 @@ public abstract class BlockBotDevice extends BlockEntity implements BotDevice<Bl
         if (!(blockEntity instanceof BlockBotDevice device))
             return true;
 
-        boolean canBreak = device.canUse(player);
-
-        if (!world.isClient() && !canBreak) {
-            device.getTeamUuid().map(teamUuid -> BotTeamPersistentState.getTeam(teamUuid).orElse(null)).ifPresent(team -> {
-                player.sendMessage(AutomataTexts.getTeamPermissionMissing(player.getStringifiedName(), team), true);
-            });
-        }
-
-        return canBreak;
+        return device.canUse(player, true);
     }
 
     public static Optional<BlockBotDevice> resolve(PlayerEntity player, BlockId deviceId) {

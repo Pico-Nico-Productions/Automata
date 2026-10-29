@@ -50,33 +50,34 @@ public interface BotDevice<T> extends ExtendedScreenHandlerFactory<T> {
 
     public boolean setTeamUuid(Optional<UUID> teamUuid);
 
-    public default boolean canUse(PlayerEntity player) {
+    public default boolean canUse(PlayerEntity player, boolean sendMessage) {
         if (player.getEntityWorld().isClient())
             return true;
 
-        Optional<UUID> teamUuid = getTeamUuid();
-
-        if (teamUuid.isEmpty())
-            return true;
-
-        Optional<BotTeam> team = BotTeamPersistentState.getTeam(teamUuid.get());
+        Optional<BotTeam> team = getTeamUuid().map(teamUuid -> BotTeamPersistentState.getTeam(teamUuid).orElse(null));
 
         if (team.isEmpty())
             return true;
 
-        return team.get().hasMemberWithRead(player);
+        boolean canUse = team.get().hasMemberWithRead(player);
+
+        if (!canUse && sendMessage) {
+            player.sendMessage(AutomataTexts.getTeamPermissionMissing(player.getStringifiedName(), team.get()), true);
+        }
+
+        return canUse;
+    }
+
+    public default boolean canUse(PlayerEntity player) {
+        return canUse(player, false);
     }
 
     public default ActionResult openScreen(PlayerEntity player) {
         if (player.getEntityWorld().isClient())
             return ActionResult.SUCCESS;
 
-        if (!canUse(player)) {
-            getTeamUuid().map(teamUuid -> BotTeamPersistentState.getTeam(teamUuid).orElse(null)).ifPresent(team -> {
-                player.sendMessage(AutomataTexts.getTeamPermissionMissing(player.getStringifiedName(), team), true);
-            });
+        if (!canUse(player, true))
             return ActionResult.FAIL;
-        }
 
         player.openHandledScreen(this);
 

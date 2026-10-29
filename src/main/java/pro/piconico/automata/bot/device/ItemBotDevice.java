@@ -93,8 +93,8 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
     }
 
     @Override
-    public boolean canUse(PlayerEntity player) {
-        return this.player == player && BotDevice.super.canUse(player);
+    public boolean canUse(PlayerEntity player, boolean sendMessage) {
+        return this.player == player && BotDevice.super.canUse(player, sendMessage);
     }
 
     @Override
@@ -135,7 +135,7 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
             return false;
         }
 
-        if (!team.get().hasMemberWith(player, BotTeamPermission.DISPATCH)) {
+        if (!team.get().hasMemberWith(player, permission)) {
             if (sendMessage) {
                 player.sendMessage(AutomataTexts.getTeamPermissionMissing(player.getStringifiedName(), team.get()), true);
             }
@@ -144,6 +144,10 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
         }
 
         return true;
+    }
+
+    public final boolean hasPermission(BotTeamPermission permission) {
+        return hasPermission(permission, false);
     }
 
     public static Optional<ItemBotDevice> resolve(PlayerEntity player, ItemId deviceId) {
