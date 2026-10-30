@@ -123,7 +123,7 @@ public class TeamCommand {
             context.getSource().sendMessage(appendTeamText("Team", team));
         }
         if (teams.isEmpty()) {
-            context.getSource().sendMessage(AutomataTexts.getTeamsEmpty());
+            context.getSource().sendMessage(AutomataTexts.getBotTeamsEmpty());
         }
 
         return teams.size() > 0 ? teams.size() : 1;

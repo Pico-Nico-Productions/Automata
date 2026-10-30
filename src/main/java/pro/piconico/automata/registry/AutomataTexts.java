@@ -28,22 +28,67 @@ public class AutomataTexts {
         return Text.translatable(BOT_DEVICE_HOME_KEY);
     }
 
-    public static final String BOT_DEVICE_TEAM_ADD_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_DEVICE + "_team_add");
+    /** Expected argument: job count */
+    public static final String BOT_JOBS_ADDED_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_JOB + "s_added");
 
-    public static final MutableText getBotDeviceTeamAdd() {
-        return Text.translatable(BOT_DEVICE_TEAM_ADD_KEY);
+    public static final MutableText getBotJobsAdded(int jobCount) {
+        return Text.translatable(BOT_JOBS_ADDED_KEY, jobCount);
     }
 
-    public static final String BOT_DEVICE_TEAM_SELECT_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_DEVICE + "_team_select");
+    /** Expected argument: job count */
+    public static final String BOT_JOBS_REMOVED_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_JOB + "s_removed");
 
-    public static final MutableText getBotDeviceTeamSelect() {
-        return Text.translatable(BOT_DEVICE_TEAM_SELECT_KEY);
+    public static final MutableText getBotJobsRemoved(int jobCount) {
+        return Text.translatable(BOT_JOBS_REMOVED_KEY, jobCount);
     }
 
-    public static final String BOT_DEVICE_TEAM_SETTINGS_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_DEVICE + "_team_settings");
+    public static final String BOT_TEAM_ADD_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_TEAM + "_add");
 
-    public static final MutableText getBotDeviceTeamSettings() {
-        return Text.translatable(BOT_DEVICE_TEAM_SETTINGS_KEY);
+    public static final MutableText getBotTeamAdd() {
+        return Text.translatable(BOT_TEAM_ADD_KEY);
+    }
+
+    public static final String BOT_TEAM_EMPTY_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_TEAM + "_empty");
+
+    public static final MutableText getBotTeamEmpty() {
+        return Text.translatable(BOT_TEAM_EMPTY_KEY);
+    }
+
+    public static final String BOT_TEAM_MEMBERS_EMPTY_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_TEAM + "_members_empty");
+
+    public static final MutableText getBotTeamMembersEmpty() {
+        return Text.translatable(BOT_TEAM_MEMBERS_EMPTY_KEY);
+    }
+
+    public static final String BOT_TEAM_MEMBERS_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_TEAM + "_members");
+
+    public static final MutableText getBotTeamMembers() {
+        return Text.translatable(BOT_TEAM_MEMBERS_KEY);
+    }
+
+    /** Expected arguments: player name, team name, and team uuid (truncated) */
+    public static final String BOT_TEAM_PERMISSION_MISSING_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_TEAM + "_permission_missing");
+
+    public static final MutableText getBotTeamPermissionMissing(String playerName, BotTeam team) {
+        return Text.translatable(BOT_TEAM_PERMISSION_MISSING_KEY, playerName, team.getName(), team.getTruncatedUuid());
+    }
+
+    public static final String BOT_TEAM_SELECT_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_TEAM + "_select");
+
+    public static final MutableText getBotTeamSelect() {
+        return Text.translatable(BOT_TEAM_SELECT_KEY);
+    }
+
+    public static final String BOT_TEAM_SETTINGS_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_TEAM + "_settings");
+
+    public static final MutableText getBotTeamSettings() {
+        return Text.translatable(BOT_TEAM_SETTINGS_KEY);
+    }
+
+    public static final String BOT_TEAMS_EMPTY_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_TEAM + "s_empty");
+
+    public static final MutableText getBotTeamsEmpty() {
+        return Text.translatable(BOT_TEAMS_EMPTY_KEY);
     }
 
     public static final String CREATE_KEY = AutomataRegistry.toTextTranslationKey("create");
@@ -64,43 +109,10 @@ public class AutomataTexts {
         return Text.translatable(DELETE_KEY);
     }
 
-    /** Expected argument: job count */
-    public static final String JOBS_ADDED_KEY = AutomataRegistry.toTextTranslationKey("jobs_added");
-
-    public static final MutableText getJobsAdded(int jobCount) {
-        return Text.translatable(JOBS_ADDED_KEY, jobCount);
-    }
-
-    /** Expected argument: job count */
-    public static final String JOBS_REMOVED_KEY = AutomataRegistry.toTextTranslationKey("jobs_removed");
-
-    public static final MutableText getJobsRemoved(int jobCount) {
-        return Text.translatable(JOBS_REMOVED_KEY, jobCount);
-    }
-
     public static final String NAME_KEY = AutomataRegistry.toTextTranslationKey("name");
 
     public static final MutableText getName() {
         return Text.translatable(NAME_KEY);
-    }
-
-    public static final String TEAM_EMPTY_KEY = AutomataRegistry.toTextTranslationKey("team_empty");
-
-    public static final MutableText getTeamEmpty() {
-        return Text.translatable(TEAM_EMPTY_KEY);
-    }
-
-    /** Expected arguments: player name, team name, and team uuid (truncated) */
-    public static final String TEAM_PERMISSION_MISSING_KEY = AutomataRegistry.toTextTranslationKey("team_permission_missing");
-
-    public static final MutableText getTeamPermissionMissing(String playerName, BotTeam team) {
-        return Text.translatable(TEAM_PERMISSION_MISSING_KEY, playerName, team.getName(), team.uuid.toString().substring(0, BotTeam.TRUNCATED_UUID_LENGTH));
-    }
-
-    public static final String TEAMS_EMPTY_KEY = AutomataRegistry.toTextTranslationKey("teams_empty");
-
-    public static final MutableText getTeamsEmpty() {
-        return Text.translatable(TEAMS_EMPTY_KEY);
     }
 
     public static final String UPDATE_KEY = AutomataRegistry.toTextTranslationKey("update");

@@ -3,6 +3,7 @@ package pro.piconico.automata.client.ui.render;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import io.wispforest.owo.ui.component.ButtonComponent;
+import io.wispforest.owo.ui.core.Color;
 import io.wispforest.owo.ui.core.OwoUIGraphics;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
@@ -15,13 +16,11 @@ import pro.piconico.automata.screen.ScreenHandlerUtils;
 public class ButtonComponentRenderers {
     public static final float ENTITY_RENDER_SCALE = 8F;
 
-    private static void drawBackground(OwoUIGraphics graphics, ButtonComponent button) {
-        if (!button.active || !button.isHovered())
-            return;
-
-        int x2 = button.getX() + ScreenHandlerUtils.SLOT_SIZE;
-        int y2 = button.getY() + ScreenHandlerUtils.SLOT_SIZE;
-        graphics.fill(button.getX(), button.getY(), x2, y2, AutomataClientColors.HOVERED.argb());
+    public static void drawBackground(OwoUIGraphics graphics, ButtonComponent button) {
+        if (button.active) {
+            Color backgroundColor = button.isHovered() ? AutomataClientColors.BUTTON_ACTIVE : AutomataClientColors.BUTTON_INACTIVE;
+            graphics.fill(button.getX(), button.getY(), button.getRight(), button.getBottom(), backgroundColor.argb());
+        }
     }
 
     public static ButtonComponent.Renderer item(ItemStack stack) {

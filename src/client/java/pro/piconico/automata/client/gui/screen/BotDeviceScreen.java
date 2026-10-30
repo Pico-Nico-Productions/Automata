@@ -25,12 +25,13 @@ import pro.piconico.automata.bot.device.LogisticStorage;
 import pro.piconico.automata.bot.device.BotDevice.ChangeBotTeam;
 import pro.piconico.automata.client.registry.AutomataClientColors;
 import pro.piconico.automata.client.registry.AutomataClientTextures;
-import pro.piconico.automata.client.ui.tab.BotDeviceHomeTab;
 import pro.piconico.automata.client.ui.tab.Tab;
 import pro.piconico.automata.client.ui.tab.TabManager;
-import pro.piconico.automata.client.ui.tab.TeamCreateTab;
-import pro.piconico.automata.client.ui.tab.TeamSelectTab;
-import pro.piconico.automata.client.ui.tab.TeamSettingsTab;
+import pro.piconico.automata.client.ui.tab.bot.BotDeviceHomeTab;
+import pro.piconico.automata.client.ui.tab.bot.BotTeamCreateTab;
+import pro.piconico.automata.client.ui.tab.bot.BotTeamMembersTab;
+import pro.piconico.automata.client.ui.tab.bot.BotTeamSelectTab;
+import pro.piconico.automata.client.ui.tab.bot.BotTeamSettingsTab;
 import pro.piconico.automata.screen.BotDeviceScreenHandler;
 import pro.piconico.automata.screen.ScreenHandlerUtils;
 
@@ -124,7 +125,7 @@ public abstract class BotDeviceScreen<HandlerT extends BotDeviceScreenHandler> e
     protected abstract BotDeviceHomeTab getHomeTab();
 
     protected List<Tab<BotDeviceScreenHandler>> getTabs() {
-        return List.of(getHomeTab(), TeamSelectTab.INSTANCE, TeamSettingsTab.INSTANCE, TeamCreateTab.INSTANCE);
+        return List.of(getHomeTab(), BotTeamSelectTab.INSTANCE, BotTeamMembersTab.INSTANCE, BotTeamSettingsTab.INSTANCE, BotTeamCreateTab.INSTANCE);
     }
 
     @Override

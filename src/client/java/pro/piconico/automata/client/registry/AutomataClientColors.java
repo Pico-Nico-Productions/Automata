@@ -3,25 +3,41 @@ package pro.piconico.automata.client.registry;
 import io.wispforest.owo.ui.core.Color;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.job.DeconstructionBotJob;
+import pro.piconico.automata.bot.team.BotTeamMember.BotTeamRole;
 
 public class AutomataClientColors {
     public static final Color SELECTION_BOUNDS = Color.ofRgb(0x00FFFF); // Cyan
-    public static final Color SELECTION1 = Color.ofRgb(0x00FF00); // Green
-    public static final Color SELECTION2 = Color.ofRgb(0x0000FF); // Blue
+    public static final Color SELECTION1 = Color.GREEN;
+    public static final Color SELECTION2 = Color.BLUE;
 
     public static final Color NETWORK = Color.ofArgb(0x7FFF7FFF); // Pink
-    public static final Color DECONSTRUCTION = Color.ofRgb(0xFF0000); // Red
-    public static final Color DEFAULT_JOB = Color.ofRgb(0xFFFFFF); // White
+    public static final Color DECONSTRUCTION = Color.RED;
+    public static final Color JOB_DEFAULT = Color.WHITE;
+
     public static Color getJobColor(BotJob botJob) {
         return switch (botJob) {
         case DeconstructionBotJob ignored -> DECONSTRUCTION;
-        default -> DEFAULT_JOB;
+        default -> JOB_DEFAULT;
         };
     }
 
-    public static final Color ACTIVE = Color.ofRgb(0xFFFFFFFF); // White
-    public static final Color HOVERED = Color.ofRgb(0xFF999999); // Light gray
-    public static final Color INACTIVE = Color.ofRgb(0xFF666666); // Gray
+    public static final Color USER = Color.WHITE;
+    public static final Color ADMIN = Color.BLUE;
+    public static final Color OWNER = Color.ofArgb(0x7FFF7FFF); // Pink
 
-    public static final Color RESERVATION = Color.ofRgb(0x55FFFF); // Aqua
+    public static Color getRoleColor(BotTeamRole role) {
+        return switch (role) {
+        case USER -> USER;
+        case ADMIN -> ADMIN;
+        case OWNER -> OWNER;
+        };
+    }
+
+    public static final Color BUTTON_INACTIVE = Color.ofArgb(0x44000000); // Black
+    public static final Color BUTTON_ACTIVE = Color.ofRgb(0x444444); // Dark gray
+    public static final Color BUTTON_HOVERED = Color.ofRgb(0x888888); // Gray
+    public static final Color BUTTON_OUTLINE = Color.ofRgb(0xCCCCCC); // Light gray
+    public static final Color BUTTON_SELECTED = Color.WHITE;
+
+    public static final Color RESERVATION = Color.BLUE;
 }

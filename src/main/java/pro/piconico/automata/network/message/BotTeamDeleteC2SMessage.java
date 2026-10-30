@@ -11,7 +11,7 @@ public record BotTeamDeleteC2SMessage(UUID teamUuid) {
     public static void handle(BotTeamDeleteC2SMessage message, ServerAccess serverAccess) {
         if (!BotTeamPersistentState.teamExistsAndHasMemberWith(message.teamUuid, serverAccess.player(), BotTeamPermission.DELETE)) {
             BotTeamPersistentState.getTeam(message.teamUuid).ifPresent(team -> {
-                serverAccess.player().sendMessage(AutomataTexts.getTeamPermissionMissing(serverAccess.player().getStringifiedName(), team), true);
+                serverAccess.player().sendMessage(AutomataTexts.getBotTeamPermissionMissing(serverAccess.player().getStringifiedName(), team), true);
             });
             return;
         }

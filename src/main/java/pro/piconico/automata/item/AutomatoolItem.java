@@ -69,7 +69,7 @@ public class AutomatoolItem extends Item {
         Optional<Integer> jobCount = BotJobDispatcher.markForDeconstruction(selectionWorld, teamUuid.get(), selection1, selection2);
 
         automatoolStack.remove(AutomataComponents.SELECTION);
-        player.sendMessage(AutomataTexts.getJobsAdded(jobCount.get()), true);
+        player.sendMessage(AutomataTexts.getBotJobsAdded(jobCount.get()), true);
 
         return ActionResult.SUCCESS_SERVER;
     }

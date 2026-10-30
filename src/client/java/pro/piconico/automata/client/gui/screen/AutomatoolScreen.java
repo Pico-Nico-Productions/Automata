@@ -4,7 +4,7 @@ import io.wispforest.owo.ui.container.FlowLayout;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import pro.piconico.automata.client.ui.component.AutomataUIComponents;
-import pro.piconico.automata.client.ui.tab.BotDeviceHomeTab;
+import pro.piconico.automata.client.ui.tab.bot.BotDeviceHomeTab;
 import pro.piconico.automata.screen.BotDeviceScreenHandler;
 import pro.piconico.automata.screen.ItemBotDeviceScreenHandler;
 

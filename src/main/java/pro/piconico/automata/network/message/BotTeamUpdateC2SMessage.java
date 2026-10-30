@@ -13,7 +13,7 @@ public record BotTeamUpdateC2SMessage(UUID teamUuid, BotTeamSettings settings) {
     public static void handle(BotTeamUpdateC2SMessage message, ServerAccess serverAccess) {
         if (!BotTeamPersistentState.teamExistsAndHasMemberWith(message.teamUuid, serverAccess.player(), BotTeamPermission.UPDATE)) {
             BotTeamPersistentState.getTeam(message.teamUuid).ifPresent(team -> {
-                serverAccess.player().sendMessage(AutomataTexts.getTeamPermissionMissing(serverAccess.player().getStringifiedName(), team), true);
+                serverAccess.player().sendMessage(AutomataTexts.getBotTeamPermissionMissing(serverAccess.player().getStringifiedName(), team), true);
             });
             return;
         }

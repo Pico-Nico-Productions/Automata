@@ -62,7 +62,7 @@ public interface BotDevice<T> extends ExtendedScreenHandlerFactory<T> {
         boolean canUse = team.get().hasMemberWithRead(player);
 
         if (!canUse && sendMessage) {
-            player.sendMessage(AutomataTexts.getTeamPermissionMissing(player.getStringifiedName(), team.get()), true);
+            player.sendMessage(AutomataTexts.getBotTeamPermissionMissing(player.getStringifiedName(), team.get()), true);
         }
 
         return canUse;

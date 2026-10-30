@@ -5,7 +5,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import pro.piconico.automata.client.ui.component.AutomataUIComponents;
-import pro.piconico.automata.client.ui.tab.BotDeviceHomeTab;
+import pro.piconico.automata.client.ui.tab.bot.BotDeviceHomeTab;
 import pro.piconico.automata.screen.BotDeviceScreenHandler;
 import pro.piconico.automata.screen.RoboportScreenHandler;
 import pro.piconico.automata.screen.slot.DisableableSlot;

@@ -26,6 +26,19 @@ public class BotTeamMember {
         private BotTeamRole(EnumSet<BotTeamPermission> permissions) {
             this.permissions = permissions;
         }
+
+        public String formatName() {
+            char[] name = name().toCharArray();
+
+            boolean capitalize = true;
+            for (int i = 0; i < name.length; i++) {
+                boolean isUnderscore = name[i] == '_';
+                name[i] = isUnderscore ? ' ' : (capitalize ? Character.toUpperCase(name[i]) : Character.toLowerCase(name[i]));
+                capitalize = isUnderscore;
+            }
+
+            return new String(name);
+        }
     }
 
     public static final Codec<BotTeamMember> CODEC = RecordCodecBuilder.create(instance -> instance.group( //

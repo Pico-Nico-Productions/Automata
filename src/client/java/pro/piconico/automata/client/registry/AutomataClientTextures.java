@@ -5,10 +5,12 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.ArgumentIndexOutOfBounds
 import io.wispforest.owo.ui.component.ButtonComponent;
 import io.wispforest.owo.ui.component.TextureComponent;
 import io.wispforest.owo.ui.component.UIComponents;
+import io.wispforest.owo.ui.core.Color;
 import io.wispforest.owo.ui.core.Sizing;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import pro.piconico.automata.client.ui.render.ButtonComponentRenderers;
 import pro.piconico.automata.registry.AutomataRegistry;
 
 public class AutomataClientTextures {
@@ -23,14 +25,13 @@ public class AutomataClientTextures {
 
         public ButtonComponent.Renderer getButtonRenderer() {
             return (graphics, button, delta) -> {
-                if (button.active && button.isHovered()) {
-                    graphics.fill(button.getX(), button.getY(), button.getRight(), button.getBottom(), AutomataClientColors.HOVERED.argb());
-                }
+                ButtonComponentRenderers.drawBackground(graphics, button);
 
                 int x = button.getX() + (button.getWidth() - width) / 2;
                 int y = button.getY() + (button.getHeight() - height) / 2;
-                int color = button.active() ? AutomataClientColors.ACTIVE.argb() : AutomataClientColors.INACTIVE.argb();
-                graphics.drawTexture(RenderPipelines.GUI_TEXTURED, id, x, y, u, v, width, height, textureWidth, textureHeight, color);
+                Color color = button.active() ? (button.isHovered() ? AutomataClientColors.BUTTON_OUTLINE : AutomataClientColors.BUTTON_HOVERED)
+                        : AutomataClientColors.BUTTON_INACTIVE;
+                graphics.drawTexture(RenderPipelines.GUI_TEXTURED, id, x, y, u, v, width, height, textureWidth, textureHeight, color.argb());
             };
         }
 
@@ -66,9 +67,10 @@ public class AutomataClientTextures {
     public static final TextureSheet BOT_DEVICE_ICONS = new TextureSheet(AutomataClientRegistry.screenGuiTextureId(AutomataClientRegistry.BOT_DEVICE_ICONS), 16,
             16, 64, 64);
     public static final Texture BOT_DEVICE_HOME_ICON = BOT_DEVICE_ICONS.getTexture(0);
-    public static final Texture BOT_DEVICE_TEAM_SELECT_ICON = BOT_DEVICE_ICONS.getTexture(1);
-    public static final Texture BOT_DEVICE_TEAM_SETTINGS_ICON = BOT_DEVICE_ICONS.getTexture(2);
-    public static final Texture BOT_DEVICE_TEAM_CREATE_ICON = BOT_DEVICE_ICONS.getTexture(3);
+    public static final Texture BOT_TEAM_SELECT_ICON = BOT_DEVICE_ICONS.getTexture(1);
+    public static final Texture BOT_TEAM_MEMBERS_ICON = BOT_DEVICE_ICONS.getTexture(2);
+    public static final Texture BOT_TEAM_SETTINGS_ICON = BOT_DEVICE_ICONS.getTexture(3);
+    public static final Texture BOT_TEAM_CREATE_ICON = BOT_DEVICE_ICONS.getTexture(4);
 
     public static final Texture CONSTRUCTION_BOT = new Texture(AutomataClientRegistry.entityTextureId(AutomataRegistry.CONSTRUCTION_BOT), 64, 64);
 

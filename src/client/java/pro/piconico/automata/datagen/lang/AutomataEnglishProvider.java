@@ -18,18 +18,20 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
     public void generateTranslations(WrapperLookup registryLookup, TranslationBuilder translationBuilder) {
         translationBuilder.add(AutomataTexts.BLOCK_SELECTED_KEY, "Selection %1$s: (%2$s)");
         translationBuilder.add(AutomataTexts.BOT_DEVICE_HOME_KEY, "Home");
-        translationBuilder.add(AutomataTexts.BOT_DEVICE_TEAM_ADD_KEY, "Team Creation");
-        translationBuilder.add(AutomataTexts.BOT_DEVICE_TEAM_SELECT_KEY, "Team Selection");
-        translationBuilder.add(AutomataTexts.BOT_DEVICE_TEAM_SETTINGS_KEY, "Team Settings");
+        translationBuilder.add(AutomataTexts.BOT_JOBS_ADDED_KEY, "Added %1$s job(s)");
+        translationBuilder.add(AutomataTexts.BOT_TEAM_EMPTY_KEY, "No team selected");
+        translationBuilder.add(AutomataTexts.BOT_JOBS_REMOVED_KEY, "Removed %1$s job(s)");
+        translationBuilder.add(AutomataTexts.BOT_TEAM_ADD_KEY, "Team Creation");
+        translationBuilder.add(AutomataTexts.BOT_TEAM_MEMBERS_EMPTY_KEY, "No members");
+        translationBuilder.add(AutomataTexts.BOT_TEAM_MEMBERS_KEY, "Team Members");
+        translationBuilder.add(AutomataTexts.BOT_TEAM_PERMISSION_MISSING_KEY, "%1$s doesn't have permission to do that on \"%2$s\" (%3$s)");
+        translationBuilder.add(AutomataTexts.BOT_TEAM_SELECT_KEY, "Team Selection");
+        translationBuilder.add(AutomataTexts.BOT_TEAM_SETTINGS_KEY, "Team Settings");
+        translationBuilder.add(AutomataTexts.BOT_TEAMS_EMPTY_KEY, "No teams");
         translationBuilder.add(AutomataTexts.CREATE_KEY, "Create");
         translationBuilder.add(AutomataTexts.DECONSTRUCTION_FAILED_KEY, "Must have 2 selections to deconstruct");
         translationBuilder.add(AutomataTexts.DELETE_KEY, "Delete");
-        translationBuilder.add(AutomataTexts.JOBS_ADDED_KEY, "Added %1$s job(s)");
-        translationBuilder.add(AutomataTexts.JOBS_REMOVED_KEY, "Removed %1$s job(s)");
         translationBuilder.add(AutomataTexts.NAME_KEY, "Name");
-        translationBuilder.add(AutomataTexts.TEAM_EMPTY_KEY, "No team selected");
-        translationBuilder.add(AutomataTexts.TEAM_PERMISSION_MISSING_KEY, "%1$s doesn't have permission to do that on \"%2$s\" (%3$s)");
-        translationBuilder.add(AutomataTexts.TEAMS_EMPTY_KEY, "No teams");
         translationBuilder.add(AutomataTexts.UPDATE_KEY, "Update");
 
         translationBuilder.add(AutomataItems.AUTOMATOOL, "Automatool");

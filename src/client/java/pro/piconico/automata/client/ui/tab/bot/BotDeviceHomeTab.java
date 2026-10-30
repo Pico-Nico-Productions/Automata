@@ -1,4 +1,4 @@
-package pro.piconico.automata.client.ui.tab;
+package pro.piconico.automata.client.ui.tab.bot;
 
 import io.wispforest.owo.ui.component.ButtonComponent;
 import net.minecraft.item.ItemStack;
@@ -8,6 +8,7 @@ import pro.piconico.automata.bot.device.EntityBotDevice;
 import pro.piconico.automata.bot.device.ItemBotDevice;
 import pro.piconico.automata.client.registry.AutomataClientTextures;
 import pro.piconico.automata.client.ui.render.ButtonComponentRenderers;
+import pro.piconico.automata.client.ui.tab.Tab;
 import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.screen.BotDeviceScreenHandler;
 

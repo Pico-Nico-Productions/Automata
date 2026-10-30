@@ -129,7 +129,7 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
         if (team.isEmpty()) {
             TeamComponent.set(stack, Optional.empty());
             if (sendMessage) {
-                player.sendMessage(AutomataTexts.getTeamEmpty(), true);
+                player.sendMessage(AutomataTexts.getBotTeamEmpty(), true);
             }
 
             return false;
@@ -137,7 +137,7 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
 
         if (!team.get().hasMemberWith(player, permission)) {
             if (sendMessage) {
-                player.sendMessage(AutomataTexts.getTeamPermissionMissing(player.getStringifiedName(), team.get()), true);
+                player.sendMessage(AutomataTexts.getBotTeamPermissionMissing(player.getStringifiedName(), team.get()), true);
             }
 
             return false;

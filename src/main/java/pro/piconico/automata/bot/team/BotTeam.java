@@ -1,10 +1,10 @@
 package pro.piconico.automata.bot.team;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import com.mojang.serialization.Codec;
@@ -91,6 +91,10 @@ public class BotTeam {
         this(UUID.randomUUID(), settings.name, owner.map(own -> List.of(new BotTeamMember(own, BotTeamRole.OWNER))).orElse(List.of()));
     }
 
+    public String getTruncatedUuid() {
+        return uuid.toString().substring(0, TRUNCATED_UUID_LENGTH);
+    }
+
     public String getName() {
         return name;
     }
@@ -110,8 +114,8 @@ public class BotTeam {
         MUTATED.invoker().onMutate(this, Mutation.SETTINGS);
     }
 
-    public Set<UUID> getMemberUuids() {
-        return Collections.unmodifiableSet(members.keySet());
+    public Collection<BotTeamMember> getMembers() {
+        return Collections.unmodifiableCollection(members.values());
     }
 
     public void addMember(ServerPlayerEntity serverPlayer, BotTeamRole role) {

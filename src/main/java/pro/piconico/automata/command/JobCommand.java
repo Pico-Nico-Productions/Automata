@@ -28,7 +28,7 @@ public class JobCommand {
     private static int removeJobs(CommandContext<ServerCommandSource> context, Supplier<Integer> removeJobs) {
         int removeCount = removeJobs.get();
 
-        context.getSource().sendMessage(AutomataTexts.getJobsRemoved(removeCount));
+        context.getSource().sendMessage(AutomataTexts.getBotJobsRemoved(removeCount));
 
         return removeCount > 0 ? removeCount : 1;
     }

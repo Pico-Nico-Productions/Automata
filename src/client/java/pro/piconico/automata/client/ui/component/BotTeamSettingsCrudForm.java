@@ -58,7 +58,7 @@ public class BotTeamSettingsCrudForm {
         boolean requiresTeam = Arrays.stream(mutations).noneMatch(Mutation.CREATE::equals);
 
         if (team.isEmpty() && requiresTeam) {
-            parent.child(AutomataUIComponents.centerHeader(AutomataTexts.getTeamEmpty()));
+            parent.child(AutomataUIComponents.centerBody(AutomataTexts.getBotTeamEmpty()));
             return;
         }
 
