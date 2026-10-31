@@ -74,7 +74,7 @@ public class BotTeamMembersTab implements Tab<BotDeviceScreenHandler> {
             LabelComponent nameLabel = UIComponents.label(Text.literal(member.getCachedName()));
             nameLabel.horizontalSizing(Sizing.fill(ROW_NAME_FILL));
 
-            LabelComponent roleLabel = UIComponents.label(Text.literal(member.getRole().formatName()));
+            LabelComponent roleLabel = UIComponents.label(Text.literal(member.getRole().toSentenceCase()));
             roleLabel.horizontalTextAlignment(HorizontalAlignment.RIGHT);
             roleLabel.color(roleColor);
             roleLabel.horizontalSizing(Sizing.fill(100 - ROW_NAME_FILL));
@@ -106,13 +106,11 @@ public class BotTeamMembersTab implements Tab<BotDeviceScreenHandler> {
             listContainer.child(row);
         }
 
-        Collection<PlayerListEntry> playerList = ((ClientPlayerEntity)handler.player()).networkHandler.getPlayerList();
-        if (!playerList.isEmpty() && team.get().hasMemberWith(handler.player(), BotTeamPermission.CHANGE_MEMBER_ROLE)) {
+        List<PlayerListEntry> nonMemberList = ((ClientPlayerEntity)handler.player()).networkHandler.getPlayerList().stream()
+                .filter(playerEntry -> members.stream().noneMatch(member -> member.uuid.equals(playerEntry.getProfile().id()))).toList();
+        if (!nonMemberList.isEmpty() && team.get().hasMemberWith(handler.player(), BotTeamPermission.CHANGE_MEMBER_ROLE)) {
             listContainer.child(AutomataUIComponents.centerBody(AutomataTexts.getBotTeamNonMembers()));
-            for (PlayerListEntry playerEntry : playerList) {
-                if (members.stream().anyMatch(member -> member.uuid.equals(playerEntry.getProfile().id())))
-                    continue;
-
+            for (PlayerListEntry playerEntry : nonMemberList) {
                 LabelComponent nameLabel = UIComponents.label(Text.literal(playerEntry.getProfile().name()));
                 nameLabel.horizontalSizing(Sizing.fill());
 

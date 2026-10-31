@@ -13,8 +13,12 @@ public class AutomataTexts {
     public static final Style AFFIRMATIVE = Style.EMPTY.withColor(Formatting.GREEN).withBold(true);
     public static final Style DISMISSIVE = Style.EMPTY.withColor(Formatting.RED).withBold(true);
 
+    public static Text getCopyableText(String displayString, String value) {
+        return Text.literal(displayString).setStyle(AutomataTexts.LINK_STYLE.withClickEvent(new ClickEvent.CopyToClipboard(displayString)));
+    }
+
     public static Text getCopyableText(String string) {
-        return Text.literal(string).setStyle(AutomataTexts.LINK_STYLE.withClickEvent(new ClickEvent.CopyToClipboard(string)));
+        return getCopyableText(string, string);
     }
 
     /** Expected arguments: selection number and selection */

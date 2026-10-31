@@ -3,11 +3,13 @@ package pro.piconico.automata.command;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -15,6 +17,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import pro.piconico.automata.bot.team.BotTeam;
+import pro.piconico.automata.bot.team.BotTeamMember;
 import pro.piconico.automata.bot.team.BotTeam.BotTeamSettings;
 import pro.piconico.automata.bot.team.BotTeamMember.BotTeamRole;
 import pro.piconico.automata.registry.AutomataTexts;
@@ -26,13 +29,21 @@ public class TeamCommand {
 
     private static final String ADD_ARGUMENT = "add";
     private static final String REMOVE_ARGUMENT = "remove";
-    private static final String JOIN_ARGUMENT = "join";
-    private static final String LEAVE_ARGUMENT = "leave";
     private static final String LIST_ARGUMENT = "list";
+    private static final String ROLE_ARGUMENT = "role";
 
     private static final String TEAM_NAME_ARGUMENT = "team_name";
     private static final String TEAM_UUID_ARGUMENT = "team_uuid";
     private static final String TARGETS_ARGUMENT = "targets";
+    private static final String ROLE_NAME_ARGUMENT = "role_name";
+
+    public static final SuggestionProvider<ServerCommandSource> ROLE_NAMES = (context, builder) -> {
+        for (BotTeamRole role : BotTeamRole.values()) {
+            builder.suggest(role.toCamelCase());
+        }
+
+        return builder.buildFuture();
+    };
 
     private static Optional<BotTeam> parseTeam(CommandContext<ServerCommandSource> context) {
         String teamUuid = StringArgumentType.getString(context, TEAM_UUID_ARGUMENT);
@@ -46,7 +57,7 @@ public class TeamCommand {
     }
 
     private static MutableText appendTeamText(String string, BotTeam team) {
-        return Text.literal(string).append(" \"" + team.getName() + "\" (").append(AutomataTexts.getCopyableText(team.uuid.toString())).append(")");
+        return Text.literal(string).append(" \"" + team.getName() + "\" (").append(AutomataTexts.getCopyableText(team.getTruncatedUuid())).append(")");
     }
 
     private static int addTeam(CommandContext<ServerCommandSource> context) {
@@ -76,7 +87,51 @@ public class TeamCommand {
         return 1;
     }
 
-    private static int doActionToTargets(CommandContext<ServerCommandSource> context, BiConsumer<BotTeam, ServerPlayerEntity> action, String actionVerb) {
+    private static MutableText getMemberText(CommandContext<ServerCommandSource> context, BotTeamMember member) {
+        return Text.literal(member.getName(context.getSource().getServer()) + " (")
+                .append(AutomataTexts.getCopyableText(member.uuid.toString().substring(0, BotTeam.TRUNCATED_UUID_LENGTH)))
+                .append(") - " + member.getRole().toPascalCase());
+    }
+
+    private static void sendTeamMessage(CommandContext<ServerCommandSource> context, BotTeam team) {
+        MutableText teamMessage = appendTeamText("Team", team);
+
+        if (!team.getMembers().isEmpty()) {
+            teamMessage.append("\n{");
+            for (BotTeamMember member : team.getMembers()) {
+                teamMessage.append("\n\t").append(getMemberText(context, member));
+            }
+            teamMessage.append("\n}");
+        }
+
+        context.getSource().sendMessage(teamMessage);
+    }
+
+    private static int listTeams(CommandContext<ServerCommandSource> context) {
+        Collection<BotTeam> teams = BotTeamPersistentState.getTeams();
+        for (BotTeam team : teams) {
+            sendTeamMessage(context, team);
+        }
+        if (teams.isEmpty()) {
+            context.getSource().sendMessage(AutomataTexts.getBotTeamsEmpty());
+        }
+
+        return teams.size() > 0 ? teams.size() : 1;
+    }
+
+    private static int listTeam(CommandContext<ServerCommandSource> context) {
+        Optional<BotTeam> team = parseTeam(context);
+
+        if (team.isEmpty())
+            return 0;
+
+        sendTeamMessage(context, team.get());
+
+        return 1;
+    }
+
+    private static int doActionToTargets(CommandContext<ServerCommandSource> context,
+            BiFunction<BotTeam, ServerPlayerEntity, Optional<BotTeamMember>> function) {
         Optional<BotTeam> team = parseTeam(context);
 
         if (team.isEmpty())
@@ -102,31 +157,34 @@ public class TeamCommand {
         }
 
         for (ServerPlayerEntity serverPlayer : targets) {
-            action.accept(team.get(), serverPlayer);
-            context.getSource().sendMessage(appendTeamText(serverPlayer.getStringifiedName() + " " + actionVerb + " team", team.get()));
+            Optional<BotTeamMember> member = function.apply(team.get(), serverPlayer);
+            if (member.isPresent()) {
+                context.getSource().sendMessage(getMemberText(context, member.get()));
+            }
+            else {
+                context.getSource().sendError(Text.literal("Couldn't apply to " + serverPlayer.getStringifiedName()));
+            }
         }
 
         return targets.size();
     }
 
-    private static int joinTeam(CommandContext<ServerCommandSource> context) {
-        return doActionToTargets(context, (team, serverPlayer) -> team.addMember(serverPlayer, BotTeamRole.OWNER), "joined");
+    private static int addMember(CommandContext<ServerCommandSource> context) {
+        return doActionToTargets(context, (team, serverPlayer) -> Optional.of(team.addMember(serverPlayer, BotTeamRole.OWNER)));
     }
 
-    private static int leaveTeam(CommandContext<ServerCommandSource> context) {
-        return doActionToTargets(context, (team, serverPlayer) -> team.removeMember(serverPlayer), "left");
+    private static int removeMember(CommandContext<ServerCommandSource> context) {
+        return doActionToTargets(context, (team, serverPlayer) -> team.removeMember(serverPlayer));
     }
 
-    private static int listTeams(CommandContext<ServerCommandSource> context) {
-        Collection<BotTeam> teams = BotTeamPersistentState.getTeams();
-        for (BotTeam team : teams) {
-            context.getSource().sendMessage(appendTeamText("Team", team));
-        }
-        if (teams.isEmpty()) {
-            context.getSource().sendMessage(AutomataTexts.getBotTeamsEmpty());
-        }
+    private static int changeRole(CommandContext<ServerCommandSource> context) {
+        String camelCaseRole = StringArgumentType.getString(context, ROLE_NAME_ARGUMENT);
+        Optional<BotTeamRole> role = BotTeamRole.parse(camelCaseRole);
 
-        return teams.size() > 0 ? teams.size() : 1;
+        if (role.isEmpty())
+            return 0;
+
+        return doActionToTargets(context, (team, serverPlayer) -> team.setRole(serverPlayer, role.get()));
     }
 
     public static LiteralArgumentBuilder<ServerCommandSource> build() {
@@ -140,19 +198,19 @@ public class TeamCommand {
         removeArgument.then(CommandManager.argument(TEAM_UUID_ARGUMENT, StringArgumentType.word()).executes(TeamCommand::removeTeam));
         teamCommand.then(removeArgument);
 
-        LiteralArgumentBuilder<ServerCommandSource> joinArgument = CommandManager.literal(JOIN_ARGUMENT);
-        joinArgument.then(CommandManager.argument(TEAM_UUID_ARGUMENT, StringArgumentType.word()).executes(TeamCommand::joinTeam) //
-                .then(CommandManager.argument(TARGETS_ARGUMENT, EntityArgumentType.players()).executes(TeamCommand::joinTeam)));
-        teamCommand.then(joinArgument);
-
-        LiteralArgumentBuilder<ServerCommandSource> leaveArgument = CommandManager.literal(LEAVE_ARGUMENT);
-        leaveArgument.then(CommandManager.argument(TEAM_UUID_ARGUMENT, StringArgumentType.word()).executes(TeamCommand::leaveTeam) //
-                .then(CommandManager.argument(TARGETS_ARGUMENT, EntityArgumentType.players()).executes(TeamCommand::leaveTeam)));
-        teamCommand.then(leaveArgument);
-
         LiteralArgumentBuilder<ServerCommandSource> listArgument = CommandManager.literal(LIST_ARGUMENT);
         listArgument.executes(TeamCommand::listTeams);
         teamCommand.then(listArgument);
+
+        RequiredArgumentBuilder<ServerCommandSource, String> teamUuidArgument = CommandManager.argument(TEAM_UUID_ARGUMENT, StringArgumentType.word());
+        teamUuidArgument.executes(TeamCommand::listTeam);
+        teamUuidArgument.then(CommandManager.literal(ADD_ARGUMENT)
+                .then(CommandManager.argument(TARGETS_ARGUMENT, EntityArgumentType.players()).executes(TeamCommand::addMember)));
+        teamUuidArgument.then(CommandManager.literal(REMOVE_ARGUMENT)
+                .then(CommandManager.argument(TARGETS_ARGUMENT, EntityArgumentType.players()).executes(TeamCommand::removeMember)));
+        teamUuidArgument.then(CommandManager.literal(ROLE_ARGUMENT).then(CommandManager.argument(TARGETS_ARGUMENT, EntityArgumentType.players())
+                .then(CommandManager.argument(ROLE_NAME_ARGUMENT, StringArgumentType.word()).suggests(ROLE_NAMES).executes(TeamCommand::changeRole))));
+        teamCommand.then(teamUuidArgument);
 
         return teamCommand;
     }

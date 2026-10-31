@@ -1,6 +1,7 @@
 package pro.piconico.automata.bot.team;
 
 import java.util.EnumSet;
+import java.util.Optional;
 import java.util.UUID;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -27,7 +28,39 @@ public class BotTeamMember {
             this.permissions = permissions;
         }
 
-        public String formatName() {
+        public static Optional<BotTeamRole> parse(String camelCaseRole) {
+            for (BotTeamRole role : BotTeamRole.values()) {
+                if (role.toCamelCase().equals(camelCaseRole))
+                    return Optional.of(role);
+            }
+
+            return Optional.empty();
+        }
+
+        private String toCase(boolean startCapitalized) {
+            StringBuilder name = new StringBuilder(name().length());
+
+            boolean capitalize = startCapitalized;
+            for (int i = 0; i < name().length(); i++) {
+                boolean isUnderscore = name().charAt(i) == '_';
+                if (!isUnderscore) {
+                    name.append(capitalize ? Character.toUpperCase(name().charAt(i)) : Character.toLowerCase(name().charAt(i)));
+                }
+                capitalize = isUnderscore;
+            }
+
+            return new String(name);
+        }
+
+        public String toCamelCase() {
+            return toCase(false);
+        }
+
+        public String toPascalCase() {
+            return toCase(true);
+        }
+
+        public String toSentenceCase() {
             char[] name = name().toCharArray();
 
             boolean capitalize = true;

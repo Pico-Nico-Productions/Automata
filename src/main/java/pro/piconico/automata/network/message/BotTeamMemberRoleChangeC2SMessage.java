@@ -21,10 +21,13 @@ public record BotTeamMemberRoleChangeC2SMessage(UUID teamUuid, UUID targetPlayer
     }
 
     public static boolean canChangeRole(PlayerEntity senderPlayer, BotTeam team, UUID targetPlayerUuid) {
+        if (senderPlayer.getUuid().equals(targetPlayerUuid))
+            return false;
+
         if (!team.hasMemberWith(senderPlayer, BotTeamPermission.CHANGE_MEMBER_ROLE))
             return false;
 
-        if (team.getRole(senderPlayer).get().ordinal() <= team.getRole(targetPlayerUuid).map(role -> role.ordinal()).orElse(0))
+        if (team.getRole(senderPlayer).get().ordinal() < team.getRole(targetPlayerUuid).map(role -> role.ordinal()).orElse(0))
             return false;
 
         return true;
