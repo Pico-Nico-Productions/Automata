@@ -9,14 +9,10 @@ import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.block.piston.PistonBehavior;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager.Builder;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
@@ -25,19 +21,24 @@ import net.minecraft.world.World;
 import pro.piconico.automata.block.entity.LogisticChestBlockEntity;
 import pro.piconico.automata.registry.AutomataEntities;
 
-public class LogisticChestBlock extends BlockWithEntity {
+public class LogisticChestBlock extends BotDeviceBlock<LogisticChestBlockEntity> {
     public static final MapCodec<LogisticChestBlock> CODEC = createCodec(LogisticChestBlock::new);
     public static final EnumProperty<Direction> FACING = Properties.HORIZONTAL_FACING;
     public static final VoxelShape SHAPE = Block.createColumnShape(14.0, 0.0, 14.0);
 
     public LogisticChestBlock(Settings settings) {
-        super(settings.pistonBehavior(PistonBehavior.BLOCK));
+        super(settings);
         setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH));
     }
 
     @Override
     protected MapCodec<? extends BlockWithEntity> getCodec() {
         return CODEC;
+    }
+
+    @Override
+    public BlockEntityType<LogisticChestBlockEntity> getEntityType() {
+        return AutomataEntities.LOGISTIC_CHEST;
     }
 
     @Override
@@ -66,11 +67,5 @@ public class LogisticChestBlock extends BlockWithEntity {
             return null;
 
         return (tickWorld, pos, tickState, blockEntity) -> ((LogisticChestBlockEntity)blockEntity).tickClient(tickWorld, pos, tickState);
-    }
-
-    @Override
-    protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        LogisticChestBlockEntity logisticChest = world.getBlockEntity(pos, AutomataEntities.LOGISTIC_CHEST).get();
-        return logisticChest.openScreen(player);
     }
 }

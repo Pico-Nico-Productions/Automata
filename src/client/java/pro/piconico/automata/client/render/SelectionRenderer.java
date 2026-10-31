@@ -14,7 +14,7 @@ import pro.piconico.automata.entity.LivingEntityUtils;
 public class SelectionRenderer {
     private static void renderSelection(WorldRenderContext context) {
         MinecraftClient client = MinecraftClient.getInstance();
-        SequencedMap<Hand, ItemStack> stacks = LivingEntityUtils.getHeldStacks(client.player, stack -> SelectionComponent.get(stack).isPresent());
+        SequencedMap<Hand, ItemStack> stacks = LivingEntityUtils.getHeldStacks(client.player, SelectionComponent::exists);
 
         if (stacks.isEmpty())
             return;

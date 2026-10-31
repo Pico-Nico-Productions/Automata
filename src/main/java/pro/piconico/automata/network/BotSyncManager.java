@@ -23,7 +23,7 @@ import pro.piconico.automata.bot.network.BotNetwork;
 import pro.piconico.automata.bot.network.BotNetworkManager;
 import pro.piconico.automata.bot.network.BotNetworkMap;
 import pro.piconico.automata.bot.team.BotTeam;
-import pro.piconico.automata.component.TeamComponent;
+import pro.piconico.automata.component.BotTeamComponent;
 import pro.piconico.automata.entity.LivingEntityUtils;
 import pro.piconico.automata.event.HoldItemCallback;
 import pro.piconico.automata.network.packet.BotSyncS2CPacket;
@@ -93,8 +93,8 @@ public class BotSyncManager {
     }
 
     private static void updateSubscription(ServerPlayerEntity serverPlayer) {
-        Collection<ItemStack> heldStacks = LivingEntityUtils.getHeldStacks(serverPlayer, stack -> TeamComponent.get(stack).isPresent()).values();
-        Optional<UUID> teamUuid = heldStacks.stream().map(heldStack -> TeamComponent.get(heldStack).orElse(null)).filter(uuid -> uuid != null).findFirst();
+        Collection<ItemStack> heldStacks = LivingEntityUtils.getHeldStacks(serverPlayer, BotTeamComponent::exists).values();
+        Optional<UUID> teamUuid = heldStacks.stream().map(heldStack -> BotTeamComponent.get(heldStack).orElse(null)).filter(uuid -> uuid != null).findFirst();
         if (teamUuid.filter(uuid -> BotTeamPersistentState.teamExistsAndHasMemberWithRead(uuid, serverPlayer)).isEmpty()) {
             unsubscribe(serverPlayer);
             return;

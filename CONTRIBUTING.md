@@ -47,7 +47,7 @@ Call **Text**.translatable with the translation key and arguments
 ### Items
 
 1. Create a class that extends **Item** [here](/src/main/java/pro/piconico/automata/item/)
-2. Register it as a public static final **Item** in [**AutomataItems**](/src/main/java/pro/piconico/automata/registry/AutomataItems.java)
+2. Register it as a public static final **Item** (or extending type) in [**AutomataItems**](/src/main/java/pro/piconico/automata/registry/AutomataItems.java)
 3. Add it to [**AutomataModelProvider**](/src/client/java/pro/piconico/automata/datagen/models/AutomataModelProvider.java)
 4. Add it to all **FabricLanguageProvider**s [here](/src/client/java/pro/piconico/automata/datagen/lang/)
 5. Run **Data Generation** launch task
@@ -152,12 +152,12 @@ Call **Text**.translatable with the translation key and arguments
 
 #### Item Bot Devices
 1. [Create an item](#items)
-2. Call **PlayerEntity**'s **openHandledScreen** passing a new **ItemBotDevice** somewhere in the item's code
+2. Call **ItemBotDevice**'s **openScreen** somewhere in the item's code
 3. Create a class that extends **BotDeviceScreen\<ItemBotDeviceScreenHandler\>** [here](/src/client/java/pro/piconico/automata/client/gui/screen/)
 4. Add it to the item bot device screen router in [**AutomataClientScreens**](/src/client/java/pro/piconico/automata/client/registry/AutomataClientScreens.java)
 
 #### Block Bot Devices
-1. [Create a block entity](#block-entities) that extends **BlockBotDevice**
+1. [Create a block entity](#block-entities) where the block extends **BotDeviceBlock** and the entity extends **BlockBotDevice**
 2. [Create a screen](#screens) where the handler (**TScreenHandler** for example) extends **BotDeviceScreenHandler** and the screen extends **BotDeviceScreen\<TScreenHandler\>**
 
 #### Entity Bot Devices
@@ -165,13 +165,13 @@ Call **Text**.translatable with the translation key and arguments
 2. [Create a screen](#screens) where the handler (**TScreenHandler** for example) extends **BotDeviceScreenHandler** and the screen extends **BotDeviceScreen\<TScreenHandler\>**
 
 #### Bot Device Types
-1. Create a class (**TBotDevice** for example) that implements **BotDevice** [here](/src/main/java/pro/piconico/automata/bot/device/)
+1. Create a type (**TBotDevice** for example) that extends/implements **BotDevice** [here](/src/main/java/pro/piconico/automata/bot/device/)
 2. Give it a public record (**Id** for example) that implements **BotDevice.Id** and give **Id** a public static final **MapCodec\<Id\>**
 3. Give **TBotDevice** a public static **Optional\<TBotDevice\>** function(**PlayerEntity**, **Id**) that can independently resolve **TBotDevice**s from the given **Id**
 4. Ensure your **TBotDevice** invokes **BotDevice**'s team changed event for synchronization
 5. Register it as a public static final **BotDeviceType\<Id, TBotDevice\>** in [**AutomataBotDevices**](/src/main/java/pro/piconico/automata/registry/AutomataBotDevices.java)
 6. [Create a screen](#screens) where the handler (**TScreenHandler** for example) extends **BotDeviceScreenHandler** and the screen extends **BotDeviceScreen\<TScreenHandler\>**
-7. Optional: Add a custom name and button renderer in [**BotDeviceHomeTab**](/src/client/java/pro/piconico/automata/client/ui/tab/BotDeviceHomeTab.java)
+7. Optional: Add a custom name and button renderer in [**BotDeviceHomeTab**](/src/client/java/pro/piconico/automata/client/ui/tab/bot/BotDeviceHomeTab.java)
 
 
 ### Bot Jobs

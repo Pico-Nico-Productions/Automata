@@ -9,8 +9,8 @@ import com.mojang.serialization.Codec;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.PersistentState;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.bot.team.SortedBotTeamMap;
@@ -70,12 +70,12 @@ public class BotTeamPersistentState extends PersistentState {
         return Optional.of(teamState.teamMap.get(teamUuid));
     }
 
-    public static boolean teamExistsAndHasMemberWith(UUID teamUuid, ServerPlayerEntity serverPlayer, BotTeamPermission permission) {
-        return getTeam(teamUuid).filter(team -> team.hasMemberWith(serverPlayer, permission)).isPresent();
+    public static boolean teamExistsAndHasMemberWith(UUID teamUuid, PlayerEntity player, BotTeamPermission permission) {
+        return getTeam(teamUuid).filter(team -> team.hasMemberWith(player, permission)).isPresent();
     }
 
-    public static boolean teamExistsAndHasMemberWithRead(UUID teamUuid, ServerPlayerEntity serverPlayer) {
-        return getTeam(teamUuid).filter(team -> team.hasMemberWithRead(serverPlayer)).isPresent();
+    public static boolean teamExistsAndHasMemberWithRead(UUID teamUuid, PlayerEntity player) {
+        return getTeam(teamUuid).filter(team -> team.hasMemberWithRead(player)).isPresent();
     }
 
     public static Set<UUID> getTeamUuids() {

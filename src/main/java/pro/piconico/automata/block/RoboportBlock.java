@@ -4,20 +4,16 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.piston.PistonBehavior;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 import pro.piconico.automata.block.entity.RoboportBlockEntity;
 import pro.piconico.automata.registry.AutomataEntities;
 
-public class RoboportBlock extends BlockWithEntity {
+public class RoboportBlock extends BotDeviceBlock<RoboportBlockEntity> {
     public static final MapCodec<RoboportBlock> CODEC = createCodec(RoboportBlock::new);
 
     public RoboportBlock(Settings settings) {
-        super(settings.strength(3.0f).pistonBehavior(PistonBehavior.BLOCK));
+        super(settings.strength(3.0f));
     }
 
     @Override
@@ -26,13 +22,12 @@ public class RoboportBlock extends BlockWithEntity {
     }
 
     @Override
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        return new RoboportBlockEntity(pos, state);
+    public BlockEntityType<RoboportBlockEntity> getEntityType() {
+        return AutomataEntities.ROBOPORT;
     }
 
     @Override
-    protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        RoboportBlockEntity roboport = world.getBlockEntity(pos, AutomataEntities.ROBOPORT).get();
-        return roboport.openScreen(player);
+    public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+        return new RoboportBlockEntity(pos, state);
     }
 }

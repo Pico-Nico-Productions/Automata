@@ -16,7 +16,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import pro.piconico.automata.component.SelectionComponent;
-import pro.piconico.automata.component.TeamComponent;
+import pro.piconico.automata.component.BotTeamComponent;
 import pro.piconico.automata.registry.AutomataComponents;
 import pro.piconico.automata.registry.AutomataItems;
 import pro.piconico.automata.registry.AutomataTexts;
@@ -46,7 +46,7 @@ public class AutomatoolItem extends Item {
     }
 
     private static ActionResult dispatch(PlayerEntity player, ItemStack automatoolStack) {
-        Optional<UUID> teamUuid = TeamComponent.get(automatoolStack);
+        Optional<UUID> teamUuid = BotTeamComponent.get(automatoolStack);
         Optional<SelectionComponent> selectionComponent = SelectionComponent.get(automatoolStack);
         boolean hasSelection = selectionComponent.filter(s -> s.hasSelection()).isPresent();
 

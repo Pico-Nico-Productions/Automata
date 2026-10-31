@@ -16,7 +16,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.bot.team.BotTeamMember.BotTeamPermission;
-import pro.piconico.automata.component.TeamComponent;
+import pro.piconico.automata.component.BotTeamComponent;
 import pro.piconico.automata.network.message.BotDeviceTeamChangeMessage;
 import pro.piconico.automata.registry.AutomataBotDevices;
 import pro.piconico.automata.registry.AutomataMessages;
@@ -99,7 +99,7 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
 
     @Override
     public Optional<UUID> getTeamUuid() {
-        return TeamComponent.get(getStack());
+        return BotTeamComponent.get(getStack());
     }
 
     @Override
@@ -109,7 +109,7 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
         if (oldTeamUuid.equals(teamUuid))
             return false;
 
-        TeamComponent.set(getStack(), teamUuid);
+        BotTeamComponent.set(getStack(), teamUuid);
 
         BotDevice.invokeTeamChanged(player.getEntityWorld(), this, oldTeamUuid);
         if (player instanceof ServerPlayerEntity serverPlayer) {
@@ -124,10 +124,10 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
             return true;
 
         ItemStack stack = getStack();
-        Optional<BotTeam> team = TeamComponent.get(stack).map(uuid -> BotTeamPersistentState.getTeam(uuid).orElse(null));
+        Optional<BotTeam> team = BotTeamComponent.get(stack).map(uuid -> BotTeamPersistentState.getTeam(uuid).orElse(null));
 
         if (team.isEmpty()) {
-            TeamComponent.set(stack, Optional.empty());
+            BotTeamComponent.set(stack, Optional.empty());
             if (sendMessage) {
                 player.sendMessage(AutomataTexts.getBotTeamEmpty(), true);
             }

@@ -38,6 +38,10 @@ public record SelectionComponent(Identifier worldId, Optional<BlockPos> selectio
         return Optional.ofNullable(stack.get(AutomataComponents.SELECTION));
     }
 
+    public static boolean exists(ItemStack stack) {
+        return get(stack).isPresent();
+    }
+
     public SelectionComponent copyWith(BlockPos selection, boolean isSelection2) {
         return new SelectionComponent(worldId, isSelection2 ? selection1 : Optional.of(selection), isSelection2 ? Optional.of(selection) : selection2);
     }
