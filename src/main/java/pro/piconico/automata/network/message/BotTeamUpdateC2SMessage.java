@@ -11,18 +11,21 @@ import pro.piconico.automata.world.BotTeamPersistentState;
 
 public record BotTeamUpdateC2SMessage(UUID teamUuid, BotTeamSettings settings) {
     public static void handle(BotTeamUpdateC2SMessage message, ServerAccess serverAccess) {
-        if (!BotTeamPersistentState.teamExistsAndHasMemberWith(message.teamUuid, serverAccess.player(), BotTeamPermission.UPDATE)) {
-            BotTeamPersistentState.getTeam(message.teamUuid).ifPresent(team -> {
-                serverAccess.player().sendMessage(AutomataTexts.getBotTeamPermissionMissing(serverAccess.player().getStringifiedName(), team), true);
-            });
-            return;
-        }
-
-        Optional<BotTeam> team = BotTeamPersistentState.updateTeam(message.teamUuid, message.settings);
+        Optional<BotTeam> team = BotTeamPersistentState.getTeam(message.teamUuid);
 
         if (team.isEmpty())
             return;
 
-        BotTeamsSyncS2CMessage.syncToPlayersUsingTeam(serverAccess.runtime(), team.get());
+        if (!team.get().hasMemberWith(serverAccess.player(), BotTeamPermission.UPDATE)) {
+            serverAccess.player().sendMessage(AutomataTexts.getBotTeamPermissionMissing(serverAccess.player().getStringifiedName(), team.get()), true);
+            return;
+        }
+
+        Optional<BotTeam> updatedTeam = BotTeamPersistentState.updateTeam(message.teamUuid, message.settings);
+
+        if (updatedTeam.isEmpty())
+            return;
+
+        BotTeamsSyncS2CMessage.syncToPlayersUsingTeam(serverAccess.runtime(), updatedTeam.get());
     }
 }

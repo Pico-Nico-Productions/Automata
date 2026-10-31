@@ -11,6 +11,7 @@ public class AutomataClientColors {
     public static final Color SELECTION2 = Color.BLUE;
 
     public static final Color NETWORK = Color.ofArgb(0x7FFF7FFF); // Pink
+    public static final Color RESERVATION = Color.BLUE;
     public static final Color DECONSTRUCTION = Color.RED;
     public static final Color JOB_DEFAULT = Color.WHITE;
 
@@ -22,8 +23,8 @@ public class AutomataClientColors {
     }
 
     public static final Color USER = Color.WHITE;
-    public static final Color ADMIN = Color.BLUE;
-    public static final Color OWNER = Color.ofArgb(0x7FFF7FFF); // Pink
+    public static final Color ADMIN = Color.ofRgb(0x7F7FFF); // Light blue
+    public static final Color OWNER = Color.ofRgb(0xFF7FFF); // Pink
 
     public static Color getRoleColor(BotTeamRole role) {
         return switch (role) {
@@ -38,6 +39,4 @@ public class AutomataClientColors {
     public static final Color BUTTON_HOVERED = Color.ofRgb(0x888888); // Gray
     public static final Color BUTTON_OUTLINE = Color.ofRgb(0xCCCCCC); // Light gray
     public static final Color BUTTON_SELECTED = Color.WHITE;
-
-    public static final Color RESERVATION = Color.BLUE;
 }

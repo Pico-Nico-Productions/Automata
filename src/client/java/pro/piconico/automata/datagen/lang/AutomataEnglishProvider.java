@@ -22,15 +22,22 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
         translationBuilder.add(AutomataTexts.BOT_TEAM_EMPTY_KEY, "No team selected");
         translationBuilder.add(AutomataTexts.BOT_JOBS_REMOVED_KEY, "Removed %1$s job(s)");
         translationBuilder.add(AutomataTexts.BOT_TEAM_ADD_KEY, "Team Creation");
+        translationBuilder.add(AutomataTexts.BOT_TEAM_ADD_MEMBER_KEY, "Add Member");
+        translationBuilder.add(AutomataTexts.BOT_TEAM_CYCLE_ROLE_KEY, "Cycle Role");
         translationBuilder.add(AutomataTexts.BOT_TEAM_MEMBERS_EMPTY_KEY, "No members");
         translationBuilder.add(AutomataTexts.BOT_TEAM_MEMBERS_KEY, "Team Members");
+        translationBuilder.add(AutomataTexts.BOT_TEAM_NON_MEMBERS_KEY, "Non-Members");
         translationBuilder.add(AutomataTexts.BOT_TEAM_PERMISSION_MISSING_KEY, "%1$s doesn't have permission to do that on \"%2$s\" (%3$s)");
+        translationBuilder.add(AutomataTexts.BOT_TEAM_REMOVE_MEMBER_KEY, "Remove Member");
         translationBuilder.add(AutomataTexts.BOT_TEAM_SELECT_KEY, "Team Selection");
         translationBuilder.add(AutomataTexts.BOT_TEAM_SETTINGS_KEY, "Team Settings");
         translationBuilder.add(AutomataTexts.BOT_TEAMS_EMPTY_KEY, "No teams");
         translationBuilder.add(AutomataTexts.CREATE_KEY, "Create");
         translationBuilder.add(AutomataTexts.DECONSTRUCTION_FAILED_KEY, "Must have 2 selections to deconstruct");
         translationBuilder.add(AutomataTexts.DELETE_KEY, "Delete");
+        translationBuilder.add(AutomataTexts.DELIMITER_KEY, " - ");
+        translationBuilder.add(AutomataTexts.MOUSE_LEFT_KEY, "Left Click");
+        translationBuilder.add(AutomataTexts.MOUSE_RIGHT_KEY, "Right Click");
         translationBuilder.add(AutomataTexts.NAME_KEY, "Name");
         translationBuilder.add(AutomataTexts.UPDATE_KEY, "Update");
 

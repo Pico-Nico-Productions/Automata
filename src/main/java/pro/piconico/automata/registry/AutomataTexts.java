@@ -10,6 +10,8 @@ import pro.piconico.automata.bot.team.BotTeam;
 
 public class AutomataTexts {
     public static final Style LINK_STYLE = Style.EMPTY.withColor(Formatting.AQUA).withUnderline(true);
+    public static final Style AFFIRMATIVE = Style.EMPTY.withColor(Formatting.GREEN).withBold(true);
+    public static final Style DISMISSIVE = Style.EMPTY.withColor(Formatting.RED).withBold(true);
 
     public static Text getCopyableText(String string) {
         return Text.literal(string).setStyle(AutomataTexts.LINK_STYLE.withClickEvent(new ClickEvent.CopyToClipboard(string)));
@@ -48,6 +50,18 @@ public class AutomataTexts {
         return Text.translatable(BOT_TEAM_ADD_KEY);
     }
 
+    public static final String BOT_TEAM_ADD_MEMBER_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_TEAM + "_add_member");
+
+    public static final MutableText getBotTeamAddMember() {
+        return Text.translatable(BOT_TEAM_ADD_MEMBER_KEY);
+    }
+
+    public static final String BOT_TEAM_CYCLE_ROLE_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_TEAM + "_cycle_role");
+
+    public static final MutableText getBotTeamCycleRole() {
+        return Text.translatable(BOT_TEAM_CYCLE_ROLE_KEY);
+    }
+
     public static final String BOT_TEAM_EMPTY_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_TEAM + "_empty");
 
     public static final MutableText getBotTeamEmpty() {
@@ -66,11 +80,23 @@ public class AutomataTexts {
         return Text.translatable(BOT_TEAM_MEMBERS_KEY);
     }
 
+    public static final String BOT_TEAM_NON_MEMBERS_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_TEAM + "_non_members");
+
+    public static final MutableText getBotTeamNonMembers() {
+        return Text.translatable(BOT_TEAM_NON_MEMBERS_KEY);
+    }
+
     /** Expected arguments: player name, team name, and team uuid (truncated) */
     public static final String BOT_TEAM_PERMISSION_MISSING_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_TEAM + "_permission_missing");
 
     public static final MutableText getBotTeamPermissionMissing(String playerName, BotTeam team) {
         return Text.translatable(BOT_TEAM_PERMISSION_MISSING_KEY, playerName, team.getName(), team.getTruncatedUuid());
+    }
+
+    public static final String BOT_TEAM_REMOVE_MEMBER_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_TEAM + "_remove_member");
+
+    public static final MutableText getBotTeamRemoveMember() {
+        return Text.translatable(BOT_TEAM_REMOVE_MEMBER_KEY);
     }
 
     public static final String BOT_TEAM_SELECT_KEY = AutomataRegistry.toTextTranslationKey(AutomataRegistry.BOT_TEAM + "_select");
@@ -107,6 +133,24 @@ public class AutomataTexts {
 
     public static final MutableText getDelete() {
         return Text.translatable(DELETE_KEY);
+    }
+
+    public static final String DELIMITER_KEY = AutomataRegistry.toTextTranslationKey("delimiter");
+
+    public static final MutableText getDelimiter() {
+        return Text.translatable(DELIMITER_KEY);
+    }
+
+    public static final String MOUSE_LEFT_KEY = AutomataRegistry.toTextTranslationKey("mouse_left");
+
+    public static final MutableText getMouseLeft() {
+        return Text.translatable(MOUSE_LEFT_KEY);
+    }
+
+    public static final String MOUSE_RIGHT_KEY = AutomataRegistry.toTextTranslationKey("mouse_right");
+
+    public static final MutableText getMouseRight() {
+        return Text.translatable(MOUSE_RIGHT_KEY);
     }
 
     public static final String NAME_KEY = AutomataRegistry.toTextTranslationKey("name");

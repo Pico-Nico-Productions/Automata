@@ -9,7 +9,6 @@ public class BotTeamsSyncS2CHandler {
         if (!(clientAccess.player().currentScreenHandler instanceof BotDeviceScreenHandler deviceScreenHandler))
             return;
 
-        deviceScreenHandler.teams.clear();
-        deviceScreenHandler.teams.addAll(message.teams());
+        deviceScreenHandler.setTeams(message.teams());
     }
 }

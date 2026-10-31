@@ -11,7 +11,7 @@ import net.minecraft.util.Uuids;
 
 public class BotTeamMember {
     public enum BotTeamPermission {
-        READ, CHANGE_DEVICE_TEAM, SELECT, DISPATCH, UPDATE, DELETE;
+        READ, CHANGE_DEVICE_TEAM, SELECT, DISPATCH, UPDATE, CHANGE_MEMBER_ROLE, DELETE;
     }
 
     public enum BotTeamRole {

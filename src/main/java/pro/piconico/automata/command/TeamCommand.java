@@ -30,16 +30,16 @@ public class TeamCommand {
     private static final String LEAVE_ARGUMENT = "leave";
     private static final String LIST_ARGUMENT = "list";
 
-    private static final String NAME_ARGUMENT = "name";
-    private static final String UUID_ARGUMENT = "uuid";
+    private static final String TEAM_NAME_ARGUMENT = "team_name";
+    private static final String TEAM_UUID_ARGUMENT = "team_uuid";
     private static final String TARGETS_ARGUMENT = "targets";
 
     private static Optional<BotTeam> parseTeam(CommandContext<ServerCommandSource> context) {
-        String uuidArgument = StringArgumentType.getString(context, UUID_ARGUMENT);
-        Optional<BotTeam> team = UUIDUtils.fromString(uuidArgument).map(teamUuid -> BotTeamPersistentState.getTeam(teamUuid).orElse(null));
+        String teamUuid = StringArgumentType.getString(context, TEAM_UUID_ARGUMENT);
+        Optional<BotTeam> team = UUIDUtils.fromString(teamUuid).map(uuid -> BotTeamPersistentState.getTeam(uuid).orElse(null));
 
         if (team.isEmpty()) {
-            context.getSource().sendMessage(Text.literal(String.format("No such team \"%1$s\"", uuidArgument)));
+            context.getSource().sendMessage(Text.literal(String.format("No such team \"%1$s\"", teamUuid)));
         }
 
         return team;
@@ -50,14 +50,14 @@ public class TeamCommand {
     }
 
     private static int addTeam(CommandContext<ServerCommandSource> context) {
-        String name = StringArgumentType.getString(context, NAME_ARGUMENT);
+        String teamName = StringArgumentType.getString(context, TEAM_NAME_ARGUMENT);
 
-        if (!BotTeam.isValidName(name)) {
-            context.getSource().sendMessage(Text.literal(String.format("Invalid team name \"%1$s\"", name)));
+        if (!BotTeam.isValidName(teamName)) {
+            context.getSource().sendMessage(Text.literal(String.format("Invalid team name \"%1$s\"", teamName)));
             return 0;
         }
 
-        BotTeamSettings settings = new BotTeamSettings(name);
+        BotTeamSettings settings = new BotTeamSettings(teamName);
         Optional<BotTeam> team = BotTeamPersistentState.addTeam(settings, Optional.ofNullable(context.getSource().getPlayer()).map(owner -> owner.getUuid()));
         context.getSource().sendMessage(appendTeamText("Added team", team.get()));
 
@@ -133,20 +133,20 @@ public class TeamCommand {
         LiteralArgumentBuilder<ServerCommandSource> teamCommand = CommandManager.literal(NAME);
 
         LiteralArgumentBuilder<ServerCommandSource> addArgument = CommandManager.literal(ADD_ARGUMENT);
-        addArgument.then(CommandManager.argument(NAME_ARGUMENT, StringArgumentType.string()).executes(TeamCommand::addTeam));
+        addArgument.then(CommandManager.argument(TEAM_NAME_ARGUMENT, StringArgumentType.string()).executes(TeamCommand::addTeam));
         teamCommand.then(addArgument);
 
         LiteralArgumentBuilder<ServerCommandSource> removeArgument = CommandManager.literal(REMOVE_ARGUMENT);
-        removeArgument.then(CommandManager.argument(UUID_ARGUMENT, StringArgumentType.word()).executes(TeamCommand::removeTeam));
+        removeArgument.then(CommandManager.argument(TEAM_UUID_ARGUMENT, StringArgumentType.word()).executes(TeamCommand::removeTeam));
         teamCommand.then(removeArgument);
 
         LiteralArgumentBuilder<ServerCommandSource> joinArgument = CommandManager.literal(JOIN_ARGUMENT);
-        joinArgument.then(CommandManager.argument(UUID_ARGUMENT, StringArgumentType.word()).executes(TeamCommand::joinTeam) //
+        joinArgument.then(CommandManager.argument(TEAM_UUID_ARGUMENT, StringArgumentType.word()).executes(TeamCommand::joinTeam) //
                 .then(CommandManager.argument(TARGETS_ARGUMENT, EntityArgumentType.players()).executes(TeamCommand::joinTeam)));
         teamCommand.then(joinArgument);
 
         LiteralArgumentBuilder<ServerCommandSource> leaveArgument = CommandManager.literal(LEAVE_ARGUMENT);
-        leaveArgument.then(CommandManager.argument(UUID_ARGUMENT, StringArgumentType.word()).executes(TeamCommand::leaveTeam) //
+        leaveArgument.then(CommandManager.argument(TEAM_UUID_ARGUMENT, StringArgumentType.word()).executes(TeamCommand::leaveTeam) //
                 .then(CommandManager.argument(TARGETS_ARGUMENT, EntityArgumentType.players()).executes(TeamCommand::leaveTeam)));
         teamCommand.then(leaveArgument);
 

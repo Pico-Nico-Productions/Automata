@@ -34,6 +34,7 @@ import pro.piconico.automata.client.ui.tab.bot.BotTeamSelectTab;
 import pro.piconico.automata.client.ui.tab.bot.BotTeamSettingsTab;
 import pro.piconico.automata.screen.BotDeviceScreenHandler;
 import pro.piconico.automata.screen.ScreenHandlerUtils;
+import pro.piconico.automata.screen.BotDeviceScreenHandler.MutateTeams;
 
 public abstract class BotDeviceScreen<HandlerT extends BotDeviceScreenHandler> extends BaseOwoContainerScreen<FlowLayout, HandlerT> {
     protected FlowLayout body;
@@ -43,6 +44,7 @@ public abstract class BotDeviceScreen<HandlerT extends BotDeviceScreenHandler> e
         super(handler, inventory, title);
 
         BotDevice.TEAM_CHANGED_CALLBACKS.add(this::onTeamChanged);
+        handler.teamsMutatedCallbacks.add(this::rebuildTab);
 
         backgroundWidth = handler.getBodyWidth();
         backgroundHeight = handler.getBodyHeight();
@@ -56,6 +58,7 @@ public abstract class BotDeviceScreen<HandlerT extends BotDeviceScreenHandler> e
     @Override
     public void removed() {
         BotDevice.TEAM_CHANGED_CALLBACKS.remove((ChangeBotTeam)this::onTeamChanged);
+        handler.teamsMutatedCallbacks.remove((MutateTeams)this::rebuildTab);
     }
 
     @Override

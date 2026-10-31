@@ -1,8 +1,11 @@
 package pro.piconico.automata.screen;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import net.fabricmc.api.EnvType;
@@ -21,10 +24,17 @@ import pro.piconico.automata.util.function.QuadFunction;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
 public abstract class BotDeviceScreenHandler extends ScreenHandler {
-    public static final int GENERIC_BODY_WIDTH = 176, GENERIC_BODY_HEIGHT = 168, GENERIC_ROW_COUNT = 3, INSET = 6, GAP = 4, DEVICE_INVENTORY_Y = 17, DEVICE_PLAYER_GAP = 14;
+    public static final int GENERIC_BODY_WIDTH = 176, GENERIC_BODY_HEIGHT = 168, GENERIC_ROW_COUNT = 3, INSET = 6, GAP = 4, DEVICE_INVENTORY_Y = 17,
+            DEVICE_PLAYER_GAP = 14;
+
+    @FunctionalInterface
+    public interface MutateTeams {
+        void onMutated();
+    }
 
     public final BotDevice<?> device;
-    public final List<BotTeam> teams;
+    private final List<BotTeam> teams;
+    public final Set<MutateTeams> teamsMutatedCallbacks = new HashSet<>();
 
     protected BotDeviceScreenHandler(@Nullable ScreenHandlerType<?> type, int syncId, BotDevice<?> device) {
         super(type, syncId);
@@ -37,6 +47,19 @@ public abstract class BotDeviceScreenHandler extends ScreenHandler {
         else {
             teams = new ArrayList<>(BotTeamPersistentState.getTeams());
         }
+    }
+
+    public List<BotTeam> getTeams() {
+        return Collections.unmodifiableList(teams);
+    }
+
+    public void setTeams(List<BotTeam> teams) {
+        if (this.teams.equals(teams))
+            return;
+
+        this.teams.clear();
+        this.teams.addAll(teams);
+        teamsMutatedCallbacks.forEach(mutateTeams -> mutateTeams.onMutated());
     }
 
     @Override

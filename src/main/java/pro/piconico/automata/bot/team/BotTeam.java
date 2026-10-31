@@ -133,26 +133,38 @@ public class BotTeam {
         addMember(serverPlayer, BotTeamRole.USER);
     }
 
-    public void removeMember(ServerPlayerEntity serverPlayer) {
-        if (!members.containsKey(serverPlayer.getUuid()))
+    public void removeMember(UUID playerUuid) {
+        if (!members.containsKey(playerUuid))
             return;
 
-        members.remove(serverPlayer.getUuid());
+        members.remove(playerUuid);
 
         MUTATED.invoker().onMutate(this, Mutation.MEMBERS);
     }
 
+    public void removeMember(ServerPlayerEntity serverPlayer) {
+        removeMember(serverPlayer.getUuid());
+    }
+
+    public Optional<BotTeamRole> getRole(UUID playerUuid) {
+        return Optional.ofNullable(members.getOrDefault(playerUuid, null)).map(member -> member.getRole());
+    }
+
     public Optional<BotTeamRole> getRole(PlayerEntity player) {
-        return Optional.ofNullable(members.getOrDefault(player.getUuid(), null)).map(member -> member.getRole());
+        return getRole(player.getUuid());
+    }
+
+    public void setRole(UUID playerUuid, BotTeamRole role) {
+        if (!members.containsKey(playerUuid) || members.get(playerUuid).getRole() == role)
+            return;
+
+        members.get(playerUuid).setRole(role);
+
+        MUTATED.invoker().onMutate(this, Mutation.ROLES);
     }
 
     public void setRole(ServerPlayerEntity serverPlayer, BotTeamRole role) {
-        if (!members.containsKey(serverPlayer.getUuid()) || members.get(serverPlayer.getUuid()).getRole() == role)
-            return;
-
-        members.get(serverPlayer.getUuid()).setRole(role);
-
-        MUTATED.invoker().onMutate(this, Mutation.ROLES);
+        setRole(serverPlayer.getUuid(), role);
     }
 
     public boolean hasMemberWith(PlayerEntity playerEntity, BotTeamPermission permission) {

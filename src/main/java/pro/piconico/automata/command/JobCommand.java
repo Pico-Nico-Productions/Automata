@@ -23,7 +23,7 @@ public class JobCommand {
     private static final String WORLD_ARGUMENT = "world";
     private static final String ALL_ARGUMENT = "all";
 
-    private static final String UUID_ARGUMENT = "uuid";
+    private static final String TEAM_UUID_ARGUMENT = "team_uuid";
 
     private static int removeJobs(CommandContext<ServerCommandSource> context, Supplier<Integer> removeJobs) {
         int removeCount = removeJobs.get();
@@ -34,7 +34,7 @@ public class JobCommand {
     }
 
     private static int removeTeamJobs(CommandContext<ServerCommandSource> context) {
-        String uuidArgument = StringArgumentType.getString(context, UUID_ARGUMENT);
+        String uuidArgument = StringArgumentType.getString(context, TEAM_UUID_ARGUMENT);
         Optional<UUID> teamUuid = UUIDUtils.fromString(uuidArgument);
 
         if (teamUuid.isEmpty() || BotTeamPersistentState.getTeam(teamUuid.get()).isEmpty()) {
@@ -58,7 +58,7 @@ public class JobCommand {
 
         LiteralArgumentBuilder<ServerCommandSource> removeArgument = CommandManager.literal(REMOVE_ARGUMENT);
         removeArgument.then(CommandManager.literal(TEAM_ARGUMENT)
-                .then(CommandManager.argument(UUID_ARGUMENT, StringArgumentType.word()).executes(JobCommand::removeTeamJobs)));
+                .then(CommandManager.argument(TEAM_UUID_ARGUMENT, StringArgumentType.word()).executes(JobCommand::removeTeamJobs)));
         removeArgument.then(CommandManager.literal(WORLD_ARGUMENT).executes(JobCommand::removeWorldJobs));
         removeArgument.then(CommandManager.literal(ALL_ARGUMENT).executes(JobCommand::removeAllJobs));
         jobCommand.then(removeArgument);

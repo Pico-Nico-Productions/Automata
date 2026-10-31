@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 import org.apache.commons.lang3.function.TriConsumer;
+import io.wispforest.owo.ui.component.ButtonComponent;
 import io.wispforest.owo.ui.component.TextBoxComponent;
 import io.wispforest.owo.ui.component.UIComponents;
 import io.wispforest.owo.ui.container.FlowLayout;
@@ -11,9 +12,11 @@ import io.wispforest.owo.ui.container.UIContainers;
 import io.wispforest.owo.ui.core.HorizontalAlignment;
 import io.wispforest.owo.ui.core.Sizing;
 import io.wispforest.owo.ui.core.VerticalAlignment;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.bot.team.BotTeam.BotTeamSettings;
+import pro.piconico.automata.bot.team.BotTeamMember.BotTeamPermission;
 import pro.piconico.automata.network.message.BotTeamCreateC2SMessage;
 import pro.piconico.automata.network.message.BotTeamDeleteC2SMessage;
 import pro.piconico.automata.network.message.BotTeamUpdateC2SMessage;
@@ -29,13 +32,13 @@ public class BotTeamSettingsCrudForm {
 
             AutomataMessages.BOT_DEVICE_CHANNEL.clientHandle().send(new BotTeamCreateC2SMessage(settings, playerUuid));
         }), //
-        UPDATE(AutomataTexts.getUpdate(), (playerUuid, team, settings) -> {
+        UPDATE(AutomataTexts.getUpdate(), BotTeamPermission.UPDATE, (playerUuid, team, settings) -> {
             if (team.isEmpty() || !BotTeam.isValidName(settings.name()))
                 return;
 
             AutomataMessages.BOT_DEVICE_CHANNEL.clientHandle().send(new BotTeamUpdateC2SMessage(team.get().uuid, settings));
         }), //
-        DELETE(AutomataTexts.getDelete(), (playerUuid, team, settings) -> {
+        DELETE(AutomataTexts.getDelete(), AutomataTexts.getDelete(), BotTeamPermission.DELETE, (playerUuid, team, settings) -> {
             if (team.isEmpty())
                 return;
 
@@ -43,11 +46,27 @@ public class BotTeamSettingsCrudForm {
         });
 
         private Text name;
+        private Optional<Text> tooltip;
+        private Optional<BotTeamPermission> permission;
         private TriConsumer<UUID, Optional<BotTeam>, BotTeamSettings> mutate;
 
-        private Mutation(Text name, TriConsumer<UUID, Optional<BotTeam>, BotTeamSettings> action) {
+        private Mutation(Text name, Text tooltip, BotTeamPermission permission, TriConsumer<UUID, Optional<BotTeam>, BotTeamSettings> mutate) {
             this.name = name;
-            this.mutate = action;
+            this.tooltip = Optional.ofNullable(tooltip);
+            this.permission = Optional.ofNullable(permission);
+            this.mutate = mutate;
+        }
+
+        private Mutation(Text name, BotTeamPermission permission, TriConsumer<UUID, Optional<BotTeam>, BotTeamSettings> mutate) {
+            this(name, null, permission, mutate);
+        }
+
+        private Mutation(Text name, TriConsumer<UUID, Optional<BotTeam>, BotTeamSettings> mutate) {
+            this(name, null, mutate);
+        }
+
+        private boolean canMutate(Optional<BotTeam> team, PlayerEntity player) {
+            return permission.isEmpty() || team.map(t -> t.getRole(player).filter(role -> role.permissions.contains(permission.get()))).isPresent();
         }
     }
 
@@ -76,10 +95,15 @@ public class BotTeamSettingsCrudForm {
         actionsRow.horizontalAlignment(HorizontalAlignment.CENTER);
         actionsRow.gap(BotDeviceScreenHandler.GAP);
         for (Mutation mutation : mutations) {
-            actionsRow.child(UIComponents.button(mutation.name, (ignored) -> {
+            if (!mutation.canMutate(team, handler.player()))
+                continue;
+
+            ButtonComponent mutateButton = UIComponents.button(mutation.name, (ignored) -> {
                 BotTeamSettings settings = new BotTeamSettings(nameTextBox.getText());
                 mutation.mutate.accept(handler.player().getUuid(), team, settings);
-            }));
+            });
+            mutation.tooltip.ifPresent(tooltip -> mutateButton.tooltip(tooltip));
+            actionsRow.child(mutateButton);
         }
         parent.child(actionsRow);
     }

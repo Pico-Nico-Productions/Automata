@@ -6,6 +6,7 @@ import io.wispforest.owo.ui.component.ButtonComponent;
 import io.wispforest.owo.ui.component.LabelComponent;
 import io.wispforest.owo.ui.component.UIComponents;
 import io.wispforest.owo.ui.container.FlowLayout;
+import io.wispforest.owo.ui.container.ScrollContainer;
 import io.wispforest.owo.ui.container.UIContainers;
 import io.wispforest.owo.ui.core.Color;
 import io.wispforest.owo.ui.core.HorizontalAlignment;
@@ -13,6 +14,7 @@ import io.wispforest.owo.ui.core.Sizing;
 import net.minecraft.text.Text;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.client.registry.AutomataClientTextures;
+import pro.piconico.automata.client.input.MouseButton;
 import pro.piconico.automata.client.registry.AutomataClientColors;
 import pro.piconico.automata.client.ui.component.AutomataUIComponents;
 import pro.piconico.automata.client.ui.tab.Tab;
@@ -42,16 +44,16 @@ public class BotTeamSelectTab implements Tab<BotDeviceScreenHandler> {
     public void build(BotDeviceScreenHandler handler, FlowLayout parent) {
         parent.child(AutomataUIComponents.centerHeader(getName(handler)));
 
-        if (handler.teams.isEmpty()) {
+        if (handler.getTeams().isEmpty()) {
             parent.child(AutomataUIComponents.centerBody(AutomataTexts.getBotTeamsEmpty()));
             return;
         }
 
-        Optional<UUID> teamUuid = handler.device.getTeamUuid();
+        Optional<BotTeam> deviceTeam = handler.getTeam();
         FlowLayout listContainer = UIContainers.verticalFlow(Sizing.fill(), Sizing.content());
         listContainer.gap(BotDeviceScreenHandler.GAP);
-        for (BotTeam team : handler.teams) {
-            boolean isSelectedTeam = teamUuid.isPresent() && teamUuid.get().equals(team.uuid);
+        for (BotTeam team : handler.getTeams()) {
+            boolean isSelectedTeam = deviceTeam.filter(t -> t == team).isPresent();
             Color outlineColor = isSelectedTeam ? AutomataClientColors.BUTTON_OUTLINE : AutomataClientColors.BUTTON_INACTIVE;
 
             LabelComponent nameLabel = UIComponents.label(Text.literal(team.getName()));
@@ -62,7 +64,7 @@ public class BotTeamSelectTab implements Tab<BotDeviceScreenHandler> {
             uuidLabel.horizontalSizing(Sizing.fill(100 - ROW_NAME_FILL));
 
             listContainer.child(AutomataUIComponents.clickableRow(AutomataClientColors.BUTTON_ACTIVE, outlineColor, (click, doubled) -> {
-                if (click.button() != 0)
+                if (click.button() != MouseButton.LEFT.button)
                     return false;
 
                 Optional<UUID> newTeamUuid = Optional.ofNullable(isSelectedTeam ? null : team.uuid);
@@ -71,6 +73,7 @@ public class BotTeamSelectTab implements Tab<BotDeviceScreenHandler> {
                 return true;
             }, nameLabel, uuidLabel));
         }
-        parent.child(listContainer);
+        ScrollContainer<FlowLayout> scrollContainer = UIContainers.verticalScroll(Sizing.fill(), Sizing.fill(), listContainer);
+        parent.child(scrollContainer);
     }
 }
