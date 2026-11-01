@@ -9,11 +9,13 @@ import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import pro.piconico.automata.component.SelectionComponent;
+import pro.piconico.automata.component.BotJobModeComponent;
 import pro.piconico.automata.component.BotTeamComponent;
 
 public final class AutomataComponents {
+    public static final ComponentType<BotJobModeComponent> BOT_JOB_MODE = register(AutomataRegistry.BOT_JOB_MODE, BotJobModeComponent.CODEC, BotJobModeComponent.PACKET_CODEC);
+    public static final ComponentType<BotTeamComponent> BOT_TEAM = register(AutomataRegistry.BOT_TEAM, BotTeamComponent.CODEC, BotTeamComponent.PACKET_CODEC);
     public static final ComponentType<SelectionComponent> SELECTION = register(AutomataRegistry.SELECTION, SelectionComponent.CODEC, SelectionComponent.PACKET_CODEC);
-    public static final ComponentType<BotTeamComponent> TEAM = register(AutomataRegistry.BOT_TEAM, BotTeamComponent.CODEC, BotTeamComponent.PACKET_CODEC);
 
     private static <T> ComponentType<T> register(String name, Codec<T> codec, PacketCodec<? super ByteBuf, T> packetCodec) {
         RegistryKey<ComponentType<?>> key = AutomataRegistry.toRegistryKey(RegistryKeys.DATA_COMPONENT_TYPE, name);

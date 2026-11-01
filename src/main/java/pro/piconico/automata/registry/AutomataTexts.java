@@ -127,12 +127,6 @@ public class AutomataTexts {
         return Text.translatable(CREATE_KEY);
     }
 
-    public static final String DECONSTRUCTION_FAILED_KEY = AutomataRegistry.toTextTranslationKey("deconstruction_failed");
-
-    public static final MutableText getDeconstructionFailed() {
-        return Text.translatable(DECONSTRUCTION_FAILED_KEY);
-    }
-
     public static final String DELETE_KEY = AutomataRegistry.toTextTranslationKey("delete");
 
     public static final MutableText getDelete() {
@@ -161,6 +155,13 @@ public class AutomataTexts {
 
     public static final MutableText getName() {
         return Text.translatable(NAME_KEY);
+    }
+
+    /** Expected arguments: required selection count */
+    public static final String SELECTION_INVALID = AutomataRegistry.toTextTranslationKey("selection_invalid");
+
+    public static final MutableText getSelectionInvalid(int requiredSelectionCount) {
+        return Text.translatable(SELECTION_INVALID, requiredSelectionCount);
     }
 
     public static final String UPDATE_KEY = AutomataRegistry.toTextTranslationKey("update");

@@ -19,6 +19,7 @@ public class AutomataRegistry {
     public static final String CONSTRUCTION_BOT = "construction_" + BOT;
 
     public static final String BLOCK_BOT_DEVICE = "block_" + BOT_DEVICE;
+    public static final String BOT_JOB_MODE = BOT_JOB + "_mode";
     public static final String BOT_JOB_PERSISTENT_STATE = BOT_JOB + "_persistent_state";
     public static final String BOT_TEAM_PERSISTENT_STATE = BOT_TEAM + "_persistent_state";
     public static final String DECONSTRUCTION_BOT_JOB = "deconstruction_" + BOT_JOB;

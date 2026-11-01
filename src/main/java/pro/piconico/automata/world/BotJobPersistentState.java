@@ -204,9 +204,9 @@ public class BotJobPersistentState extends PersistentState {
     }
     //#endregion
 
-    public static Optional<Integer> addJobs(UUID teamUuid, Iterable<BotJob> jobs, ServerWorld serverWorld) {
+    public static int addJobs(UUID teamUuid, Iterable<BotJob> jobs, ServerWorld serverWorld) {
         if (BotTeamPersistentState.getTeam(teamUuid).isEmpty())
-            return Optional.empty();
+            return 0;
 
         BotJobPersistentState jobState = getJobState(serverWorld);
         Set<BlockPos> addedPositions = new HashSet<>();
@@ -226,14 +226,14 @@ public class BotJobPersistentState extends PersistentState {
         }
 
         if (addedPositions.isEmpty())
-            return Optional.of(0);
+            return 0;
 
         jobState.markDirty();
         JOBS_MUTATED.invoker().onMutate(serverWorld, teamUuid, Mutation.ADD);
 
         jobState.markForAssigning(teamUuid);
 
-        return Optional.of(addedPositions.size());
+        return addedPositions.size();
     }
 
     //#region Job Removal

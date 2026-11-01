@@ -1,14 +1,10 @@
 package pro.piconico.automata.item;
 
 import java.util.Optional;
-import java.util.UUID;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -16,12 +12,13 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import pro.piconico.automata.component.SelectionComponent;
+import pro.piconico.automata.component.SelectionComponent.Selection;
+import pro.piconico.automata.component.BotJobModeComponent;
 import pro.piconico.automata.component.BotTeamComponent;
-import pro.piconico.automata.registry.AutomataComponents;
 import pro.piconico.automata.registry.AutomataItems;
 import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.bot.device.ItemBotDevice;
-import pro.piconico.automata.bot.job.BotJobDispatcher;
+import pro.piconico.automata.bot.job.BotJobType;
 import pro.piconico.automata.bot.team.BotTeamMember.BotTeamPermission;
 
 public class AutomatoolItem extends Item {
@@ -30,7 +27,7 @@ public class AutomatoolItem extends Item {
     }
 
     //#region Actions
-    private static ActionResult select(PlayerEntity player, ItemStack automatoolStack, BlockPos selection, boolean isSelection2) {
+    private static ActionResult select(PlayerEntity player, ItemStack automatoolStack, BlockPos pos, Selection selection) {
         World world = player.getEntityWorld();
 
         if (world.isClient())
@@ -39,37 +36,53 @@ public class AutomatoolItem extends Item {
         if (!new ItemBotDevice(player, automatoolStack).hasPermission(BotTeamPermission.SELECT, true))
             return ActionResult.FAIL;
 
-        automatoolStack.set(AutomataComponents.SELECTION, SelectionComponent.getAndCopyWithOrElse(automatoolStack, world, selection, isSelection2));
-        player.sendMessage(AutomataTexts.getBlockSelected(isSelection2 ? 2 : 1, selection), true);
+        BotJobType<?> jobType = BotJobModeComponent.getOrDefault(automatoolStack);
+
+        if (jobType.requiredSelectionCount().isEmpty())
+            return ActionResult.PASS;
+
+        if (jobType.requiredSelectionCount().get().toInt() < selection.toInt()) {
+            selection = jobType.requiredSelectionCount().get();
+        }
+        Optional<SelectionComponent> sameWorldSelection = SelectionComponent.get(automatoolStack).filter(s -> s.worldKey().equals(world.getRegistryKey()));
+        Optional<BlockPos> pos1 = Optional.ofNullable(selection == Selection.ONE ? pos : sameWorldSelection.map(s -> s.selection1().orElse(null)).orElse(null));
+        Optional<BlockPos> pos2 = Optional.ofNullable(selection != Selection.ONE ? pos : sameWorldSelection.map(s -> s.selection2().orElse(null)).orElse(null));
+        SelectionComponent.set(automatoolStack, Optional.of(new SelectionComponent(world.getRegistryKey(), pos1, pos2)));
+
+        player.sendMessage(AutomataTexts.getBlockSelected(selection.toInt(), pos), true);
 
         return ActionResult.SUCCESS;
     }
 
     private static ActionResult dispatch(PlayerEntity player, ItemStack automatoolStack) {
-        Optional<UUID> teamUuid = BotTeamComponent.get(automatoolStack);
         Optional<SelectionComponent> selectionComponent = SelectionComponent.get(automatoolStack);
-        boolean hasSelection = selectionComponent.filter(s -> s.hasSelection()).isPresent();
+        BotJobType<?> jobType = BotJobModeComponent.getOrDefault(automatoolStack);
+        int requiredSelectionCount = jobType.requiredSelectionCount().map(s -> s.toInt()).orElse(0);
 
-        if (!(player instanceof ServerPlayerEntity)) {
-            return teamUuid.isPresent() && hasSelection ? ActionResult.SUCCESS : ActionResult.FAIL;
+        if (selectionComponent.map(s -> s.getSelectionCount()).orElse(0) < requiredSelectionCount) {
+            player.sendMessage(AutomataTexts.getSelectionInvalid(requiredSelectionCount), true);
+
+            return ActionResult.FAIL;
         }
 
         if (!new ItemBotDevice(player, automatoolStack).hasPermission(BotTeamPermission.DISPATCH, true))
             return ActionResult.FAIL;
 
-        if (!hasSelection) {
-            player.sendMessage(AutomataTexts.getDeconstructionFailed(), true);
+        if (player.getEntityWorld().isClient())
+            return ActionResult.SUCCESS;
+
+        Optional<ServerWorld> selectionWorld = selectionComponent.get().getWorld(player.getEntityWorld().getServer());
+
+        if (selectionWorld.isEmpty()) {
+            player.sendMessage(AutomataTexts.getSelectionInvalid(requiredSelectionCount), true);
 
             return ActionResult.FAIL;
         }
 
-        ServerWorld selectionWorld = player.getEntityWorld().getServer().getWorld(RegistryKey.of(RegistryKeys.WORLD, selectionComponent.get().worldId()));
-        BlockPos selection1 = selectionComponent.get().selection1().get();
-        BlockPos selection2 = selectionComponent.get().selection2().get();
-        Optional<Integer> jobCount = BotJobDispatcher.markForDeconstruction(selectionWorld, teamUuid.get(), selection1, selection2);
+        Integer jobCount = jobType.dispatch().apply(selectionWorld.get(), BotTeamComponent.get(automatoolStack).get(), selectionComponent.get().toList());
 
-        automatoolStack.remove(AutomataComponents.SELECTION);
-        player.sendMessage(AutomataTexts.getBotJobsAdded(jobCount.get()), true);
+        SelectionComponent.set(automatoolStack, Optional.empty());
+        player.sendMessage(AutomataTexts.getBotJobsAdded(jobCount), true);
 
         return ActionResult.SUCCESS_SERVER;
     }
@@ -82,7 +95,7 @@ public class AutomatoolItem extends Item {
         if (!(stack.isOf(AutomataItems.AUTOMATOOL)))
             return ActionResult.PASS;
 
-        return select(player, stack, blockPos, player.isSneaking());
+        return select(player, stack, blockPos, player.isSneaking() ? Selection.TWO : Selection.ONE);
     }
 
     @Override

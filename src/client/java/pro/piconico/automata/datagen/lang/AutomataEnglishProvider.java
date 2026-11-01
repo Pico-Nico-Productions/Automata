@@ -33,12 +33,12 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
         translationBuilder.add(AutomataTexts.BOT_TEAM_SETTINGS_KEY, "Team Settings");
         translationBuilder.add(AutomataTexts.BOT_TEAMS_EMPTY_KEY, "No teams");
         translationBuilder.add(AutomataTexts.CREATE_KEY, "Create");
-        translationBuilder.add(AutomataTexts.DECONSTRUCTION_FAILED_KEY, "Must have 2 selections to deconstruct");
         translationBuilder.add(AutomataTexts.DELETE_KEY, "Delete");
         translationBuilder.add(AutomataTexts.DELIMITER_KEY, " - ");
         translationBuilder.add(AutomataTexts.MOUSE_LEFT_KEY, "Left Click");
         translationBuilder.add(AutomataTexts.MOUSE_RIGHT_KEY, "Right Click");
         translationBuilder.add(AutomataTexts.NAME_KEY, "Name");
+        translationBuilder.add(AutomataTexts.SELECTION_INVALID, "Must have %1$s selection(s) to do that");
         translationBuilder.add(AutomataTexts.UPDATE_KEY, "Update");
 
         translationBuilder.add(AutomataItems.AUTOMATOOL, "Automatool");

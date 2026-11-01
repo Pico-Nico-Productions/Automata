@@ -21,7 +21,7 @@ public class SelectionRenderer {
 
         SelectionComponent selection = SelectionComponent.get(stacks.firstEntry().getValue()).get();
 
-        if (!client.world.getRegistryKey().getValue().equals(selection.worldId()))
+        if (!client.world.getRegistryKey().equals(selection.worldKey()))
             return;
 
         selection.getSelectionBox().ifPresent(box -> RenderUtils.drawBoxOutline(context, box, AutomataClientColors.SELECTION_BOUNDS));

@@ -120,11 +120,20 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
     }
 
     public boolean hasPermission(BotTeamPermission permission, boolean sendMessage) {
+        ItemStack stack = getStack();
+        Optional<UUID> teamUuid = BotTeamComponent.get(stack);
+
+        if (teamUuid.isEmpty()) {
+            if (sendMessage) {
+                player.sendMessage(AutomataTexts.getBotTeamEmpty(), true);
+            }
+            return false;
+        }
+
         if (player.getEntityWorld().isClient())
             return true;
 
-        ItemStack stack = getStack();
-        Optional<BotTeam> team = BotTeamComponent.get(stack).map(uuid -> BotTeamPersistentState.getTeam(uuid).orElse(null));
+        Optional<BotTeam> team = BotTeamPersistentState.getTeam(teamUuid.get());
 
         if (team.isEmpty()) {
             BotTeamComponent.set(stack, Optional.empty());
