@@ -10,4 +10,7 @@ import net.minecraft.util.math.BlockPos;
 import pro.piconico.automata.component.SelectionComponent.Selection;
 
 public record BotJobType<T extends BotJob>(MapCodec<T> codec, Optional<Selection> requiredSelectionCount, TriFunction<ServerWorld, UUID, List<BlockPos>, Integer> dispatch) {
+    public int getRequiredSelectionCount() {
+        return requiredSelectionCount.map(s -> s.toInt()).orElse(0);
+    }
 }

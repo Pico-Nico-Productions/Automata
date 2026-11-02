@@ -106,11 +106,10 @@ public abstract class EntityBotDevice extends PathAwareEntity implements BotDevi
 
     @Override
     public boolean setTeamUuid(Optional<UUID> teamUuid) {
-        Optional<UUID> oldTeamUuid = this.teamUuid;
-
-        if (oldTeamUuid.equals(teamUuid))
+        if (this.teamUuid.equals(teamUuid))
             return false;
 
+        Optional<UUID> oldTeamUuid = this.teamUuid;
         this.teamUuid = teamUuid;
 
         World world = getEntityWorld();

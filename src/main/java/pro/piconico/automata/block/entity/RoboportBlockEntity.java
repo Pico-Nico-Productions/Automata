@@ -100,7 +100,8 @@ public class RoboportBlockEntity extends BlockBotDevice implements ListInventory
         markDirty();
 
         EntityType<? extends BotEntity> botEntityType = botItem.getBotType().entityType();
-        BotEntity newBotEntity = BotEntity.spawnWithTeam(botEntityType, (ServerWorld)getWorld(), getSpawnPos(), SpawnReason.MOB_SUMMONED, getTeamUuid().get());
+        BotEntity newBotEntity = botEntityType.spawn((ServerWorld)getWorld(), getSpawnPos(), SpawnReason.MOB_SUMMONED);
+        newBotEntity.setTeamUuid(getTeamUuid());
 
         return Optional.of(newBotEntity);
     }

@@ -91,14 +91,11 @@ public abstract class BotEntity extends EntityBotDevice implements ListInventory
 
     @Override
     public boolean setTeamUuid(Optional<UUID> teamUuid) {
-        if (!super.setTeamUuid(teamUuid))
-            return false;
-
-        if (getEntityWorld() instanceof ServerWorld) {
+        if (getEntityWorld() instanceof ServerWorld && !this.teamUuid.equals(teamUuid)) {
             endJob(false);
         }
 
-        return true;
+        return super.setTeamUuid(teamUuid);
     }
 
     public Optional<BotJob> getJob() {
@@ -225,6 +222,11 @@ public abstract class BotEntity extends EntityBotDevice implements ListInventory
     }
 
     @Override
+    public boolean cannotDespawn() {
+        return true;
+    }
+
+    @Override
     public void onDeath(DamageSource damageSource) {
         super.onDeath(damageSource);
 
@@ -270,15 +272,4 @@ public abstract class BotEntity extends EntityBotDevice implements ListInventory
     public void markDirty() {
     }
     //#endregion
-
-    public static BotEntity spawnWithTeam(EntityType<? extends BotEntity> botEntityType, ServerWorld serverWorld, BlockPos pos, SpawnReason reason, UUID teamUuid) {
-        BotEntity bot = botEntityType.create(serverWorld, reason);
-        bot.refreshPositionAndAngles(pos, 0F, 0F);
-        bot.initialize(serverWorld, serverWorld.getLocalDifficulty(pos), reason, null);
-        bot.teamUuid = Optional.of(teamUuid);
-
-        serverWorld.spawnEntity(bot);
-
-        return bot;
-    }
 }

@@ -41,7 +41,7 @@ public class AutomatoolItem extends Item {
         if (jobType.requiredSelectionCount().isEmpty())
             return ActionResult.PASS;
 
-        if (jobType.requiredSelectionCount().get().toInt() < selection.toInt()) {
+        if (jobType.getRequiredSelectionCount() < selection.toInt()) {
             selection = jobType.requiredSelectionCount().get();
         }
         Optional<SelectionComponent> sameWorldSelection = SelectionComponent.get(automatoolStack).filter(s -> s.worldKey().equals(world.getRegistryKey()));
@@ -57,7 +57,7 @@ public class AutomatoolItem extends Item {
     private static ActionResult dispatch(PlayerEntity player, ItemStack automatoolStack) {
         Optional<SelectionComponent> selectionComponent = SelectionComponent.get(automatoolStack);
         BotJobType<?> jobType = BotJobModeComponent.getOrDefault(automatoolStack);
-        int requiredSelectionCount = jobType.requiredSelectionCount().map(s -> s.toInt()).orElse(0);
+        int requiredSelectionCount = jobType.getRequiredSelectionCount();
 
         if (selectionComponent.map(s -> s.getSelectionCount()).orElse(0) < requiredSelectionCount) {
             player.sendMessage(AutomataTexts.getSelectionInvalid(requiredSelectionCount), true);
