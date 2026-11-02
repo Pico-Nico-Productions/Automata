@@ -60,11 +60,11 @@ public record SelectionComponent(RegistryKey<World> worldKey, Optional<BlockPos>
         return get(stack).isPresent();
     }
 
-    public static boolean set(ItemStack stack, Optional<SelectionComponent> selection) {
+    public static void set(ItemStack stack, Optional<SelectionComponent> selection) {
         Optional<SelectionComponent> oldSelection = get(stack);
 
         if (oldSelection.equals(selection))
-            return false;
+            return;
 
         if (selection.filter(s -> s.selection1.isPresent() || s.selection2.isPresent()).isEmpty()) {
             stack.remove(AutomataComponents.SELECTION);
@@ -72,8 +72,6 @@ public record SelectionComponent(RegistryKey<World> worldKey, Optional<BlockPos>
         else {
             stack.set(AutomataComponents.SELECTION, selection.get());
         }
-
-        return true;
     }
 
     public List<BlockPos> toList() {

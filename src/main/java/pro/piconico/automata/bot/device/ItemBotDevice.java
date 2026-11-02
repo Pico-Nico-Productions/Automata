@@ -37,7 +37,7 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
     }
 
     public final PlayerEntity player;
-    private final int slot;
+    public final int slot;
 
     public ItemBotDevice(PlayerEntity player, ItemStack stack) {
         int slot = player.getInventory().getSlotWithStack(stack);
@@ -53,7 +53,7 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
         return player.getBlockPos();
     }
 
-    private ItemStack getStack() {
+    public ItemStack getStack() {
         return player.getInventory().getStack(slot);
     }
 

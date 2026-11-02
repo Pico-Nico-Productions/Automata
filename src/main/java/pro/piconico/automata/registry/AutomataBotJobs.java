@@ -15,8 +15,8 @@ import pro.piconico.automata.bot.job.DeconstructionBotJob;
 import pro.piconico.automata.component.SelectionComponent.Selection;
 
 public class AutomataBotJobs {
-    public static final BotJobType<DeconstructionBotJob> DECONSTRUCTION = register(AutomataRegistry.DECONSTRUCTION_BOT_JOB, DeconstructionBotJob.CODEC,
-            Selection.TWO, DeconstructionBotJob::dispatch);
+    public static final BotJobType<DeconstructionBotJob> DECONSTRUCTION = register(AutomataRegistry.DECONSTRUCTION, DeconstructionBotJob.CODEC, Selection.TWO,
+            DeconstructionBotJob::dispatch);
 
     private static <T extends BotJob> BotJobType<T> register(String name, MapCodec<T> codec, Optional<Selection> selectionRequirement,
             TriFunction<ServerWorld, UUID, List<BlockPos>, Integer> dispatch) {

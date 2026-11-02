@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricLanguageProvider;
 import net.minecraft.registry.RegistryWrapper.WrapperLookup;
 import pro.piconico.automata.registry.AutomataBlocks;
+import pro.piconico.automata.registry.AutomataBotJobs;
 import pro.piconico.automata.registry.AutomataEntities;
 import pro.piconico.automata.registry.AutomataItems;
 import pro.piconico.automata.registry.AutomataTexts;
@@ -44,9 +45,11 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
         translationBuilder.add(AutomataItems.AUTOMATOOL, "Automatool");
         translationBuilder.add(AutomataItems.CONSTRUCTION_BOT, "Construction Bot");
 
-        AutomataLanguageGenerationUtils.AddBlockTranslation(translationBuilder, AutomataBlocks.LOGISTIC_CHEST, "Logistic Chest");
-        AutomataLanguageGenerationUtils.AddBlockTranslation(translationBuilder, AutomataBlocks.ROBOPORT, "Roboport");
+        AutomataLanguageGenerationUtils.addBlockTranslation(translationBuilder, AutomataBlocks.LOGISTIC_CHEST, "Logistic Chest");
+        AutomataLanguageGenerationUtils.addBlockTranslation(translationBuilder, AutomataBlocks.ROBOPORT, "Roboport");
 
         translationBuilder.add(AutomataEntities.CONSTRUCTION_BOT, "Construction Bot");
+
+        translationBuilder.add(AutomataBotJobs.DECONSTRUCTION.getTranslationKey(), "Deconstruction");
     }
 }

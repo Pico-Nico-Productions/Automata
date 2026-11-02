@@ -7,7 +7,6 @@ import io.wispforest.owo.ui.component.ButtonComponent;
 import io.wispforest.owo.ui.component.LabelComponent;
 import io.wispforest.owo.ui.component.UIComponents;
 import io.wispforest.owo.ui.container.FlowLayout;
-import io.wispforest.owo.ui.container.ScrollContainer;
 import io.wispforest.owo.ui.container.UIContainers;
 import io.wispforest.owo.ui.core.Color;
 import io.wispforest.owo.ui.core.HorizontalAlignment;
@@ -128,7 +127,6 @@ public class BotTeamMembersTab implements Tab<BotDeviceScreenHandler> {
             }
         }
 
-        ScrollContainer<FlowLayout> scrollContainer = UIContainers.verticalScroll(Sizing.fill(), Sizing.fill(), listContainer);
-        parent.child(scrollContainer);
+        parent.child(UIContainers.verticalScroll(Sizing.fill(), Sizing.fill(), listContainer));
     }
 }

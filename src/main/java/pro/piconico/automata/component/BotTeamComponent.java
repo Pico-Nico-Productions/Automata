@@ -26,11 +26,11 @@ public record BotTeamComponent(UUID teamUuid) {
         return get(stack).isPresent();
     }
 
-    public static boolean set(ItemStack stack, Optional<UUID> teamUuid) {
+    public static void set(ItemStack stack, Optional<UUID> teamUuid) {
         Optional<UUID> oldTeamUuid = get(stack);
 
         if (oldTeamUuid.equals(teamUuid))
-            return false;
+            return;
 
         if (teamUuid.isEmpty()) {
             stack.remove(AutomataComponents.BOT_TEAM);
@@ -38,7 +38,5 @@ public record BotTeamComponent(UUID teamUuid) {
         else {
             stack.set(AutomataComponents.BOT_TEAM, new BotTeamComponent(teamUuid.get()));
         }
-
-        return true;
     }
 }

@@ -21,11 +21,7 @@ public record BotJobModeComponent(RegistryKey<BotJobType<?>> jobTypeKey) {
             RegistryKey.createPacketCodec(AutomataRegistryKeys.BOT_JOB_TYPE), BotJobModeComponent::jobTypeKey, //
             BotJobModeComponent::new);
 
-    public BotJobModeComponent(BotJobType<?> jobType) {
-        this(AutomataRegistries.BOT_JOB_TYPE.getKey(jobType).get());
-    }
-
-    public static  BotJobType<?> getDefaultJobType() {
+    public static BotJobType<?> getDefaultJobType() {
         return AutomataRegistries.BOT_JOB_TYPE.getDefaultEntry().get().value();
     }
 
@@ -42,19 +38,12 @@ public record BotJobModeComponent(RegistryKey<BotJobType<?>> jobTypeKey) {
         return get(stack).orElse(getDefaultJobType());
     }
 
-    public static boolean set(ItemStack stack, Optional<BotJobType<?>> jobType) {
+    public static void set(ItemStack stack, BotJobType<?> jobType) {
         Optional<BotJobType<?>> oldJobType = get(stack);
 
-        if (oldJobType.equals(jobType))
-            return false;
+        if (oldJobType.filter(j -> j == jobType).isPresent())
+            return;
 
-        if (jobType.isEmpty()) {
-            stack.remove(AutomataComponents.BOT_JOB_MODE);
-        }
-        else {
-            stack.set(AutomataComponents.BOT_JOB_MODE, new BotJobModeComponent(jobType.get()));
-        }
-
-        return true;
+        stack.set(AutomataComponents.BOT_JOB_MODE, new BotJobModeComponent(jobType.getRegistryKey()));
     }
 }
