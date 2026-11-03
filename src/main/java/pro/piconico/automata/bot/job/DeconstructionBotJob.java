@@ -14,6 +14,7 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.World;
@@ -22,6 +23,7 @@ import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.inventory.InventoryUtils;
 import pro.piconico.automata.item.ItemUtils.PredicateItemStack;
 import pro.piconico.automata.registry.AutomataBotJobs;
+import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.world.BotJobPersistentState;
 
 // TODO: Add silk touch check to predicate
@@ -101,9 +103,9 @@ public record DeconstructionBotJob(BlockPos pos) implements BotJob {
         serverWorld.setBlockBreakingInfo(bot.getId(), pos, BlockUtils.BREAK_NOT_IN_PROGRESS);
     }
 
-    public static int dispatch(ServerWorld serverWorld, UUID teamUuid, List<BlockPos> selections) {
+    public static Text dispatch(ServerWorld serverWorld, UUID teamUuid, List<BlockPos> selections) {
         if (selections.isEmpty())
-            return 0;
+            return AutomataTexts.getBotJobsAdded(0);
 
         BlockPos selection1 = selections.get(0), selection2 = selections.size() > 1 ? selections.get(1) : selection1;
         BlockPos min = BlockPos.min(selection1, selection2), max = BlockPos.max(selection1, selection2);
@@ -121,6 +123,6 @@ public record DeconstructionBotJob(BlockPos pos) implements BotJob {
         }
         int jobCount = BotJobPersistentState.addJobs(teamUuid, jobsToAdd, serverWorld);
 
-        return jobCount;
+        return AutomataTexts.getBotJobsAdded(jobCount);
     }
 }

@@ -2,17 +2,17 @@ package pro.piconico.automata.client.network.message;
 
 import io.wispforest.owo.network.ClientAccess;
 import net.minecraft.item.ItemStack;
-import pro.piconico.automata.bot.job.BotJobType;
+import pro.piconico.automata.bot.mode.AutomatoolMode;
 import pro.piconico.automata.client.gui.screen.BotDeviceScreen;
-import pro.piconico.automata.component.BotJobModeComponent;
-import pro.piconico.automata.network.message.BotJobModeChangeMessage;
+import pro.piconico.automata.component.AutomatoolModeComponent;
+import pro.piconico.automata.network.message.AutomatoolModeChangeMessage;
 import pro.piconico.automata.registry.AutomataRegistries;
 
-public class BotJobModeChangeHandler {
-    public static void handle(BotJobModeChangeMessage message, ClientAccess clientAccess) {
+public class AutomatoolModeChangeHandler {
+    public static void handle(AutomatoolModeChangeMessage message, ClientAccess clientAccess) {
         ItemStack stack = clientAccess.player().getInventory().getStack(message.slot());
-        BotJobType<?> jobType = AutomataRegistries.BOT_JOB_TYPE.get(message.jobTypeId());
-        BotJobModeComponent.set(stack, jobType);
+        AutomatoolMode mode = AutomataRegistries.AUTOMATOOL_MODE.get(message.modeId());
+        AutomatoolModeComponent.set(stack, mode);
 
         if (clientAccess.runtime().currentScreen instanceof BotDeviceScreen botDeviceScreen) {
             botDeviceScreen.rebuildTab();

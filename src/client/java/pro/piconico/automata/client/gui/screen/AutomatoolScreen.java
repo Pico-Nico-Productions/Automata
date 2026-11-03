@@ -9,11 +9,11 @@ import io.wispforest.owo.ui.core.Sizing;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 import pro.piconico.automata.bot.device.ItemBotDevice;
-import pro.piconico.automata.bot.job.BotJobType;
+import pro.piconico.automata.bot.mode.AutomatoolMode;
 import pro.piconico.automata.client.ui.component.AutomataUIComponents;
 import pro.piconico.automata.client.ui.tab.bot.BotDeviceHomeTab;
-import pro.piconico.automata.component.BotJobModeComponent;
-import pro.piconico.automata.network.message.BotJobModeChangeMessage;
+import pro.piconico.automata.component.AutomatoolModeComponent;
+import pro.piconico.automata.network.message.AutomatoolModeChangeMessage;
 import pro.piconico.automata.registry.AutomataMessages;
 import pro.piconico.automata.registry.AutomataRegistries;
 import pro.piconico.automata.screen.BotDeviceScreenHandler;
@@ -32,15 +32,15 @@ public class AutomatoolScreen extends BotDeviceScreen<ItemBotDeviceScreenHandler
             parent.child(AutomataUIComponents.centerHeader(getName(handler)));
 
             ItemBotDevice itemDevice = (ItemBotDevice)handler.device;
-            BotJobType<?> selectedJobType = BotJobModeComponent.getOrDefault(itemDevice.getStack());
+            AutomatoolMode selectedMode = AutomatoolModeComponent.getOrDefault(itemDevice.getStack());
 
             FlowLayout modePanel = UIContainers.horizontalFlow(Sizing.fill(), Sizing.content());
             modePanel.horizontalAlignment(HorizontalAlignment.CENTER);
-            for (BotJobType<?> jobType : AutomataRegistries.BOT_JOB_TYPE.stream().toList()) {
-                ButtonComponent modeButton = UIComponents.button(jobType.getName(), ignored -> {
-                    AutomataMessages.BOT_DEVICE_CHANNEL.clientHandle().send(new BotJobModeChangeMessage(itemDevice.slot, jobType));
+            for (AutomatoolMode mode : AutomataRegistries.AUTOMATOOL_MODE.stream().toList()) {
+                ButtonComponent modeButton = UIComponents.button(mode.getName(), ignored -> {
+                    AutomataMessages.BOT_DEVICE_CHANNEL.clientHandle().send(new AutomatoolModeChangeMessage(itemDevice.slot, mode));
                 });
-                modeButton.active(jobType != selectedJobType);
+                modeButton.active(mode != selectedMode);
                 modePanel.child(modeButton);
             }
             parent.child(UIContainers.horizontalScroll(Sizing.fill(), Sizing.content(), modePanel));

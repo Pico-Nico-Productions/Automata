@@ -4,6 +4,7 @@ import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.piconico.automata.bot.network.BotNetworkManager;
+import pro.piconico.automata.registry.AutomataAutomatoolModes;
 import pro.piconico.automata.registry.AutomataBlocks;
 import pro.piconico.automata.registry.AutomataBotDevices;
 import pro.piconico.automata.registry.AutomataBotJobs;
@@ -38,6 +39,7 @@ public class Automata implements ModInitializer {
         AutomataSyncManagers.initialize();
 		AutomataScreenHandlers.initialize();
         AutomataCommands.initialize();
+        AutomataAutomatoolModes.initialize();
         AutomataBotDevices.initialize();
         AutomataBotJobs.initialize();
         AutomataBots.initialize();

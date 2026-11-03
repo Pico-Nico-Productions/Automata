@@ -6,6 +6,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
@@ -13,12 +14,12 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import pro.piconico.automata.component.SelectionComponent;
 import pro.piconico.automata.component.SelectionComponent.Selection;
-import pro.piconico.automata.component.BotJobModeComponent;
+import pro.piconico.automata.component.AutomatoolModeComponent;
 import pro.piconico.automata.component.BotTeamComponent;
 import pro.piconico.automata.registry.AutomataItems;
 import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.bot.device.ItemBotDevice;
-import pro.piconico.automata.bot.job.BotJobType;
+import pro.piconico.automata.bot.mode.AutomatoolMode;
 import pro.piconico.automata.bot.team.BotTeamMember.BotTeamPermission;
 
 public class AutomatoolItem extends Item {
@@ -36,13 +37,13 @@ public class AutomatoolItem extends Item {
         if (!new ItemBotDevice(player, automatoolStack).hasPermission(BotTeamPermission.SELECT, true))
             return ActionResult.FAIL;
 
-        BotJobType<?> jobType = BotJobModeComponent.getOrDefault(automatoolStack);
+        AutomatoolMode mode = AutomatoolModeComponent.getOrDefault(automatoolStack);
 
-        if (jobType.requiredSelectionCount().isEmpty())
+        if (mode.requiredSelectionCount().isEmpty())
             return ActionResult.PASS;
 
-        if (jobType.getRequiredSelectionCount() < selection.toInt()) {
-            selection = jobType.requiredSelectionCount().get();
+        if (mode.getRequiredSelectionCount() < selection.toInt()) {
+            selection = mode.requiredSelectionCount().get();
         }
         Optional<SelectionComponent> sameWorldSelection = SelectionComponent.get(automatoolStack).filter(s -> s.worldKey().equals(world.getRegistryKey()));
         Optional<BlockPos> pos1 = Optional.ofNullable(selection == Selection.ONE ? pos : sameWorldSelection.map(s -> s.selection1().orElse(null)).orElse(null));
@@ -56,8 +57,8 @@ public class AutomatoolItem extends Item {
 
     private static ActionResult dispatch(PlayerEntity player, ItemStack automatoolStack) {
         Optional<SelectionComponent> selectionComponent = SelectionComponent.get(automatoolStack);
-        BotJobType<?> jobType = BotJobModeComponent.getOrDefault(automatoolStack);
-        int requiredSelectionCount = jobType.getRequiredSelectionCount();
+        AutomatoolMode mode = AutomatoolModeComponent.getOrDefault(automatoolStack);
+        int requiredSelectionCount = mode.getRequiredSelectionCount();
 
         if (selectionComponent.map(s -> s.getSelectionCount()).orElse(0) < requiredSelectionCount) {
             player.sendMessage(AutomataTexts.getSelectionInvalid(requiredSelectionCount), true);
@@ -79,10 +80,10 @@ public class AutomatoolItem extends Item {
             return ActionResult.FAIL;
         }
 
-        Integer jobCount = jobType.dispatch().apply(selectionWorld.get(), BotTeamComponent.get(automatoolStack).get(), selectionComponent.get().toList());
+        Text outcomeText = mode.dispatch().apply(selectionWorld.get(), BotTeamComponent.get(automatoolStack).get(), selectionComponent.get().toList());
 
         SelectionComponent.set(automatoolStack, Optional.empty());
-        player.sendMessage(AutomataTexts.getBotJobsAdded(jobCount), true);
+        player.sendMessage(outcomeText, true);
 
         return ActionResult.SUCCESS_SERVER;
     }

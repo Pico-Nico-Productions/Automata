@@ -5,7 +5,7 @@ import pro.piconico.automata.bot.device.BotDevice;
 import pro.piconico.automata.bot.team.BotTeam;
 import pro.piconico.automata.bot.team.BotTeam.BotTeamSettings;
 import pro.piconico.automata.network.message.BotDeviceTeamChangeMessage;
-import pro.piconico.automata.network.message.BotJobModeChangeMessage;
+import pro.piconico.automata.network.message.AutomatoolModeChangeMessage;
 import pro.piconico.automata.network.message.BotTeamCreateC2SMessage;
 import pro.piconico.automata.network.message.BotTeamDeleteC2SMessage;
 import pro.piconico.automata.network.message.BotTeamMemberRoleChangeC2SMessage;
@@ -23,7 +23,7 @@ public class AutomataMessages {
         });
 
         BOT_DEVICE_CHANNEL.registerServerbound(BotDeviceTeamChangeMessage.class, BotDeviceTeamChangeMessage::handle);
-        BOT_DEVICE_CHANNEL.registerServerbound(BotJobModeChangeMessage.class, BotJobModeChangeMessage::handle);
+        BOT_DEVICE_CHANNEL.registerServerbound(AutomatoolModeChangeMessage.class, AutomatoolModeChangeMessage::handle);
         BOT_DEVICE_CHANNEL.registerServerbound(BotTeamCreateC2SMessage.class, BotTeamCreateC2SMessage::handle);
         BOT_DEVICE_CHANNEL.registerServerbound(BotTeamDeleteC2SMessage.class, BotTeamDeleteC2SMessage::handle);
         BOT_DEVICE_CHANNEL.registerServerbound(BotTeamMemberRoleChangeC2SMessage.class, BotTeamMemberRoleChangeC2SMessage::handle);

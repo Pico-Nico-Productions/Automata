@@ -14,13 +14,13 @@ public class AutomataRegistry {
     public static final String ROBOPORT = "roboport";
     public static final String SELECTION = "selection";
 
+    public static final String AUTOMATOOL_MODE = AUTOMATOOL + "_mode";
     public static final String BOT_DEVICE = BOT + "_device";
     public static final String BOT_JOB = BOT + "_job";
     public static final String BOT_TEAM = BOT + "_team";
     public static final String CONSTRUCTION_BOT = "construction_" + BOT;
 
     public static final String BLOCK_BOT_DEVICE = "block_" + BOT_DEVICE;
-    public static final String BOT_JOB_MODE = BOT_JOB + "_mode";
     public static final String BOT_JOB_PERSISTENT_STATE = BOT_JOB + "_persistent_state";
     public static final String BOT_TEAM_PERSISTENT_STATE = BOT_TEAM + "_persistent_state";
     public static final String ENTITY_BOT_DEVICE = "entity_" + BOT_DEVICE;
@@ -42,7 +42,7 @@ public class AutomataRegistry {
         return "text." + Automata.MOD_ID + "." + name;
     }
 
-    public static String toBotJobTypeTranslationKey(String name) {
-        return BOT_JOB + "." + Automata.MOD_ID + "." + name;
+    public static String toAutomatoolModeTranslationKey(String name) {
+        return AUTOMATOOL_MODE + "." + Automata.MOD_ID + "." + name;
     }
 }
