@@ -7,7 +7,7 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.World;
 
-public class ChunkUtils {
+public class ChunkPosUtils {
     public static final int CHUNK_SIZE = 16;
 
     public static BlockPos getStartPos(ChunkPos chunkPos, int minY) {

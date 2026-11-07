@@ -14,7 +14,7 @@ import pro.piconico.automata.bot.job.BotJobType;
 import pro.piconico.automata.bot.network.BotNetwork;
 import pro.piconico.automata.client.network.BotCache;
 import pro.piconico.automata.client.registry.AutomataClientColors;
-import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
+import pro.piconico.automata.util.math.ChunkPosUtils.ChunkBounds;
 
 public class BotCacheRenderer {
     private static void renderNetworks(WorldRenderContext context) {

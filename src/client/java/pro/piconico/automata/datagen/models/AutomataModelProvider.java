@@ -18,6 +18,7 @@ public class AutomataModelProvider extends FabricModelProvider {
     @Override
     public void generateItemModels(ItemModelGenerator itemModelGenerator) {
         itemModelGenerator.register(AutomataItems.AUTOMATOOL, Models.GENERATED);
+        itemModelGenerator.register(AutomataItems.BLUEPRINT, Models.GENERATED);
         itemModelGenerator.register(AutomataItems.CONSTRUCTION_BOT, Models.GENERATED);
     }
 

@@ -11,6 +11,7 @@ import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -31,17 +32,17 @@ public abstract class BotDeviceBlock<T extends BlockBotDevice> extends BlockWith
 
     @Override
     public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
-        if (world.isClient() || !(placer instanceof PlayerEntity player))
+        if (world.isClient() || !(placer instanceof ServerPlayerEntity serverPlayer))
             return;
 
-        SequencedMap<Hand,ItemStack> teamStacks = LivingEntityUtils.getHeldStacks(player, BotTeamComponent::exists);
+        SequencedMap<Hand,ItemStack> teamStacks = LivingEntityUtils.getHeldStacks(serverPlayer, BotTeamComponent::exists);
 
         if (teamStacks.isEmpty())
             return;
 
         Optional<UUID> teamUuid = BotTeamComponent.get(teamStacks.firstEntry().getValue());
 
-        if (!BotTeamPersistentState.teamExistsAndHasMemberWith(teamUuid.get(), player, BotTeamPermission.CHANGE_DEVICE_TEAM))
+        if (!BotTeamPersistentState.teamExistsAndHasMemberWith(teamUuid.get(), serverPlayer, BotTeamPermission.CHANGE_DEVICE_TEAM))
             return;
 
         world.getBlockEntity(pos, getEntityType()).get().setTeamUuid(teamUuid);

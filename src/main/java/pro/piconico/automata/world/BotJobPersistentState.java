@@ -31,7 +31,7 @@ import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.inventory.InventoryUtils.ItemStackMutation;
 import pro.piconico.automata.registry.AutomataPersistentStates;
 import pro.piconico.automata.util.MapUtils;
-import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
+import pro.piconico.automata.util.math.ChunkPosUtils.ChunkBounds;
 
 public class BotJobPersistentState extends PersistentState {
     public static final int SHORT_TICK_DELAY = 3, LONG_TICK_DELAY = 5;

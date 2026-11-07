@@ -34,7 +34,7 @@ public class AutomatoolScreen extends BotDeviceScreen<ItemBotDeviceScreenHandler
             ItemBotDevice itemDevice = (ItemBotDevice)handler.device;
             AutomatoolMode selectedMode = AutomatoolModeComponent.getOrDefault(itemDevice.getStack());
 
-            FlowLayout modePanel = UIContainers.horizontalFlow(Sizing.fill(), Sizing.content());
+            FlowLayout modePanel = UIContainers.horizontalFlow(Sizing.content(), Sizing.content());
             modePanel.horizontalAlignment(HorizontalAlignment.CENTER);
             for (AutomatoolMode mode : AutomataRegistries.AUTOMATOOL_MODE.stream().toList()) {
                 ButtonComponent modeButton = UIComponents.button(mode.getName(), ignored -> {

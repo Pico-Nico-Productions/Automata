@@ -38,7 +38,7 @@ import pro.piconico.automata.item.ItemUtils.PredicateItemStack;
 import pro.piconico.automata.loader.LoaderUtils;
 import pro.piconico.automata.registry.AutomataEntities;
 import pro.piconico.automata.util.MapUtils;
-import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
+import pro.piconico.automata.util.math.ChunkPosUtils.ChunkBounds;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
 public class BotNetworkManager {

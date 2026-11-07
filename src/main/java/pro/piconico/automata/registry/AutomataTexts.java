@@ -157,11 +157,10 @@ public class AutomataTexts {
         return Text.translatable(NAME_KEY);
     }
 
-    /** Expected arguments: required selection count */
     public static final String SELECTION_INVALID = AutomataRegistry.toTextTranslationKey("selection_invalid");
 
-    public static final MutableText getSelectionInvalid(int requiredSelectionCount) {
-        return Text.translatable(SELECTION_INVALID, requiredSelectionCount);
+    public static final MutableText getSelectionInvalid() {
+        return Text.translatable(SELECTION_INVALID);
     }
 
     public static final String UPDATE_KEY = AutomataRegistry.toTextTranslationKey("update");

@@ -1,9 +1,7 @@
 package pro.piconico.automata.bot.job;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.block.Block;
@@ -14,7 +12,6 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.World;
@@ -23,8 +20,6 @@ import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.inventory.InventoryUtils;
 import pro.piconico.automata.item.ItemUtils.PredicateItemStack;
 import pro.piconico.automata.registry.AutomataBotJobs;
-import pro.piconico.automata.registry.AutomataTexts;
-import pro.piconico.automata.world.BotJobPersistentState;
 
 // TODO: Add silk touch check to predicate
 public record DeconstructionBotJob(BlockPos pos) implements BotJob {
@@ -101,28 +96,5 @@ public record DeconstructionBotJob(BlockPos pos) implements BotJob {
     @Override
     public void stop(ServerWorld serverWorld, BotEntity bot) {
         serverWorld.setBlockBreakingInfo(bot.getId(), pos, BlockUtils.BREAK_NOT_IN_PROGRESS);
-    }
-
-    public static Text dispatch(ServerWorld serverWorld, UUID teamUuid, List<BlockPos> selections) {
-        if (selections.isEmpty())
-            return AutomataTexts.getBotJobsAdded(0);
-
-        BlockPos selection1 = selections.get(0), selection2 = selections.size() > 1 ? selections.get(1) : selection1;
-        BlockPos min = BlockPos.min(selection1, selection2), max = BlockPos.max(selection1, selection2);
-        ArrayList<BotJob> jobsToAdd = new ArrayList<>();
-        for (int x = min.getX(); x <= max.getX(); x++) {
-            for (int y = min.getY(); y <= max.getY(); y++) {
-                for (int z = min.getZ(); z <= max.getZ(); z++) {
-                    DeconstructionBotJob deconstructionJob = new DeconstructionBotJob(new BlockPos(x, y, z));
-                    if (!deconstructionJob.canStart(serverWorld))
-                        continue;
-
-                    jobsToAdd.add(deconstructionJob);
-                }
-            }
-        }
-        int jobCount = BotJobPersistentState.addJobs(teamUuid, jobsToAdd, serverWorld);
-
-        return AutomataTexts.getBotJobsAdded(jobCount);
     }
 }

@@ -49,7 +49,7 @@ import pro.piconico.automata.entity.ai.goal.BotStoreItemsGoal;
 import pro.piconico.automata.inventory.InventoryUtils;
 import pro.piconico.automata.item.ItemUtils.PredicateItemStack;
 import pro.piconico.automata.screen.BotScreenHandler;
-import pro.piconico.automata.util.math.ChunkUtils;
+import pro.piconico.automata.util.math.ChunkPosUtils;
 import pro.piconico.automata.entity.ai.goal.BotReturnToRoboportGoal;
 import pro.piconico.automata.world.BotJobPersistentState;
 
@@ -59,7 +59,7 @@ public abstract class BotEntity extends EntityBotDevice implements ListInventory
     public static final int INVENTORY_SIZE = 3;
     public static final double SPEED = 0.65;
     public static final int INTERACT_DISTANCE = 1;
-    public static final float MAX_FOLLOW_RANGE = 2F * ChunkUtils.CHUNK_SIZE;
+    public static final float MAX_FOLLOW_RANGE = 2F * ChunkPosUtils.CHUNK_SIZE;
 
     @FunctionalInterface
     public interface EndJob {

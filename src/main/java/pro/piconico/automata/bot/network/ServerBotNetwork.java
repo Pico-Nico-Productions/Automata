@@ -27,7 +27,7 @@ import pro.piconico.automata.entity.BotEntity;
 import pro.piconico.automata.inventory.InventoryUtils;
 import pro.piconico.automata.item.ItemUtils.PredicateItemStack;
 import pro.piconico.automata.registry.AutomataBots;
-import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
+import pro.piconico.automata.util.math.ChunkPosUtils.ChunkBounds;
 
 public class ServerBotNetwork extends BotNetwork {
     final ServerWorld serverWorld;

@@ -7,6 +7,7 @@ import pro.piconico.automata.Automata;
 
 public class AutomataRegistry {
     public static final String AUTOMATOOL = "automatool";
+    public static final String BLUEPRINT = "blueprint";
     public static final String BOT = "bot";
     public static final String BOT_SYNC_S2C_PACKET = "bot_sync_s2c_packet";
     public static final String DECONSTRUCTION = "deconstruction";

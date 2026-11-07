@@ -6,17 +6,21 @@ import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.World;
 import pro.piconico.automata.registry.AutomataComponents;
+import pro.piconico.automata.registry.RegistryUtils;
+import pro.piconico.automata.util.math.BlockPosUtils;
 
 public record SelectionComponent(RegistryKey<World> worldKey, Optional<BlockPos> selection1, Optional<BlockPos> selection2) {
     public enum Selection {
@@ -48,8 +52,27 @@ public record SelectionComponent(RegistryKey<World> worldKey, Optional<BlockPos>
                 Optional.ofNullable(selection == Selection.TWO ? pos : null));
     }
 
+    @Override
+    public final boolean equals(Object object) {
+        if (this == object)
+            return true;
+
+        if (!(object instanceof SelectionComponent selectionComponent))
+            return false;
+
+        return RegistryUtils.keysEqual(worldKey, selectionComponent.worldKey) && selection1.equals(selectionComponent.selection1)
+                && selection2.equals(selectionComponent.selection2);
+    }
+
     public Optional<ServerWorld> getWorld(MinecraftServer server) {
         return Optional.ofNullable(server.getWorld(worldKey));
+    }
+
+    public Optional<ServerWorld> getWorld(PlayerEntity player) {
+        if (!(player instanceof ServerPlayerEntity serverPlayer))
+            return Optional.empty();
+
+        return getWorld(serverPlayer.getEntityWorld().getServer());
     }
 
     public static Optional<SelectionComponent> get(ItemStack stack) {
@@ -74,7 +97,11 @@ public record SelectionComponent(RegistryKey<World> worldKey, Optional<BlockPos>
         }
     }
 
-    public List<BlockPos> toList() {
+    public int getSelectionCount() {
+        return selection1.map(ignored -> 1).orElse(0) + selection2.map(ignored -> 1).orElse(0);
+    }
+
+    public List<BlockPos> getSelections() {
         ArrayList<BlockPos> selections = new ArrayList<>();
         selection1.ifPresent(s -> selections.add(s));
         selection2.ifPresent(s -> selections.add(s));
@@ -82,15 +109,12 @@ public record SelectionComponent(RegistryKey<World> worldKey, Optional<BlockPos>
         return selections;
     }
 
-    public int getSelectionCount() {
-        return selection1.map(ignored -> 1).orElse(0) + selection2.map(ignored -> 1).orElse(0);
-    }
-
     public Optional<Box> getSelectionBox() {
-        if (getSelectionCount() < 2) {
+        if (getSelectionCount() == 0)
             return Optional.empty();
-        }
 
-        return Optional.of(Box.enclosing(selection1.get(), selection2.get()));
+        List<BlockPos> selections = getSelections();
+        BlockPos min = BlockPosUtils.min(selections).get(), max = BlockPosUtils.max(selections).get();
+        return Optional.of(Box.enclosing(min, max));
     }
 }

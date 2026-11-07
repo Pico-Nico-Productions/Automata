@@ -39,10 +39,11 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
         translationBuilder.add(AutomataTexts.MOUSE_LEFT_KEY, "Left Click");
         translationBuilder.add(AutomataTexts.MOUSE_RIGHT_KEY, "Right Click");
         translationBuilder.add(AutomataTexts.NAME_KEY, "Name");
-        translationBuilder.add(AutomataTexts.SELECTION_INVALID, "Must have %1$s selection(s) to do that");
+        translationBuilder.add(AutomataTexts.SELECTION_INVALID, "Must have a valid selection to do that");
         translationBuilder.add(AutomataTexts.UPDATE_KEY, "Update");
 
         translationBuilder.add(AutomataItems.AUTOMATOOL, "Automatool");
+        translationBuilder.add(AutomataItems.BLUEPRINT, "Blueprint");
         translationBuilder.add(AutomataItems.CONSTRUCTION_BOT, "Construction Bot");
 
         AutomataLanguageGenerationUtils.addBlockTranslation(translationBuilder, AutomataBlocks.LOGISTIC_CHEST, "Logistic Chest");
@@ -50,6 +51,7 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
 
         translationBuilder.add(AutomataEntities.CONSTRUCTION_BOT, "Construction Bot");
 
+        translationBuilder.add(AutomataAutomatoolModes.BLUEPRINT.getTranslationKey(), "Blueprint");
         translationBuilder.add(AutomataAutomatoolModes.DECONSTRUCTION.getTranslationKey(), "Deconstruction");
     }
 }

@@ -27,7 +27,7 @@ import pro.piconico.automata.component.BotTeamComponent;
 import pro.piconico.automata.entity.LivingEntityUtils;
 import pro.piconico.automata.event.HoldItemCallback;
 import pro.piconico.automata.network.packet.BotSyncS2CPacket;
-import pro.piconico.automata.util.math.ChunkUtils.ChunkBounds;
+import pro.piconico.automata.util.math.ChunkPosUtils.ChunkBounds;
 import pro.piconico.automata.world.BotJobPersistentState;
 import pro.piconico.automata.world.BotTeamPersistentState;
 import pro.piconico.automata.world.BotTeamPersistentState.Mutation;

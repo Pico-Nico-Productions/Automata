@@ -10,11 +10,13 @@ import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import pro.piconico.automata.item.AutomatoolItem;
+import pro.piconico.automata.item.BlueprintItem;
 import pro.piconico.automata.item.BotItem;
 import pro.piconico.automata.item.ConstructionBotItem;
 
 public class AutomataItems {
     public static final Item AUTOMATOOL = register(AutomataRegistry.AUTOMATOOL, AutomatoolItem::new);
+    public static final Item BLUEPRINT = register(AutomataRegistry.BLUEPRINT, BlueprintItem::new);
     public static final BotItem CONSTRUCTION_BOT = register(AutomataRegistry.CONSTRUCTION_BOT, ConstructionBotItem::new);
 
     private static <T extends Item> T register(String name, Function<Settings, T> itemFactory) {

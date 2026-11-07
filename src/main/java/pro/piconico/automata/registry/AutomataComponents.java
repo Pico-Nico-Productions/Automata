@@ -10,10 +10,12 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import pro.piconico.automata.component.SelectionComponent;
 import pro.piconico.automata.component.AutomatoolModeComponent;
+import pro.piconico.automata.component.BlueprintComponent;
 import pro.piconico.automata.component.BotTeamComponent;
 
 public final class AutomataComponents {
     public static final ComponentType<AutomatoolModeComponent> AUTOMATOOL_MODE = register(AutomataRegistry.AUTOMATOOL_MODE, AutomatoolModeComponent.CODEC, AutomatoolModeComponent.PACKET_CODEC);
+    public static final ComponentType<BlueprintComponent> BLUEPRINT_COMPONENT = register(AutomataRegistry.BLUEPRINT, BlueprintComponent.CODEC, BlueprintComponent.PACKET_CODEC);
     public static final ComponentType<BotTeamComponent> BOT_TEAM = register(AutomataRegistry.BOT_TEAM, BotTeamComponent.CODEC, BotTeamComponent.PACKET_CODEC);
     public static final ComponentType<SelectionComponent> SELECTION = register(AutomataRegistry.SELECTION, SelectionComponent.CODEC, SelectionComponent.PACKET_CODEC);
 

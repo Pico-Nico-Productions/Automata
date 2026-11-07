@@ -15,22 +15,22 @@ public class SelectionRenderer {
     private static void renderSelection(WorldRenderContext context) {
         MinecraftClient client = MinecraftClient.getInstance();
         SequencedMap<Hand, ItemStack> stacks = LivingEntityUtils.getHeldStacks(client.player, SelectionComponent::exists);
+        for (ItemStack stack : stacks.values()) {
+            SelectionComponent selection = SelectionComponent.get(stack).get();
 
-        if (stacks.isEmpty())
-            return;
+            if (!client.world.getRegistryKey().equals(selection.worldKey()))
+                continue;
 
-        SelectionComponent selection = SelectionComponent.get(stacks.firstEntry().getValue()).get();
+            if (selection.getSelectionCount() > 1) {
+                RenderUtils.drawBoxOutline(context, selection.getSelectionBox().get(), AutomataClientColors.SELECTION_BOUNDS);
+            }
 
-        if (!client.world.getRegistryKey().equals(selection.worldKey()))
-            return;
+            if (selection.selection1().equals(selection.selection2()))
+                continue;
 
-        selection.getSelectionBox().ifPresent(box -> RenderUtils.drawBoxOutline(context, box, AutomataClientColors.SELECTION_BOUNDS));
-
-        if (selection.selection1().equals(selection.selection2()))
-            return;
-
-        selection.selection1().ifPresent(selection1 -> RenderUtils.drawBoxOutline(context, new Box(selection1), AutomataClientColors.SELECTION1));
-        selection.selection2().ifPresent(selection2 -> RenderUtils.drawBoxOutline(context, new Box(selection2), AutomataClientColors.SELECTION2));
+            selection.selection1().ifPresent(selection1 -> RenderUtils.drawBoxOutline(context, new Box(selection1), AutomataClientColors.SELECTION1));
+            selection.selection2().ifPresent(selection2 -> RenderUtils.drawBoxOutline(context, new Box(selection2), AutomataClientColors.SELECTION2));
+        }
     }
 
     public static void initialize() {

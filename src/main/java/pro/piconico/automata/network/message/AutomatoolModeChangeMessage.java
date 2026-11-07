@@ -1,10 +1,12 @@
 package pro.piconico.automata.network.message;
 
+import java.util.Optional;
 import io.wispforest.owo.network.ServerAccess;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import pro.piconico.automata.bot.mode.AutomatoolMode;
 import pro.piconico.automata.component.AutomatoolModeComponent;
+import pro.piconico.automata.component.SelectionComponent;
 import pro.piconico.automata.registry.AutomataMessages;
 import pro.piconico.automata.registry.AutomataRegistries;
 
@@ -28,6 +30,9 @@ public record AutomatoolModeChangeMessage(int slot, Identifier modeId) {
             return;
 
         AutomatoolModeComponent.set(stack, mode);
+        if (!mode.requiresSelection()) {
+            SelectionComponent.set(stack, Optional.empty());
+        }
 
         AutomataMessages.BOT_DEVICE_CHANNEL.serverHandle(serverAccess.player()).send(message);
     }

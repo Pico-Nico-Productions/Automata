@@ -11,10 +11,12 @@ import net.minecraft.util.Uuids;
 import pro.piconico.automata.registry.AutomataComponents;
 
 public record BotTeamComponent(UUID teamUuid) {
-    public static final Codec<BotTeamComponent> CODEC = RecordCodecBuilder
-            .create(instance -> instance.group(Uuids.INT_STREAM_CODEC.fieldOf("team_uuid").forGetter(BotTeamComponent::teamUuid)).apply(instance, BotTeamComponent::new));
+    public static final Codec<BotTeamComponent> CODEC = RecordCodecBuilder.create(instance -> instance.group( //
+            Uuids.INT_STREAM_CODEC.fieldOf("team_uuid").forGetter(BotTeamComponent::teamUuid)) //
+            .apply(instance, BotTeamComponent::new));
 
-    public static final PacketCodec<ByteBuf, BotTeamComponent> PACKET_CODEC = PacketCodec.tuple(Uuids.PACKET_CODEC, component -> component.teamUuid,
+    public static final PacketCodec<ByteBuf, BotTeamComponent> PACKET_CODEC = PacketCodec.tuple( //
+            Uuids.PACKET_CODEC, BotTeamComponent::teamUuid, //
             BotTeamComponent::new);
 
     public static Optional<UUID> get(ItemStack stack) {

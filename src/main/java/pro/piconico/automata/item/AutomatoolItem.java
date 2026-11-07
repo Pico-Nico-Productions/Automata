@@ -1,11 +1,12 @@
 package pro.piconico.automata.item;
 
 import java.util.Optional;
+import java.util.UUID;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.server.world.ServerWorld;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -29,6 +30,11 @@ public class AutomatoolItem extends Item {
 
     //#region Actions
     private static ActionResult select(PlayerEntity player, ItemStack automatoolStack, BlockPos pos, Selection selection) {
+        AutomatoolMode mode = AutomatoolModeComponent.getOrDefault(automatoolStack);
+
+        if (!mode.requiresSelection())
+            return ActionResult.PASS;
+
         World world = player.getEntityWorld();
 
         if (world.isClient())
@@ -37,17 +43,12 @@ public class AutomatoolItem extends Item {
         if (!new ItemBotDevice(player, automatoolStack).hasPermission(BotTeamPermission.SELECT, true))
             return ActionResult.FAIL;
 
-        AutomatoolMode mode = AutomatoolModeComponent.getOrDefault(automatoolStack);
-
-        if (mode.requiredSelectionCount().isEmpty())
-            return ActionResult.PASS;
-
-        if (mode.getRequiredSelectionCount() < selection.toInt()) {
-            selection = mode.requiredSelectionCount().get();
+        if (selection.toInt() > Selection.TWO.toInt()) {
+            selection = Selection.TWO;
         }
         Optional<SelectionComponent> sameWorldSelection = SelectionComponent.get(automatoolStack).filter(s -> s.worldKey().equals(world.getRegistryKey()));
         Optional<BlockPos> pos1 = Optional.ofNullable(selection == Selection.ONE ? pos : sameWorldSelection.map(s -> s.selection1().orElse(null)).orElse(null));
-        Optional<BlockPos> pos2 = Optional.ofNullable(selection != Selection.ONE ? pos : sameWorldSelection.map(s -> s.selection2().orElse(null)).orElse(null));
+        Optional<BlockPos> pos2 = Optional.ofNullable(selection == Selection.TWO ? pos : sameWorldSelection.map(s -> s.selection2().orElse(null)).orElse(null));
         SelectionComponent.set(automatoolStack, Optional.of(new SelectionComponent(world.getRegistryKey(), pos1, pos2)));
 
         player.sendMessage(AutomataTexts.getBlockSelected(selection.toInt(), pos), true);
@@ -56,34 +57,22 @@ public class AutomatoolItem extends Item {
     }
 
     private static ActionResult dispatch(PlayerEntity player, ItemStack automatoolStack) {
-        Optional<SelectionComponent> selectionComponent = SelectionComponent.get(automatoolStack);
         AutomatoolMode mode = AutomatoolModeComponent.getOrDefault(automatoolStack);
-        int requiredSelectionCount = mode.getRequiredSelectionCount();
+        Optional<UUID> teamUuid = BotTeamComponent.get(automatoolStack);
+        Optional<SelectionComponent> selectionComponent = SelectionComponent.get(automatoolStack);
 
-        if (selectionComponent.map(s -> s.getSelectionCount()).orElse(0) < requiredSelectionCount) {
-            player.sendMessage(AutomataTexts.getSelectionInvalid(requiredSelectionCount), true);
-
+        Optional<Text> requirementFailure = AutomatoolMode.getRequirementFailure(mode, player, teamUuid, selectionComponent);
+        if (requirementFailure.isPresent()) {
+            player.sendMessage(requirementFailure.get(), true);
             return ActionResult.FAIL;
         }
 
-        if (!new ItemBotDevice(player, automatoolStack).hasPermission(BotTeamPermission.DISPATCH, true))
-            return ActionResult.FAIL;
-
-        if (player.getEntityWorld().isClient())
+        if (!(player instanceof ServerPlayerEntity serverPlayer))
             return ActionResult.SUCCESS;
 
-        Optional<ServerWorld> selectionWorld = selectionComponent.get().getWorld(player.getEntityWorld().getServer());
-
-        if (selectionWorld.isEmpty()) {
-            player.sendMessage(AutomataTexts.getSelectionInvalid(requiredSelectionCount), true);
-
-            return ActionResult.FAIL;
-        }
-
-        Text outcomeText = mode.dispatch().apply(selectionWorld.get(), BotTeamComponent.get(automatoolStack).get(), selectionComponent.get().toList());
-
+        Optional<Text> outcomeText = mode.dispatch().apply(serverPlayer, teamUuid, selectionComponent);
         SelectionComponent.set(automatoolStack, Optional.empty());
-        player.sendMessage(outcomeText, true);
+        outcomeText.ifPresent(text -> player.sendMessage(text, true));
 
         return ActionResult.SUCCESS_SERVER;
     }
