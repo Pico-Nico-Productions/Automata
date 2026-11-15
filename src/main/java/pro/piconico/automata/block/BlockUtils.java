@@ -8,20 +8,32 @@ import net.minecraft.world.World;
 public class BlockUtils {
     public static final int BREAK_NOT_IN_PROGRESS = -1, MAX_BREAK_PROGRESS = 10;
 
-    public static boolean isBreakableBlock(World world, BlockPos blockPos) {
+    public static boolean isPlaceableBlock(World world, BlockPos blockPos) {
         BlockState blockState = world.getBlockState(blockPos);
-        if (blockState.isAir() || blockState.getHardness(world, blockPos) < 0f)
+        if (blockState.isAir())
             return false;
 
         return blockState.contains(Properties.WATERLOGGED) || blockState.getFluidState().isEmpty();
     }
 
-    public static boolean isFluidSourceBlock(World world, BlockPos blockPos) {
+    public static boolean isBreakableBlock(World world, BlockPos blockPos) {
+        BlockState blockState = world.getBlockState(blockPos);
+        if (blockState.getHardness(world, blockPos) < 0f)
+            return false;
+
+        return isPlaceableBlock(world, blockPos);
+    }
+
+    public static boolean isFluidSource(World world, BlockPos blockPos) {
         return world.getBlockState(blockPos).getFluidState().isStill();
     }
 
+    public static boolean isConstructable(World world, BlockPos blockPos) {
+        return isPlaceableBlock(world, blockPos) || isFluidSource(world, blockPos);
+    }
+
     public static boolean isDeconstructable(World world, BlockPos blockPos) {
-        return isBreakableBlock(world, blockPos) || isFluidSourceBlock(world, blockPos);
+        return isBreakableBlock(world, blockPos) || isFluidSource(world, blockPos);
     }
 
     public static int getBreakProgress(float progress) {

@@ -12,6 +12,8 @@ public class AutomataClientColors {
 
     public static final Color NETWORK = Color.ofArgb(0x7FFF7FFF); // Pink
     public static final Color RESERVATION = Color.BLUE;
+
+    public static final Color BLUEPRINT = Color.ofArgb(0xBF7F7FFF); // Blue tint
     public static final Color DECONSTRUCTION = Color.RED;
     public static final Color JOB_DEFAULT = Color.WHITE;
 

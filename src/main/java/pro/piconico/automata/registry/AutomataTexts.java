@@ -163,6 +163,12 @@ public class AutomataTexts {
         return Text.translatable(SELECTION_INVALID);
     }
 
+    public static final String SELECTION_UNNECESSARY = AutomataRegistry.toTextTranslationKey("selection_unnecessary");
+
+    public static final MutableText getSelectionUnnecessary() {
+        return Text.translatable(SELECTION_UNNECESSARY);
+    }
+
     public static final String UPDATE_KEY = AutomataRegistry.toTextTranslationKey("update");
 
     public static final MutableText getUpdate() {

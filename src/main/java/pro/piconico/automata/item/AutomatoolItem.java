@@ -32,23 +32,25 @@ public class AutomatoolItem extends Item {
     private static ActionResult select(PlayerEntity player, ItemStack automatoolStack, BlockPos pos, Selection selection) {
         AutomatoolMode mode = AutomatoolModeComponent.getOrDefault(automatoolStack);
 
-        if (!mode.requiresSelection())
-            return ActionResult.PASS;
+        if (mode.maxSelections().isEmpty()) {
+            player.sendMessage(AutomataTexts.getSelectionUnnecessary(), true);
+            return ActionResult.FAIL;
+        }
 
         World world = player.getEntityWorld();
 
         if (world.isClient())
             return ActionResult.SUCCESS;
 
-        if (!new ItemBotDevice(player, automatoolStack).hasPermission(BotTeamPermission.SELECT, true))
+        if (mode.requiresTeam() && !new ItemBotDevice(player, automatoolStack).hasPermission(BotTeamPermission.SELECT, true))
             return ActionResult.FAIL;
 
-        if (selection.toInt() > Selection.TWO.toInt()) {
-            selection = Selection.TWO;
+        if (selection.toInt() > mode.maxSelections().get().toInt()) {
+            selection = mode.maxSelections().get();
         }
         Optional<SelectionComponent> sameWorldSelection = SelectionComponent.get(automatoolStack).filter(s -> s.worldKey().equals(world.getRegistryKey()));
         Optional<BlockPos> pos1 = Optional.ofNullable(selection == Selection.ONE ? pos : sameWorldSelection.map(s -> s.selection1().orElse(null)).orElse(null));
-        Optional<BlockPos> pos2 = Optional.ofNullable(selection == Selection.TWO ? pos : sameWorldSelection.map(s -> s.selection2().orElse(null)).orElse(null));
+        Optional<BlockPos> pos2 = Optional.ofNullable(selection != Selection.ONE ? pos : sameWorldSelection.map(s -> s.selection2().orElse(null)).orElse(null));
         SelectionComponent.set(automatoolStack, Optional.of(new SelectionComponent(world.getRegistryKey(), pos1, pos2)));
 
         player.sendMessage(AutomataTexts.getBlockSelected(selection.toInt(), pos), true);

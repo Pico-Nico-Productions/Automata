@@ -160,15 +160,17 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
     }
 
     public static Optional<ItemBotDevice> resolve(PlayerEntity player, ItemId deviceId) {
+        if (deviceId.slot < 0 || deviceId.slot >= player.getInventory().size())
+            return Optional.empty();
+
         ItemStack stack = player.getInventory().getStack(deviceId.slot);
 
         if (stack.isEmpty())
             return Optional.empty();
 
         if (player.currentScreenHandler instanceof BotDeviceScreenHandler deviceScreenHandler && deviceScreenHandler.device instanceof ItemBotDevice itemDevice
-                && !ItemStack.areItemsAndComponentsEqual(itemDevice.getStack(), stack)) {
+                && !ItemStack.areItemsAndComponentsEqual(itemDevice.getStack(), stack))
             return Optional.empty();
-        }
 
         return Optional.of(new ItemBotDevice(player, stack));
     }

@@ -10,12 +10,13 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import pro.piconico.automata.bot.team.BotTeamMember.BotTeamPermission;
 import pro.piconico.automata.component.SelectionComponent;
+import pro.piconico.automata.component.SelectionComponent.Selection;
 import pro.piconico.automata.registry.AutomataRegistries;
 import pro.piconico.automata.registry.AutomataRegistry;
 import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
-public record AutomatoolMode(boolean requiresTeam, boolean requiresSelection,
+public record AutomatoolMode(boolean requiresTeam, Optional<Selection> maxSelections,
         TriFunction<ServerPlayerEntity, Optional<UUID>, Optional<SelectionComponent>, Optional<Text>> dispatch) {
     public RegistryKey<AutomatoolMode> getRegistryKey() {
         return AutomataRegistries.AUTOMATOOL_MODE.getKey(this).get();
@@ -29,6 +30,10 @@ public record AutomatoolMode(boolean requiresTeam, boolean requiresSelection,
         return Text.translatable(getTranslationKey());
     }
 
+    public int maxSelectionsInt() {
+        return maxSelections.map(max -> max.toInt()).orElse(0);
+    }
+
     public static Optional<Text> getRequirementFailure(AutomatoolMode mode, PlayerEntity player, Optional<UUID> teamUuid,
             Optional<SelectionComponent> selectionComponent) {
         boolean isClient = player.getEntityWorld().isClient();
@@ -37,7 +42,7 @@ public record AutomatoolMode(boolean requiresTeam, boolean requiresSelection,
                 || BotTeamPersistentState.teamExistsAndHasMemberWith(uuid, (ServerPlayerEntity)player, BotTeamPermission.DISPATCH)).isEmpty())
             return Optional.of(AutomataTexts.getBotTeamEmpty());
 
-        if (mode.requiresSelection && selectionComponent.filter(selection -> (isClient || selection.getWorld(player).isPresent()) //
+        if (mode.maxSelections.isPresent() && selectionComponent.filter(selection -> (isClient || selection.getWorld(player).isPresent()) //
                 && selection.getSelectionCount() > 0).isEmpty())
             return Optional.of(AutomataTexts.getSelectionInvalid());
 

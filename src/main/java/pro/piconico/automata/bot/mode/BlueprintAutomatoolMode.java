@@ -13,7 +13,7 @@ import pro.piconico.automata.registry.AutomataAutomatoolModes;
 import pro.piconico.automata.registry.AutomataTexts;
 
 public class BlueprintAutomatoolMode {
-    public static Optional<Text> dispatch(ServerPlayerEntity serverPlayer, UUID teamUuid, ServerWorld serverWorld, List<BlockPos> selections) {
+    public static Optional<Text> dispatch(ServerPlayerEntity serverPlayer, ServerWorld serverWorld, List<BlockPos> selections) {
         if (selections.isEmpty())
             return Optional.of(AutomataTexts.getSelectionInvalid());
 
@@ -27,6 +27,6 @@ public class BlueprintAutomatoolMode {
         if (requirementFailure.isPresent())
             return requirementFailure;
 
-        return dispatch(serverPlayer, teamUuid.get(), selection.get().getWorld(serverPlayer).get(), selection.get().getSelections());
+        return dispatch(serverPlayer, selection.get().getWorld(serverPlayer).get(), selection.get().getSelections());
     }
 }

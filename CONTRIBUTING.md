@@ -49,8 +49,9 @@ Call **Text**.translatable with the translation key and arguments
 1. Create a class that extends **Item** [here](/src/main/java/pro/piconico/automata/item/)
 2. Register it as a public static final **Item** (or extending type) in [**AutomataItems**](/src/main/java/pro/piconico/automata/registry/AutomataItems.java)
 3. Add it to [**AutomataModelProvider**](/src/client/java/pro/piconico/automata/datagen/models/AutomataModelProvider.java)
+5. Add an image (.png) with the same name as the item [here](/src/main/resources/assets/automata/textures/item/) (Multiple images may be needed depending on the model used)
 4. Add it to all **FabricLanguageProvider**s [here](/src/client/java/pro/piconico/automata/datagen/lang/)
-5. Run **Data Generation** launch task
+6. Run **Data Generation** launch task
 
 
 ### Blocks
@@ -58,6 +59,7 @@ Call **Text**.translatable with the translation key and arguments
 1. Create a class that extends **Block** [here](/src/main/java/pro/piconico/automata/block/)
 2. Register it as a public static final **Block** in [**AutomataBlocks**](/src/main/java/pro/piconico/automata/registry/AutomataBlocks.java) (Creates **Item** for you)
 3. Add it to [**AutomataModelProvider**](/src/client/java/pro/piconico/automata/datagen/models/AutomataModelProvider.java)
+5. Add an image (.png) with the same name as the block [here](/src/main/resources/assets/automata/textures/block/) (Multiple images may be needed depending on the model used)
 4. Add it to [**AutomataBlockLootTableGeneratorProvider**](/src/client/java/pro/piconico/automata/datagen/loot_table/AutomataBlockLootTableProvider.java)
 5. Add it to all **FabricLanguageProvider**s [here](/src/client/java/pro/piconico/automata/datagen/lang/)
 6. Run **Data Generation** launch task
@@ -75,6 +77,7 @@ Call **Text**.translatable with the translation key and arguments
 2. Register it as a public static final **EntityType\<TLivingEntity\>** in [**AutomataEntities**](/src/main/java/pro/piconico/automata/registry/AutomataEntities.java)
 3. Create a class that extends **LivingEntityRenderer** [here](/src/client/java/pro/piconico/automata/client/render/entity/)
 4. Register it in [**AutomataClientRenderers**](/src/client/java/pro/piconico/automata/client/registry/AutomataClientRenderers.java)
+5. Add an image (.png) with the same name as the entity [here](/src/main/resources/assets/automata/textures/entity/) (Multiple images may be needed depending on the renderer)
 
 #### Block Entities
 1. [Create a block](#blocks) that extends **BlockWithEntity**

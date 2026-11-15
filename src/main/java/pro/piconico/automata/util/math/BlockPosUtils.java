@@ -3,6 +3,7 @@ package pro.piconico.automata.util.math;
 import java.util.Collection;
 import java.util.Optional;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 
 public class BlockPosUtils {
     public static Optional<BlockPos> min(Collection<BlockPos> positions) {
@@ -31,5 +32,19 @@ public class BlockPosUtils {
         }
 
         return Optional.of(new BlockPos(x, y, z));
+    }
+
+    public static BlockPos rotateRelativePos(BlockPos relativePos, Direction facing) {
+        int x = relativePos.getX();
+        int y = relativePos.getY();
+        int z = relativePos.getZ();
+
+        int dx = facing.getOffsetX();
+        int dz = facing.getOffsetZ();
+
+        int rotatedX = x * dz + z * dx;
+        int rotatedZ = -x * dx + z * dz;
+
+        return new BlockPos(rotatedX, y, rotatedZ);
     }
 }

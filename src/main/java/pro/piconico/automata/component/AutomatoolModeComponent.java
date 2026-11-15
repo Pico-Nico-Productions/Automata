@@ -44,6 +44,11 @@ public record AutomatoolModeComponent(RegistryKey<AutomatoolMode> modeKey) {
         if (oldMode.filter(j -> j == mode).isPresent())
             return;
 
-        stack.set(AutomataComponents.AUTOMATOOL_MODE, new AutomatoolModeComponent(mode.getRegistryKey()));
+        if (mode == getDefaultMode()) {
+            stack.remove(AutomataComponents.AUTOMATOOL_MODE);
+        }
+        else {
+            stack.set(AutomataComponents.AUTOMATOOL_MODE, new AutomatoolModeComponent(mode.getRegistryKey()));
+        }
     }
 }

@@ -1,4 +1,4 @@
-package pro.piconico.automata.client.render;
+package pro.piconico.automata.client.render.overlay;
 
 import java.util.SequencedMap;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
@@ -8,6 +8,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.Box;
 import pro.piconico.automata.client.registry.AutomataClientColors;
+import pro.piconico.automata.client.render.RenderUtils;
 import pro.piconico.automata.component.SelectionComponent;
 import pro.piconico.automata.entity.LivingEntityUtils;
 

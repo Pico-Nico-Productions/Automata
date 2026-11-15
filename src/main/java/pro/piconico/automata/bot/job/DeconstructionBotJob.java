@@ -86,7 +86,7 @@ public record DeconstructionBotJob(BlockPos pos) implements BotJob {
             }
             bot.addItemsToPickUp(serverWorld.getEntitiesByClass(ItemEntity.class, new Box(pos), entity -> true));
         }
-        if (BlockUtils.isFluidSourceBlock(serverWorld, pos)) {
+        if (BlockUtils.isFluidSource(serverWorld, pos)) {
             serverWorld.setBlockState(pos, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
         }
 

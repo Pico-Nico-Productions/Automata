@@ -11,17 +11,23 @@ import pro.piconico.automata.bot.mode.AutomatoolMode;
 import pro.piconico.automata.bot.mode.BlueprintAutomatoolMode;
 import pro.piconico.automata.bot.mode.DeconstructionAutomatoolMode;
 import pro.piconico.automata.component.SelectionComponent;
+import pro.piconico.automata.component.SelectionComponent.Selection;
 
 public class AutomataAutomatoolModes {
-    public static final AutomatoolMode BLUEPRINT = register(AutomataRegistry.BLUEPRINT, false, true, BlueprintAutomatoolMode::dispatch);
-    public static final AutomatoolMode DECONSTRUCTION = register(AutomataRegistry.DECONSTRUCTION, true, true, DeconstructionAutomatoolMode::dispatch);
+    public static final AutomatoolMode BLUEPRINT = register(AutomataRegistry.BLUEPRINT, false, Selection.TWO, BlueprintAutomatoolMode::dispatch);
+    public static final AutomatoolMode DECONSTRUCTION = register(AutomataRegistry.DECONSTRUCTION, true, Selection.TWO, DeconstructionAutomatoolMode::dispatch);
 
-    private static AutomatoolMode register(String name, boolean requiresTeam, boolean requiresSelection,
+    private static AutomatoolMode register(String name, boolean requiresTeam, Optional<Selection> maxSelections,
             TriFunction<ServerPlayerEntity, Optional<UUID>, Optional<SelectionComponent>, Optional<Text>> dispatch) {
         Identifier identifier = AutomataRegistry.id(name);
-        AutomatoolMode mode = Registry.register(AutomataRegistries.AUTOMATOOL_MODE, identifier, new AutomatoolMode(requiresTeam, requiresSelection, dispatch));
+        AutomatoolMode mode = Registry.register(AutomataRegistries.AUTOMATOOL_MODE, identifier, new AutomatoolMode(requiresTeam, maxSelections, dispatch));
 
         return mode;
+    }
+
+    private static AutomatoolMode register(String name, boolean requiresTeam, Selection maxSelections,
+            TriFunction<ServerPlayerEntity, Optional<UUID>, Optional<SelectionComponent>, Optional<Text>> dispatch) {
+        return register(name, requiresTeam, Optional.of(maxSelections), dispatch);
     }
 
     public static void initialize() {
