@@ -1,6 +1,5 @@
 package pro.piconico.automata.bot.job;
 
-import java.util.Collections;
 import java.util.List;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -23,9 +22,9 @@ import pro.piconico.automata.registry.AutomataBotJobs;
 
 // TODO: Add silk touch check to predicate
 public record DeconstructionBotJob(BlockPos pos) implements BotJob {
-    public static final MapCodec<DeconstructionBotJob> CODEC = RecordCodecBuilder
-            .mapCodec(instance -> instance.group(BlockPos.CODEC.fieldOf("pos").forGetter(job -> job.pos)).apply(instance, DeconstructionBotJob::new));
-    public static final float TOOL_SPEED = 1F / 30F, NO_TOOL_SPEED = 1F / 100F;
+    public static final MapCodec<DeconstructionBotJob> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group( //
+            BlockPos.CODEC.fieldOf("pos").forGetter(DeconstructionBotJob::pos) //
+    ).apply(instance, DeconstructionBotJob::new));
 
     @Override
     public BotJobType<?> getType() {
@@ -33,7 +32,7 @@ public record DeconstructionBotJob(BlockPos pos) implements BotJob {
     }
 
     private static List<PredicateItemStack> getToolPredicateItemStacks(BlockState state) {
-        return Collections.unmodifiableList(List.of(new PredicateItemStack(stack -> stack.isSuitableFor(state))));
+        return List.of(new PredicateItemStack(stack -> stack.isSuitableFor(state)));
     }
 
     @Override
@@ -69,11 +68,11 @@ public record DeconstructionBotJob(BlockPos pos) implements BotJob {
 
             BlockState state = serverWorld.getBlockState(pos);
             ItemStack toolStack = bot.getEquippedStack(EquipmentSlot.MAINHAND);
-            if (toolStack == ItemStack.EMPTY) {
+            if (toolStack.isEmpty() && state.isToolRequired()) {
                 toolStack = InventoryUtils.getSlot(bot, stack -> stack.isSuitableFor(state)).map(slot -> bot.getStack(slot)).orElse(ItemStack.EMPTY);
                 bot.equipStack(EquipmentSlot.MAINHAND, toolStack);
             }
-            float toolMultiplier = (!state.isToolRequired() || !toolStack.isEmpty()) ? TOOL_SPEED : NO_TOOL_SPEED;
+            float toolMultiplier = (!state.isToolRequired() || !toolStack.isEmpty()) ? BlockUtils.TOOL_SPEED : BlockUtils.NO_TOOL_SPEED;
             float progress = tick * toolStack.getMiningSpeedMultiplier(state) * toolMultiplier / state.getHardness(serverWorld, pos);
             serverWorld.setBlockBreakingInfo(bot.getId(), pos, BlockUtils.getBreakProgress(progress));
 

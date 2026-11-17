@@ -10,6 +10,7 @@ public class AutomataRegistry {
     public static final String BLUEPRINT = "blueprint";
     public static final String BOT = "bot";
     public static final String BOT_SYNC_S2C_PACKET = "bot_sync_s2c_packet";
+    public static final String CONSTRUCTION = "construction";
     public static final String DECONSTRUCTION = "deconstruction";
     public static final String LOGISTIC_CHEST = "logistic_chest";
     public static final String ROBOPORT = "roboport";
@@ -19,7 +20,7 @@ public class AutomataRegistry {
     public static final String BOT_DEVICE = BOT + "_device";
     public static final String BOT_JOB = BOT + "_job";
     public static final String BOT_TEAM = BOT + "_team";
-    public static final String CONSTRUCTION_BOT = "construction_" + BOT;
+    public static final String CONSTRUCTION_BOT = CONSTRUCTION + "_" + BOT;
 
     public static final String BLOCK_BOT_DEVICE = "block_" + BOT_DEVICE;
     public static final String BOT_JOB_PERSISTENT_STATE = BOT_JOB + "_persistent_state";

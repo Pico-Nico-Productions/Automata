@@ -5,9 +5,11 @@ import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 import pro.piconico.automata.bot.job.BotJob;
 import pro.piconico.automata.bot.job.BotJobType;
+import pro.piconico.automata.bot.job.ConstructionBotJob;
 import pro.piconico.automata.bot.job.DeconstructionBotJob;
 
 public class AutomataBotJobs {
+    public static final BotJobType<ConstructionBotJob> CONSTRUCTION = register(AutomataRegistry.CONSTRUCTION, ConstructionBotJob.CODEC);
     public static final BotJobType<DeconstructionBotJob> DECONSTRUCTION = register(AutomataRegistry.DECONSTRUCTION, DeconstructionBotJob.CODEC);
 
     private static <T extends BotJob> BotJobType<T> register(String name, MapCodec<T> codec) {

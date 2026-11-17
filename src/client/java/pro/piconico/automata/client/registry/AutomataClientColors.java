@@ -2,6 +2,7 @@ package pro.piconico.automata.client.registry;
 
 import io.wispforest.owo.ui.core.Color;
 import pro.piconico.automata.bot.job.BotJob;
+import pro.piconico.automata.bot.job.ConstructionBotJob;
 import pro.piconico.automata.bot.job.DeconstructionBotJob;
 import pro.piconico.automata.bot.team.BotTeamMember.BotTeamRole;
 
@@ -14,11 +15,13 @@ public class AutomataClientColors {
     public static final Color RESERVATION = Color.BLUE;
 
     public static final Color BLUEPRINT = Color.ofArgb(0xBF7F7FFF); // Blue tint
+    public static final Color CONSTRUCTION = Color.BLUE;
     public static final Color DECONSTRUCTION = Color.RED;
     public static final Color JOB_DEFAULT = Color.WHITE;
 
     public static Color getJobColor(BotJob botJob) {
         return switch (botJob) {
+        case ConstructionBotJob ignored -> CONSTRUCTION;
         case DeconstructionBotJob ignored -> DECONSTRUCTION;
         default -> JOB_DEFAULT;
         };

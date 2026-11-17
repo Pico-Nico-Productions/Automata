@@ -1,5 +1,7 @@
 # Automata Contributor Guide
 
+This guide is mainly [code conventions](#code-conventions) which should be read before contributing and [content creation](#content-creation) which lists steps for adding new content of any existing type to the mod
+
 ## Code Conventions
 
 ### Avoid Literals
@@ -177,12 +179,19 @@ Call **Text**.translatable with the translation key and arguments
 7. Optional: Add a custom name and button renderer in [**BotDeviceHomeTab**](/src/client/java/pro/piconico/automata/client/ui/tab/bot/BotDeviceHomeTab.java)
 
 
+### Automatool Modes
+
+1. Create a class [here](/src/main/java/pro/piconico/automata/bot/mode/)
+2. Give it a public static function that matches [**AutomatoolMode**](/src/main/java/pro/piconico/automata/bot/mode/AutomatoolMode.java)'s dispatch
+3. Register it as a public static final **AutomatoolMode** in [**AutomataAutomatoolModes**](/src/main/java/pro/piconico/automata/registry/AutomataAutomatoolModes.java)
+
+
 ### Bot Jobs
 
 1. Create a record (**TBotJob** for example) that implements **BotJob** [here](/src/main/java/pro/piconico/automata/bot/job/)
 2. Give it a public static final **MapCodec\<TBotJob\>**
 3. Register it as a public static final **BotJobType\<TBotJob\>** in [**AutomataBotJobs**](/src/main/java/pro/piconico/automata/registry/AutomataBotJobs.java)
-4. Optional: Give it a color in the job function in [**AutomataColors**](/src/client/java/pro/piconico/automata/client/registry/AutomataColors.java) to have it render an outline
+4. Optional: Give it a color in the job function in [**AutomataClientColors**](/src/client/java/pro/piconico/automata/client/registry/AutomataClientColors.java) to have it render an outline
 
 
 ### Bots

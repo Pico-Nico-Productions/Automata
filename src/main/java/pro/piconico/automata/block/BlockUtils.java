@@ -7,9 +7,11 @@ import net.minecraft.world.World;
 
 public class BlockUtils {
     public static final int BREAK_NOT_IN_PROGRESS = -1, MAX_BREAK_PROGRESS = 10;
+    public static final float TOOL_SPEED = 1F / 30F, NO_TOOL_SPEED = 1F / 100F;
 
     public static boolean isPlaceableBlock(World world, BlockPos blockPos) {
         BlockState blockState = world.getBlockState(blockPos);
+
         if (blockState.isAir())
             return false;
 
