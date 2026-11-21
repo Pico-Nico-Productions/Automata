@@ -50,7 +50,7 @@ public interface BotDevice<T> extends ExtendedScreenHandlerFactory<T> {
 
     public boolean setTeamUuid(Optional<UUID> teamUuid);
 
-    public default boolean canUse(PlayerEntity player, boolean sendMessage) {
+    public default boolean canUse(PlayerEntity player, boolean sendFailMessage) {
         if (player.getEntityWorld().isClient())
             return true;
 
@@ -61,7 +61,7 @@ public interface BotDevice<T> extends ExtendedScreenHandlerFactory<T> {
 
         boolean canUse = team.get().hasMemberWithRead(player);
 
-        if (!canUse && sendMessage) {
+        if (!canUse && sendFailMessage) {
             player.sendMessage(AutomataTexts.getBotTeamPermissionMissing(player.getStringifiedName(), team.get()), true);
         }
 

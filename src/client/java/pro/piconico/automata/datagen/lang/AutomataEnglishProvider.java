@@ -53,6 +53,7 @@ public class AutomataEnglishProvider extends FabricLanguageProvider {
         translationBuilder.add(AutomataEntities.CONSTRUCTION_BOT, "Construction Bot");
 
         translationBuilder.add(AutomataAutomatoolModes.BLUEPRINT.getTranslationKey(), "Blueprint");
+        translationBuilder.add(AutomataAutomatoolModes.CONSTRUCTION.getTranslationKey(), "Construction");
         translationBuilder.add(AutomataAutomatoolModes.DECONSTRUCTION.getTranslationKey(), "Deconstruction");
     }
 }

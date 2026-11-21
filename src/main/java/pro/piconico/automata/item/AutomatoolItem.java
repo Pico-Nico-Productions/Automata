@@ -1,13 +1,11 @@
 package pro.piconico.automata.item;
 
 import java.util.Optional;
-import java.util.UUID;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
@@ -16,7 +14,6 @@ import net.minecraft.world.World;
 import pro.piconico.automata.component.SelectionComponent;
 import pro.piconico.automata.component.SelectionComponent.Selection;
 import pro.piconico.automata.component.AutomatoolModeComponent;
-import pro.piconico.automata.component.BotTeamComponent;
 import pro.piconico.automata.registry.AutomataItems;
 import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.bot.device.ItemBotDevice;
@@ -32,7 +29,7 @@ public class AutomatoolItem extends Item {
     private static ActionResult select(PlayerEntity player, ItemStack automatoolStack, BlockPos pos, Selection selection) {
         AutomatoolMode mode = AutomatoolModeComponent.getOrDefault(automatoolStack);
 
-        if (mode.maxSelections().isEmpty()) {
+        if (!mode.requiresSelection()) {
             player.sendMessage(AutomataTexts.getSelectionUnnecessary(), true);
             return ActionResult.FAIL;
         }
@@ -55,26 +52,19 @@ public class AutomatoolItem extends Item {
 
         player.sendMessage(AutomataTexts.getBlockSelected(selection.toInt(), pos), true);
 
-        return ActionResult.SUCCESS;
+        return ActionResult.SUCCESS_SERVER;
     }
 
     private static ActionResult dispatch(PlayerEntity player, ItemStack automatoolStack) {
         AutomatoolMode mode = AutomatoolModeComponent.getOrDefault(automatoolStack);
-        Optional<UUID> teamUuid = BotTeamComponent.get(automatoolStack);
-        Optional<SelectionComponent> selectionComponent = SelectionComponent.get(automatoolStack);
-
-        Optional<Text> requirementFailure = AutomatoolMode.getRequirementFailure(mode, player, teamUuid, selectionComponent);
-        if (requirementFailure.isPresent()) {
-            player.sendMessage(requirementFailure.get(), true);
+        if (mode.canDispatch(player, automatoolStack, true))
             return ActionResult.FAIL;
-        }
 
         if (!(player instanceof ServerPlayerEntity serverPlayer))
             return ActionResult.SUCCESS;
 
-        Optional<Text> outcomeText = mode.dispatch().apply(serverPlayer, teamUuid, selectionComponent);
+        mode.dispatch().accept(serverPlayer, automatoolStack);
         SelectionComponent.set(automatoolStack, Optional.empty());
-        outcomeText.ifPresent(text -> player.sendMessage(text, true));
 
         return ActionResult.SUCCESS_SERVER;
     }

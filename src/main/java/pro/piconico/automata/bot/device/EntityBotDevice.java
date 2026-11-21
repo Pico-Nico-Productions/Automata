@@ -95,8 +95,8 @@ public abstract class EntityBotDevice extends PathAwareEntity implements BotDevi
     }
 
     @Override
-    public boolean canUse(PlayerEntity player, boolean sendMessage) {
-        return isAlive() && player.canInteractWithEntity(this, 0) && BotDevice.super.canUse(player, sendMessage);
+    public boolean canUse(PlayerEntity player, boolean sendFailMessage) {
+        return isAlive() && player.canInteractWithEntity(this, 0) && BotDevice.super.canUse(player, sendFailMessage);
     }
 
     @Override

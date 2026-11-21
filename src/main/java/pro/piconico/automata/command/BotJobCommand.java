@@ -14,7 +14,7 @@ import pro.piconico.automata.util.UUIDUtils;
 import pro.piconico.automata.world.BotJobPersistentState;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
-public class JobCommand {
+public class BotJobCommand {
     private static final String NAME = "job";
 
     private static final String REMOVE_ARGUMENT = "remove";
@@ -58,9 +58,9 @@ public class JobCommand {
 
         LiteralArgumentBuilder<ServerCommandSource> removeArgument = CommandManager.literal(REMOVE_ARGUMENT);
         removeArgument.then(CommandManager.literal(TEAM_ARGUMENT)
-                .then(CommandManager.argument(TEAM_UUID_ARGUMENT, StringArgumentType.word()).executes(JobCommand::removeTeamJobs)));
-        removeArgument.then(CommandManager.literal(WORLD_ARGUMENT).executes(JobCommand::removeWorldJobs));
-        removeArgument.then(CommandManager.literal(ALL_ARGUMENT).executes(JobCommand::removeAllJobs));
+                .then(CommandManager.argument(TEAM_UUID_ARGUMENT, StringArgumentType.word()).executes(BotJobCommand::removeTeamJobs)));
+        removeArgument.then(CommandManager.literal(WORLD_ARGUMENT).executes(BotJobCommand::removeWorldJobs));
+        removeArgument.then(CommandManager.literal(ALL_ARGUMENT).executes(BotJobCommand::removeAllJobs));
         jobCommand.then(removeArgument);
 
         return jobCommand;

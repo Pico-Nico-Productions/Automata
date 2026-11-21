@@ -1,0 +1,17 @@
+# Validates that
+
+name: validate local links in md
+on: [pull_request, push]
+
+jobs:
+  linkChecker:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@6
+
+      - name: validate links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --offline --root-dir . --extensions md .
+          fail: true

@@ -24,7 +24,7 @@ import pro.piconico.automata.registry.AutomataTexts;
 import pro.piconico.automata.util.UUIDUtils;
 import pro.piconico.automata.world.BotTeamPersistentState;
 
-public class TeamCommand {
+public class BotTeamCommand {
     private static final String NAME = "team";
 
     private static final String ADD_ARGUMENT = "add";
@@ -191,25 +191,25 @@ public class TeamCommand {
         LiteralArgumentBuilder<ServerCommandSource> teamCommand = CommandManager.literal(NAME);
 
         LiteralArgumentBuilder<ServerCommandSource> addArgument = CommandManager.literal(ADD_ARGUMENT);
-        addArgument.then(CommandManager.argument(TEAM_NAME_ARGUMENT, StringArgumentType.string()).executes(TeamCommand::addTeam));
+        addArgument.then(CommandManager.argument(TEAM_NAME_ARGUMENT, StringArgumentType.string()).executes(BotTeamCommand::addTeam));
         teamCommand.then(addArgument);
 
         LiteralArgumentBuilder<ServerCommandSource> removeArgument = CommandManager.literal(REMOVE_ARGUMENT);
-        removeArgument.then(CommandManager.argument(TEAM_UUID_ARGUMENT, StringArgumentType.word()).executes(TeamCommand::removeTeam));
+        removeArgument.then(CommandManager.argument(TEAM_UUID_ARGUMENT, StringArgumentType.word()).executes(BotTeamCommand::removeTeam));
         teamCommand.then(removeArgument);
 
         LiteralArgumentBuilder<ServerCommandSource> listArgument = CommandManager.literal(LIST_ARGUMENT);
-        listArgument.executes(TeamCommand::listTeams);
+        listArgument.executes(BotTeamCommand::listTeams);
         teamCommand.then(listArgument);
 
         RequiredArgumentBuilder<ServerCommandSource, String> teamUuidArgument = CommandManager.argument(TEAM_UUID_ARGUMENT, StringArgumentType.word());
-        teamUuidArgument.executes(TeamCommand::listTeam);
+        teamUuidArgument.executes(BotTeamCommand::listTeam);
         teamUuidArgument.then(CommandManager.literal(ADD_ARGUMENT)
-                .then(CommandManager.argument(TARGETS_ARGUMENT, EntityArgumentType.players()).executes(TeamCommand::addMember)));
+                .then(CommandManager.argument(TARGETS_ARGUMENT, EntityArgumentType.players()).executes(BotTeamCommand::addMember)));
         teamUuidArgument.then(CommandManager.literal(REMOVE_ARGUMENT)
-                .then(CommandManager.argument(TARGETS_ARGUMENT, EntityArgumentType.players()).executes(TeamCommand::removeMember)));
+                .then(CommandManager.argument(TARGETS_ARGUMENT, EntityArgumentType.players()).executes(BotTeamCommand::removeMember)));
         teamUuidArgument.then(CommandManager.literal(ROLE_ARGUMENT).then(CommandManager.argument(TARGETS_ARGUMENT, EntityArgumentType.players())
-                .then(CommandManager.argument(ROLE_NAME_ARGUMENT, StringArgumentType.word()).suggests(ROLE_NAMES).executes(TeamCommand::changeRole))));
+                .then(CommandManager.argument(ROLE_NAME_ARGUMENT, StringArgumentType.word()).suggests(ROLE_NAMES).executes(BotTeamCommand::changeRole))));
         teamCommand.then(teamUuidArgument);
 
         return teamCommand;

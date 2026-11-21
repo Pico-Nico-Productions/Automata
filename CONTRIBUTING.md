@@ -12,8 +12,8 @@ Literal values are typically arbitrary so literals should be used to define fina
 - Define all strings used as translation keys in [**AutomataTexts**](/src/main/java/pro/piconico/automata/registry/AutomataTexts.java)
 - Write all player facing strings in the **FabricLanguageProvider**s [here](/src/client/java/pro/piconico/automata/datagen/lang/)
 
-### Avoid Null
-Java has no explicit null safety so this repository uses **Optional\<\>** to explicitly declare a value is nullable
+### Don't Pass Null
+Java has no explicit null safety so this repository uses **Optional\<\>** in function argument are return types to explicitly declare them as nullable
 
 
 
@@ -182,8 +182,10 @@ Call **Text**.translatable with the translation key and arguments
 ### Automatool Modes
 
 1. Create a class [here](/src/main/java/pro/piconico/automata/bot/mode/)
-2. Give it a public static function that matches [**AutomatoolMode**](/src/main/java/pro/piconico/automata/bot/mode/AutomatoolMode.java)'s dispatch
-3. Register it as a public static final **AutomatoolMode** in [**AutomataAutomatoolModes**](/src/main/java/pro/piconico/automata/registry/AutomataAutomatoolModes.java)
+2. Optional: Give it a public static function that matches [**AutomatoolMode**](/src/main/java/pro/piconico/automata/bot/mode/AutomatoolMode.java)'s **canDispatch** component
+3. Give it a public static function that matches [**AutomatoolMode**](/src/main/java/pro/piconico/automata/bot/mode/AutomatoolMode.java)'s **dispatch** component
+4. Register it as a public static final **AutomatoolMode** in [**AutomataAutomatoolModes**](/src/main/java/pro/piconico/automata/registry/AutomataAutomatoolModes.java)
+5. Add it to all **FabricLanguageProvider**s [here](/src/client/java/pro/piconico/automata/datagen/lang/)
 
 
 ### Bot Jobs

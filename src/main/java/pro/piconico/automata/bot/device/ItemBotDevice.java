@@ -93,8 +93,8 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
     }
 
     @Override
-    public boolean canUse(PlayerEntity player, boolean sendMessage) {
-        return this.player == player && BotDevice.super.canUse(player, sendMessage);
+    public boolean canUse(PlayerEntity player, boolean sendFailMessage) {
+        return this.player == player && BotDevice.super.canUse(player, sendFailMessage);
     }
 
     @Override
@@ -119,12 +119,12 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
         return true;
     }
 
-    public boolean hasPermission(BotTeamPermission permission, boolean sendMessage) {
+    public boolean hasPermission(BotTeamPermission permission, boolean sendFailMessage) {
         ItemStack stack = getStack();
         Optional<UUID> teamUuid = BotTeamComponent.get(stack);
 
         if (teamUuid.isEmpty()) {
-            if (sendMessage) {
+            if (sendFailMessage) {
                 player.sendMessage(AutomataTexts.getBotTeamEmpty(), true);
             }
             return false;
@@ -137,7 +137,7 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
 
         if (team.isEmpty()) {
             BotTeamComponent.set(stack, Optional.empty());
-            if (sendMessage) {
+            if (sendFailMessage) {
                 player.sendMessage(AutomataTexts.getBotTeamEmpty(), true);
             }
 
@@ -145,7 +145,7 @@ public class ItemBotDevice implements BotDevice<ItemStack> {
         }
 
         if (!team.get().hasMemberWith(player, permission)) {
-            if (sendMessage) {
+            if (sendFailMessage) {
                 player.sendMessage(AutomataTexts.getBotTeamPermissionMissing(player.getStringifiedName(), team.get()), true);
             }
 

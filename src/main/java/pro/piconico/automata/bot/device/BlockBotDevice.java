@@ -104,8 +104,8 @@ public abstract class BlockBotDevice extends BlockEntity implements BotDevice<Bl
     }
 
     @Override
-    public boolean canUse(PlayerEntity player, boolean sendMessage) {
-        return canPlayerUse(player) && BotDevice.super.canUse(player, sendMessage);
+    public boolean canUse(PlayerEntity player, boolean sendFailMessage) {
+        return canPlayerUse(player) && BotDevice.super.canUse(player, sendFailMessage);
     }
 
     @Override

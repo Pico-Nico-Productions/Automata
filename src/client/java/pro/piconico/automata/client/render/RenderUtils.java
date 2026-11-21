@@ -114,7 +114,7 @@ public class RenderUtils {
         client.getBlockEntityRenderDispatcher().render(renderState, matrices, tintedOrderedRenderCommandQueue, cameraRenderState);
     }
 
-    // TODO: Resolve transparency clipping through other drawn blocks
+    // TODO: Resolve transparency cutting through other drawn blocks
     public static void drawBlock(WorldRenderContext context, BlockPos worldPos, Quaternionfc rotation, BlockState state, Optional<BlockEntity> blockEntity,
             Color tint) {
         MatrixStack matrices = context.matrices();
